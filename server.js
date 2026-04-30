@@ -3,19 +3,149 @@ const exifr = require('exifr');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
+
+// ── State directory & sessions ──
+const stateDir = path.join(os.homedir(), '.latent');
+const oldStateDir = path.join(os.homedir(), '.safelight');
+
+// Migrate ~/.safelight/ → ~/.latent/ if old dir exists and new doesn't
+if (fs.existsSync(oldStateDir) && !fs.existsSync(stateDir)) {
+  fs.renameSync(oldStateDir, stateDir);
+  console.log('Migrated ~/.safelight/ → ~/.latent/');
+}
+
+const sessionsFile = path.join(stateDir, 'sessions.json');
+const previewCacheDir = path.join(stateDir, 'preview-cache');
 
 // Active directory state (mutable, no restart needed)
 let activeDir = null;
+let activeSessionId = null;
 let cacheDir = null;
 let thumbCacheDir = null;
 let ratingsFile = null;
 let files = [];
 let ratings = {};
 
+// ── Sessions persistence ──
+
+function loadSessions() {
+  try {
+    if (fs.existsSync(sessionsFile)) {
+      return JSON.parse(fs.readFileSync(sessionsFile, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Failed to load sessions:', e.message);
+  }
+  return [];
+}
+
+function saveSessions(sessions) {
+  try {
+    fs.mkdirSync(stateDir, { recursive: true });
+    fs.writeFileSync(sessionsFile, JSON.stringify(sessions, null, 2));
+  } catch (e) {
+    console.error('Failed to save sessions:', e.message);
+  }
+}
+
+function findSessionByDir(sessions, dir) {
+  return sessions.find(s => s.dir === dir);
+}
+
+function findSessionById(sessions, id) {
+  return sessions.find(s => s.id === id);
+}
+
+function countRatingsInDir(dir) {
+  const rf = path.join(dir, 'ratings.json');
+  try {
+    if (fs.existsSync(rf)) {
+      const data = JSON.parse(fs.readFileSync(rf, 'utf8'));
+      return Object.keys(data).length;
+    }
+  } catch (e) {}
+  return 0;
+}
+
+function upsertSession(dir, fileCount) {
+  const sessions = loadSessions();
+  let session = findSessionByDir(sessions, dir);
+  const now = new Date().toISOString();
+
+  if (session) {
+    session.lastOpened = now;
+    session.fileCount = fileCount;
+    session.ratedCount = countRatingsInDir(dir);
+  } else {
+    session = {
+      id: crypto.randomUUID(),
+      dir,
+      name: path.basename(dir),
+      lastOpened: now,
+      lastPosition: 0,
+      fileCount,
+      ratedCount: countRatingsInDir(dir),
+    };
+    sessions.push(session);
+  }
+
+  saveSessions(sessions);
+  return session;
+}
+
+function updateSessionRatedCount(dir) {
+  const sessions = loadSessions();
+  const session = findSessionByDir(sessions, dir);
+  if (session) {
+    session.ratedCount = countRatingsInDir(dir);
+    saveSessions(sessions);
+  }
+}
+
+function updateSessionPosition(sessionId, position) {
+  const sessions = loadSessions();
+  const session = findSessionById(sessions, sessionId);
+  if (session) {
+    session.lastPosition = position;
+    saveSessions(sessions);
+  }
+}
+
+// ── Helpers ──
+
+function isSupportedImage(filename) {
+  const upper = filename.toUpperCase();
+  return upper.endsWith('.HIF') || upper.endsWith('.HEIF') ||
+         upper.endsWith('.JPG') || upper.endsWith('.JPEG');
+}
+
 function isHeifFile(filename) {
   const upper = filename.toUpperCase();
   return upper.endsWith('.HIF') || upper.endsWith('.HEIF');
+}
+
+function walkDir(baseDir, currentDir, maxDepth, depth) {
+  if (depth > maxDepth) return [];
+  let results = [];
+  let entries;
+  try {
+    entries = fs.readdirSync(currentDir, { withFileTypes: true });
+  } catch (e) {
+    return results;
+  }
+  for (const entry of entries) {
+    if (entry.name.startsWith('.')) continue;
+    const fullPath = path.join(currentDir, entry.name);
+    if (entry.isFile() && isSupportedImage(entry.name) && !entry.name.startsWith('._')) {
+      const relativePath = path.relative(baseDir, fullPath);
+      results.push(relativePath);
+    } else if (entry.isDirectory()) {
+      results = results.concat(walkDir(baseDir, fullPath, maxDepth, depth + 1));
+    }
+  }
+  return results;
 }
 
 function loadDirectory(dir) {
@@ -31,11 +161,10 @@ function loadDirectory(dir) {
   fs.mkdirSync(cacheDir, { recursive: true });
   fs.mkdirSync(thumbCacheDir, { recursive: true });
 
-  files = fs.readdirSync(dir)
-    .filter(f => isHeifFile(f) && !f.startsWith('._'))
-    .sort();
+  // Recursively find all supported image files
+  files = walkDir(dir, dir, 5, 0).sort();
 
-  console.log(`Found ${files.length} HEIF files in ${dir}`);
+  console.log(`Found ${files.length} photos in ${dir}`);
 
   ratings = {};
   if (fs.existsSync(ratingsFile)) {
@@ -49,12 +178,20 @@ function loadDirectory(dir) {
     }
   }
 
-  return files;
+  // Upsert session and track active session ID
+  const session = upsertSession(dir, files.length);
+  activeSessionId = session.id;
+
+  return { files, session };
 }
 
 function saveRatings() {
   if (!ratingsFile) return;
   fs.writeFileSync(ratingsFile, JSON.stringify(ratings, null, 2));
+  // Keep session ratedCount in sync
+  if (activeDir) {
+    updateSessionRatedCount(activeDir);
+  }
 }
 
 function requireActiveDir(req, res, next) {
@@ -63,6 +200,18 @@ function requireActiveDir(req, res, next) {
   }
   next();
 }
+
+function generateThumb(srcPath, destPath, size) {
+  const upper = srcPath.toUpperCase();
+  const needsConversion = upper.endsWith('.HIF') || upper.endsWith('.HEIF');
+  if (needsConversion) {
+    execSync(`sips -s format jpeg -Z ${size} ${JSON.stringify(srcPath)} --out ${JSON.stringify(destPath)}`, { stdio: 'pipe' });
+  } else {
+    execSync(`sips -Z ${size} ${JSON.stringify(srcPath)} --out ${JSON.stringify(destPath)}`, { stdio: 'pipe' });
+  }
+}
+
+// ── Express setup ──
 
 const app = express();
 app.use(express.json());
@@ -74,14 +223,58 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── New endpoints ──
+// ── Endpoints ──
 
 // Status: is a directory loaded?
 app.get('/api/status', (req, res) => {
   if (!activeDir) {
     return res.json({ loaded: false });
   }
-  res.json({ loaded: true, dir: activeDir, fileCount: files.length });
+  res.json({
+    loaded: true,
+    dir: activeDir,
+    fileCount: files.length,
+    sessionId: activeSessionId,
+  });
+});
+
+// Sessions list with thumbnails
+app.get('/api/sessions', (req, res) => {
+  const sessions = loadSessions();
+
+  // Sort by lastOpened descending
+  sessions.sort((a, b) => new Date(b.lastOpened) - new Date(a.lastOpened));
+
+  const result = sessions.map(s => {
+    let accessible = true;
+    let thumbnails = [];
+
+    try {
+      if (!fs.existsSync(s.dir)) {
+        accessible = false;
+      } else {
+        const dirFiles = walkDir(s.dir, s.dir, 3, 0).sort();
+        thumbnails = dirFiles.slice(0, 6);
+      }
+    } catch (e) {
+      accessible = false;
+    }
+
+    // Fresh ratedCount from disk
+    let ratedCount = 0;
+    if (accessible) {
+      ratedCount = countRatingsInDir(s.dir);
+    }
+
+    return {
+      ...s,
+      accessible,
+      thumbnails,
+      ratedCount,
+    };
+  });
+
+  res.json(result);
 });
 
 // Browse directories
@@ -99,31 +292,44 @@ app.get('/api/browse', (req, res) => {
 
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
-      if (entry.name.startsWith('.')) continue; // skip hidden
+      if (entry.name.startsWith('.')) continue;
 
       const fullPath = path.join(resolved, entry.name);
-      let heifCount = 0;
+      let photoCount = 0;
+      let previewFiles = [];
 
       try {
-        const contents = fs.readdirSync(fullPath);
-        heifCount = contents.filter(f => isHeifFile(f) && !f.startsWith('._')).length;
+        const allPhotos = walkDir(fullPath, fullPath, 3, 0).sort();
+        photoCount = allPhotos.length;
+        if (photoCount > 0) {
+          // For preview, use the full relative paths joined back to fullPath
+          previewFiles = allPhotos.slice(0, 16);
+        }
       } catch (e) {
-        // Permission denied or other error — skip count
+        // Permission denied or other error
       }
 
-      folders.push({ name: entry.name, path: fullPath, heifCount });
+      const hasRatings = fs.existsSync(path.join(fullPath, 'ratings.json'));
+      const ratedCount = hasRatings ? countRatingsInDir(fullPath) : 0;
+      folders.push({ name: entry.name, path: fullPath, photoCount, previewFiles, hasRatings, ratedCount });
     }
 
     folders.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Count HEIF files in the current directory itself
-    let currentHeifCount = 0;
+    // Count supported image files recursively in the current directory
+    let currentPhotoCount = 0;
+    let currentPreviewFiles = [];
     try {
-      const contents = fs.readdirSync(resolved);
-      currentHeifCount = contents.filter(f => isHeifFile(f) && !f.startsWith('._')).length;
+      const allPhotos = walkDir(resolved, resolved, 3, 0).sort();
+      currentPhotoCount = allPhotos.length;
+      if (currentPhotoCount > 0) {
+        currentPreviewFiles = allPhotos.slice(0, 16);
+      }
     } catch (e) {}
 
-    res.json({ dir: resolved, folders, heifCount: currentHeifCount });
+    const currentHasRatings = fs.existsSync(path.join(resolved, 'ratings.json'));
+    const currentRatedCount = currentHasRatings ? countRatingsInDir(resolved) : 0;
+    res.json({ dir: resolved, folders, photoCount: currentPhotoCount, previewFiles: currentPreviewFiles, hasRatings: currentHasRatings, ratedCount: currentRatedCount });
   } catch (err) {
     res.status(403).json({ error: 'Cannot read directory' });
   }
@@ -144,18 +350,116 @@ app.get('/api/volumes', (req, res) => {
   }
 });
 
-// Load a directory
+// Load a directory (by dir path or sessionId)
 app.post('/api/load', (req, res) => {
-  const { dir } = req.body;
-  if (!dir) {
-    return res.status(400).json({ error: 'dir is required' });
+  const { dir, sessionId } = req.body;
+
+  let targetDir = dir;
+
+  if (sessionId && !dir) {
+    const sessions = loadSessions();
+    const session = findSessionById(sessions, sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    targetDir = session.dir;
+  }
+
+  if (!targetDir) {
+    return res.status(400).json({ error: 'dir or sessionId is required' });
   }
 
   try {
-    const fileList = loadDirectory(dir);
-    res.json({ ok: true, dir: activeDir, files: fileList });
+    const { files: fileList, session } = loadDirectory(targetDir);
+    res.json({
+      ok: true,
+      dir: activeDir,
+      files: fileList,
+      sessionId: session.id,
+      lastPosition: session.lastPosition,
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// Save viewing position
+app.post('/api/save-position', (req, res) => {
+  const { position } = req.body;
+  if (typeof position !== 'number') {
+    return res.status(400).json({ error: 'position (number) is required' });
+  }
+  if (!activeSessionId) {
+    return res.status(400).json({ error: 'No active session' });
+  }
+  updateSessionPosition(activeSessionId, position);
+  res.json({ ok: true });
+});
+
+// Session thumbnail (for landing page mosaic — session not currently loaded)
+app.get('/api/session-thumb/:sessionId/{*filepath}', (req, res) => {
+  const sessionId = req.params.sessionId;
+  const filepath = req.params.filepath;
+  const decodedFilename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
+
+  const sessions = loadSessions();
+  const session = findSessionById(sessions, sessionId);
+  if (!session) {
+    return res.status(404).send('Session not found');
+  }
+
+  const srcPath = path.join(session.dir, decodedFilename);
+  if (!fs.existsSync(srcPath)) {
+    return res.status(404).send('File not found');
+  }
+
+  // Cache in session's .cache/thumbs/
+  const sessionThumbDir = path.join(session.dir, '.cache', 'thumbs');
+  fs.mkdirSync(sessionThumbDir, { recursive: true });
+
+  const cacheKey = crypto.createHash('md5').update(decodedFilename).digest('hex').slice(0, 16);
+  const cacheName = cacheKey + '_' + path.parse(decodedFilename).name + '_thumb.jpg';
+  const cachePath = path.join(sessionThumbDir, cacheName);
+
+  try {
+    if (!fs.existsSync(cachePath)) {
+      generateThumb(srcPath, cachePath, 300);
+    }
+    res.type('image/jpeg');
+    res.send(fs.readFileSync(cachePath));
+  } catch (err) {
+    console.error(`Error creating session thumbnail for ${decodedFilename}:`, err.message);
+    res.status(500).send('Thumbnail creation failed');
+  }
+});
+
+// Preview thumbnail for folder browser (dir is base64-encoded)
+app.get('/api/preview-thumb/:dir/{*filepath}', (req, res) => {
+  const dirDecoded = Buffer.from(req.params.dir, 'base64').toString('utf8');
+  const filepath = req.params.filepath;
+  const filename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
+
+  const srcPath = path.join(dirDecoded, filename);
+  if (!fs.existsSync(srcPath)) {
+    return res.status(404).send('File not found');
+  }
+
+  fs.mkdirSync(previewCacheDir, { recursive: true });
+
+  // Use a hash of the full path to avoid collisions
+  const pathHash = crypto.createHash('md5').update(srcPath).digest('hex').slice(0, 12);
+  const cacheName = pathHash + '_preview.jpg';
+  const cachePath = path.join(previewCacheDir, cacheName);
+
+  try {
+    if (!fs.existsSync(cachePath)) {
+      generateThumb(srcPath, cachePath, 300);
+    }
+    res.type('image/jpeg');
+    res.send(fs.readFileSync(cachePath));
+  } catch (err) {
+    console.error(`Error creating preview thumbnail for ${filename}:`, err.message);
+    res.status(500).send('Thumbnail creation failed');
   }
 });
 
@@ -174,25 +478,42 @@ app.get('/api/ratings', requireActiveDir, (req, res) => {
 // Rate a file
 app.post('/api/rate', requireActiveDir, (req, res) => {
   const { filename, rating } = req.body;
-  const basename = path.parse(filename).name;
+  // Use relative path without extension as key (backward-compatible for root-level files)
+  const key = filename.replace(/\.[^.]+$/, '');
   if (rating === 0 || rating === null) {
-    delete ratings[basename];
+    delete ratings[key];
   } else {
-    ratings[basename] = rating;
+    ratings[key] = rating;
   }
   saveRatings();
   res.json({ ok: true });
 });
 
-// Serve full-size converted JPEG
-app.get('/api/image/:filename', requireActiveDir, async (req, res) => {
-  const filename = decodeURIComponent(req.params.filename);
+// Serve full-size converted JPEG (HEIF needs sips conversion, JPG/JPEG served directly)
+app.get('/api/image/{*filepath}', requireActiveDir, async (req, res) => {
+  const filepath = req.params.filepath;
+  const filename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
   const srcPath = path.join(activeDir, filename);
   if (!fs.existsSync(srcPath)) {
     return res.status(404).send('Not found');
   }
 
-  const cacheName = path.parse(filename).name + '.jpg';
+  // JPG/JPEG — serve directly, no conversion needed
+  const upper = filename.toUpperCase();
+  if (upper.endsWith('.JPG') || upper.endsWith('.JPEG')) {
+    try {
+      res.type('image/jpeg');
+      res.send(fs.readFileSync(srcPath));
+    } catch (err) {
+      console.error(`Error reading ${filename}:`, err.message);
+      res.status(500).send('Read failed');
+    }
+    return;
+  }
+
+  // HEIF — convert via sips — use hash of relative path for cache key to avoid collisions
+  const cacheKey = crypto.createHash('md5').update(filename).digest('hex').slice(0, 16);
+  const cacheName = cacheKey + '_' + path.parse(filename).name + '.jpg';
   const cachePath = path.join(cacheDir, cacheName);
 
   try {
@@ -208,19 +529,21 @@ app.get('/api/image/:filename', requireActiveDir, async (req, res) => {
 });
 
 // Serve thumbnail
-app.get('/api/thumb/:filename', requireActiveDir, async (req, res) => {
-  const filename = decodeURIComponent(req.params.filename);
+app.get('/api/thumb/{*filepath}', requireActiveDir, async (req, res) => {
+  const filepath = req.params.filepath;
+  const filename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
   const srcPath = path.join(activeDir, filename);
   if (!fs.existsSync(srcPath)) {
     return res.status(404).send('Not found');
   }
 
-  const cacheName = path.parse(filename).name + '.jpg';
+  const cacheKey = crypto.createHash('md5').update(filename).digest('hex').slice(0, 16);
+  const cacheName = cacheKey + '_' + path.parse(filename).name + '_thumb.jpg';
   const cachePath = path.join(thumbCacheDir, cacheName);
 
   try {
     if (!fs.existsSync(cachePath)) {
-      execSync(`sips -s format jpeg -Z 300 ${JSON.stringify(srcPath)} --out ${JSON.stringify(cachePath)}`, { stdio: 'pipe' });
+      generateThumb(srcPath, cachePath, 300);
     }
     res.type('image/jpeg');
     res.send(fs.readFileSync(cachePath));
@@ -231,8 +554,9 @@ app.get('/api/thumb/:filename', requireActiveDir, async (req, res) => {
 });
 
 // Serve EXIF metadata
-app.get('/api/meta/:filename', requireActiveDir, async (req, res) => {
-  const filename = req.params.filename;
+app.get('/api/meta/{*filepath}', requireActiveDir, async (req, res) => {
+  const filepath = req.params.filepath;
+  const filename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
   const srcPath = path.join(activeDir, filename);
   if (!fs.existsSync(srcPath)) {
     return res.status(404).send('Not found');
@@ -240,7 +564,7 @@ app.get('/api/meta/:filename', requireActiveDir, async (req, res) => {
 
   try {
     const exif = await exifr.parse(srcPath, {
-      pick: ['DateTimeOriginal', 'FNumber', 'ExposureTime', 'ISO', 'FocalLength', 'FocalLengthIn35mmFormat', 'LensModel', 'Model']
+      pick: ['DateTimeOriginal', 'FNumber', 'ExposureTime', 'ISO', 'FocalLength', 'FocalLengthIn35mmFormat', 'LensModel', 'Model', 'Make', 'FilmSimulation', 'WhiteBalance', 'MeteringMode', 'ExposureProgram', 'ExposureMode', 'Flash']
     });
 
     if (!exif) {
@@ -256,6 +580,13 @@ app.get('/api/meta/:filename', requireActiveDir, async (req, res) => {
       focalLength35: exif.FocalLengthIn35mmFormat || null,
       lens: exif.LensModel || null,
       camera: exif.Model || null,
+      make: exif.Make || null,
+      filmSimulation: exif.FilmSimulation || null,
+      whiteBalance: exif.WhiteBalance || null,
+      meteringMode: exif.MeteringMode || null,
+      exposureProgram: exif.ExposureProgram || null,
+      exposureMode: exif.ExposureMode || null,
+      flash: exif.Flash || null,
     };
 
     res.json(meta);
@@ -265,8 +596,40 @@ app.get('/api/meta/:filename', requireActiveDir, async (req, res) => {
   }
 });
 
+// ── Startup: migrate old state.json → sessions (no auto-resume) ──
+
+(function migrateOldState() {
+  const oldStateFile = path.join(stateDir, 'state.json');
+
+  // Migrate old state.json if sessions.json doesn't exist yet
+  if (!fs.existsSync(sessionsFile) && fs.existsSync(oldStateFile)) {
+    try {
+      const old = JSON.parse(fs.readFileSync(oldStateFile, 'utf8'));
+      if (old.lastDir && fs.existsSync(old.lastDir)) {
+        const dirFiles = fs.readdirSync(old.lastDir)
+          .filter(f => isSupportedImage(f) && !f.startsWith('._'));
+        const session = {
+          id: crypto.randomUUID(),
+          dir: old.lastDir,
+          name: path.basename(old.lastDir),
+          lastOpened: new Date().toISOString(),
+          lastPosition: 0,
+          fileCount: dirFiles.length,
+          ratedCount: countRatingsInDir(old.lastDir),
+        };
+        saveSessions([session]);
+        console.log(`Migrated state.json → sessions.json`);
+      }
+    } catch (e) {
+      console.error('Migration failed:', e.message);
+    }
+  }
+})();
+
 const PORT = 4000;
 app.listen(PORT, () => {
-  console.log(`Photo culler running at http://localhost:${PORT}`);
-  console.log('No directory loaded — use the web UI to select a folder');
+  console.log(`Latent running at http://localhost:${PORT}`);
+  if (!activeDir) {
+    console.log('No directory loaded — use the web UI to select a folder');
+  }
 });
