@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo Culler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0d0d0d;
+  --bg-strip: #0a0a0a;
+  --amber: #c8a55a;
+  --amber-dim: rgba(200, 165, 90, 0.4);
+  --amber-faint: rgba(200, 165, 90, 0.15);
+  --reject: #a0614a;
+  --maybe: #b89a52;
+  --keep: #6a9e6a;
+  --text: #d4cbb8;
+  --text-dim: rgba(212, 203, 184, 0.5);
+  --mono: 'IBM Plex Mono', monospace;
+  --serif: 'Playfair Display', Georgia, serif;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  user-select: none;
+  cursor: default;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ── Folder picker ── */
+#folder-picker {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 40px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+#folder-picker.hidden { display: none; }
+
+#picker-header {
+  margin-bottom: 32px;
+  flex-shrink: 0;
+}
+
+#picker-header h1 {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--amber);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+#picker-header .subtitle {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+#current-path {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--amber-dim);
+  letter-spacing: 0.5px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--amber-faint);
+  margin-bottom: 4px;
+  flex-shrink: 0;
+  word-break: break-all;
+}
+
+#volumes-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 0;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.volume-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--amber-dim);
+  background: none;
+  border: 1px solid var(--amber-faint);
+  padding: 4px 10px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+
+.volume-btn:hover {
+  color: var(--amber);
+  border-color: var(--amber-dim);
+}
+
+#folder-list {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--amber-faint) transparent;
+}
+
+#folder-list::-webkit-scrollbar { width: 4px; }
+#folder-list::-webkit-scrollbar-track { background: transparent; }
+#folder-list::-webkit-scrollbar-thumb { background: var(--amber-faint); }
+
+.folder-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--amber-faint);
+  cursor: pointer;
+  font-size: 13px;
+  transition: color 0.1s ease;
+}
+
+.folder-entry:hover {
+  color: var(--amber);
+}
+
+.folder-entry .folder-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.folder-entry .heif-count {
+  font-size: 11px;
+  color: var(--amber-dim);
+  flex-shrink: 0;
+  margin-left: 12px;
+  opacity: 0.7;
+}
+
+.folder-entry.up-dir {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.folder-entry.up-dir:hover {
+  color: var(--amber-dim);
+}
+
+#picker-footer {
+  flex-shrink: 0;
+  padding: 16px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+#current-dir-count {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+#current-dir-count.has-files {
+  color: var(--amber-dim);
+}
+
+#load-btn {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bg);
+  background: var(--amber);
+  border: none;
+  padding: 8px 24px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  opacity: 0.3;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+#load-btn.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#load-btn.active:hover {
+  background: #d4b366;
+}
+
+/* ── Top bar ── */
+#topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  font-size: 12px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  height: 36px;
+}
+
+#back-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  margin-right: 12px;
+  opacity: 0.6;
+  transition: opacity 0.1s ease;
+}
+
+#back-btn:hover {
+  opacity: 1;
+  color: var(--amber-dim);
+}
+
+#filter-indicator {
+  font-family: var(--serif);
+  font-size: 13px;
+  color: var(--amber-dim);
+  letter-spacing: 0.5px;
+}
+
+#counter {
+  font-variant-numeric: tabular-nums;
+}
+
+#rating-counts {
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+#rating-counts .keep-count { color: var(--keep); }
+#rating-counts .maybe-count { color: var(--maybe); }
+#rating-counts .reject-count { color: var(--reject); }
+
+/* ── Main image area ── */
+#main-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#main-image {
+  max-width: calc(100vw - 40px);
+  max-height: 100%;
+  object-fit: contain;
+  transition: opacity 0.12s ease;
+}
+
+#main-image.loading {
+  opacity: 0.3;
+}
+
+/* ── Metadata overlay ── */
+#metadata {
+  position: absolute;
+  bottom: 16px;
+  left: 20px;
+  font-size: 11px;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--text-dim);
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#metadata.hidden {
+  opacity: 0;
+}
+
+#metadata .filename {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--amber-dim);
+  letter-spacing: 1px;
+}
+
+/* ── Rating indicator ── */
+#rating-indicator {
+  position: absolute;
+  bottom: 16px;
+  right: 20px;
+  font-family: var(--serif);
+  font-size: 14px;
+  letter-spacing: 1px;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#rating-indicator.r1 { color: var(--reject); }
+#rating-indicator.r2 { color: var(--maybe); }
+#rating-indicator.r3 { color: var(--keep); }
+#rating-indicator.r0 { color: var(--text-dim); opacity: 0.3; }
+
+/* ── Flash feedback ── */
+#flash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--serif);
+  font-size: 48px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+#flash.show {
+  opacity: 0.5;
+}
+
+/* ── Filmstrip ── */
+#filmstrip-container {
+  flex-shrink: 0;
+  height: 80px;
+  background: var(--bg-strip);
+  border-top: 1px solid var(--amber-faint);
+  overflow: hidden;
+  position: relative;
+}
+
+#filmstrip {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 3px;
+  padding: 6px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+#filmstrip::-webkit-scrollbar { display: none; }
+
+.thumb-wrapper {
+  flex-shrink: 0;
+  width: 56px;
+  height: 64px;
+  position: relative;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.thumb-wrapper:hover {
+  opacity: 0.7;
+}
+
+.thumb-wrapper.active {
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+.thumb-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumb-rating {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.thumb-rating.r1 { background: var(--reject); }
+.thumb-rating.r2 { background: var(--maybe); }
+.thumb-rating.r3 { background: var(--keep); }
+
+/* ── Help overlay ── */
+#help-toggle {
+  position: fixed;
+  top: 10px;
+  right: 20px;
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--amber-dim);
+  cursor: pointer;
+  z-index: 100;
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  line-height: 24px;
+}
+
+#help-toggle:hover {
+  color: var(--amber);
+}
+
+#help-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#help-overlay.visible {
+  display: flex;
+}
+
+#help-content {
+  max-width: 480px;
+  padding: 40px;
+}
+
+#help-content h2 {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--amber);
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+
+#help-content .shortcut-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--amber-faint);
+}
+
+#help-content .key {
+  color: var(--amber-dim);
+  font-weight: 500;
+  min-width: 140px;
+}
+
+#help-content .desc {
+  color: var(--text-dim);
+  text-align: right;
+}
+
+/* ── Loading state ── */
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--amber-dim);
+  letter-spacing: 2px;
+}
+
+#loading-screen.visible {
+  display: flex;
+}
+</style>
+</head>
+<body>
+
+<div id="loading-screen">Loading...</div>
+
+<!-- ── Folder picker ── -->
+<div id="folder-picker">
+  <div id="picker-header">
+    <h1>Photo Culler</h1>
+    <div class="subtitle">Select a folder containing HEIF photos</div>
+  </div>
+  <div id="current-path"></div>
+  <div id="volumes-bar"></div>
+  <div id="folder-list"></div>
+  <div id="picker-footer">
+    <div id="current-dir-count"></div>
+    <button id="load-btn">Load</button>
+  </div>
+</div>
+
+<!-- ── Photo viewer ── -->
+<div id="app" style="display:none">
+  <div id="topbar">
+    <div style="display:flex;align-items:center">
+      <span id="back-btn">&larr; folders</span>
+      <div id="filter-indicator">All</div>
+    </div>
+    <div id="counter">0 / 0</div>
+    <div id="rating-counts">
+      <span class="keep-count">Keep: 0</span>
+      &middot;
+      <span class="maybe-count">Maybe: 0</span>
+      &middot;
+      <span class="reject-count">Reject: 0</span>
+    </div>
+  </div>
+
+  <div id="main-area">
+    <img id="main-image" src="" alt="">
+    <div id="metadata">
+      <div class="filename"></div>
+      <div class="meta-line date-line"></div>
+      <div class="meta-line exposure-line"></div>
+    </div>
+    <div id="rating-indicator" class="r0"></div>
+    <div id="flash"></div>
+  </div>
+
+  <div id="filmstrip-container">
+    <div id="filmstrip"></div>
+  </div>
+</div>
+
+<div id="help-toggle">?</div>
+<div id="help-overlay">
+  <div id="help-content">
+    <h2>Keyboard Shortcuts</h2>
+    <div class="shortcut-row"><span class="key">Left / Right</span><span class="desc">Previous / Next</span></div>
+    <div class="shortcut-row"><span class="key">Shift+Left / Right</span><span class="desc">Jump 10</span></div>
+    <div class="shortcut-row"><span class="key">Home / End</span><span class="desc">First / Last</span></div>
+    <div class="shortcut-row"><span class="key">1</span><span class="desc">Reject</span></div>
+    <div class="shortcut-row"><span class="key">2</span><span class="desc">Maybe</span></div>
+    <div class="shortcut-row"><span class="key">3</span><span class="desc">Keep</span></div>
+    <div class="shortcut-row"><span class="key">0</span><span class="desc">Clear rating</span></div>
+    <div class="shortcut-row"><span class="key">Space</span><span class="desc">Toggle metadata</span></div>
+    <div class="shortcut-row"><span class="key">F</span><span class="desc">Toggle fullscreen</span></div>
+    <div class="shortcut-row"><span class="key">Tab</span><span class="desc">Cycle filter mode</span></div>
+    <div class="shortcut-row"><span class="key">Escape</span><span class="desc">Back to folders (at first photo)</span></div>
+    <div class="shortcut-row"><span class="key">?</span><span class="desc">Toggle this help</span></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // ── State ──
+  let screen = 'picker'; // 'picker' or 'viewer'
+  let browseDir = '';
+  let browseHeifCount = 0;
+
+  let allFiles = [];
+  let ratings = {};
+  let currentIndex = 0;
+  let filteredIndices = [];
+  let filterMode = 'all';
+  const filterCycle = ['all', 'unrated', '3', '2', '1'];
+  const filterLabels = { all: 'All', unrated: 'Unrated', '3': 'Keep', '2': 'Maybe', '1': 'Reject' };
+  let metadataVisible = true;
+  let metaCache = {};
+  let helpVisible = false;
+
+  // ── DOM refs ──
+  const folderPicker = document.getElementById('folder-picker');
+  const currentPathEl = document.getElementById('current-path');
+  const volumesBar = document.getElementById('volumes-bar');
+  const folderList = document.getElementById('folder-list');
+  const currentDirCount = document.getElementById('current-dir-count');
+  const loadBtn = document.getElementById('load-btn');
+  const backBtn = document.getElementById('back-btn');
+
+  const mainImage = document.getElementById('main-image');
+  const metadataEl = document.getElementById('metadata');
+  const ratingIndicator = document.getElementById('rating-indicator');
+  const filmstrip = document.getElementById('filmstrip');
+  const counter = document.getElementById('counter');
+  const ratingCounts = document.getElementById('rating-counts');
+  const filterIndicator = document.getElementById('filter-indicator');
+  const flash = document.getElementById('flash');
+  const helpOverlay = document.getElementById('help-overlay');
+  const helpToggle = document.getElementById('help-toggle');
+  const loadingScreen = document.getElementById('loading-screen');
+  const appEl = document.getElementById('app');
+
+  const preloadNext = new Image();
+  const preloadPrev = new Image();
+
+  // ── Folder picker ──
+
+  async function initPicker() {
+    // Check if a directory is already loaded
+    const status = await fetch('/api/status').then(r => r.json());
+    if (status.loaded) {
+      // Resume into viewer
+      await enterViewer();
+      return;
+    }
+
+    showPicker();
+  }
+
+  function showPicker() {
+    screen = 'picker';
+    folderPicker.classList.remove('hidden');
+    folderPicker.style.display = '';
+    appEl.style.display = 'none';
+    loadVolumes();
+    browseTo('');
+  }
+
+  async function loadVolumes() {
+    try {
+      const volumes = await fetch('/api/volumes').then(r => r.json());
+      volumesBar.innerHTML = '';
+      for (const v of volumes) {
+        const btn = document.createElement('button');
+        btn.className = 'volume-btn';
+        btn.textContent = v.name;
+        btn.addEventListener('click', () => browseTo(v.path));
+        volumesBar.appendChild(btn);
+      }
+    } catch (e) {}
+  }
+
+  async function browseTo(dir) {
+    const params = dir ? '?dir=' + encodeURIComponent(dir) : '';
+    try {
+      const data = await fetch('/api/browse' + params).then(r => r.json());
+      if (data.error) return;
+
+      browseDir = data.dir;
+      browseHeifCount = data.heifCount;
+      currentPathEl.textContent = data.dir;
+
+      // Update footer
+      if (data.heifCount > 0) {
+        currentDirCount.textContent = data.heifCount + ' HEIF file' + (data.heifCount === 1 ? '' : 's') + ' in this folder';
+        currentDirCount.className = 'has-files';
+        loadBtn.classList.add('active');
+      } else {
+        currentDirCount.textContent = 'No HEIF files here';
+        currentDirCount.className = '';
+        loadBtn.classList.remove('active');
+      }
+
+      // Build folder list
+      folderList.innerHTML = '';
+
+      // ".." entry (go up)
+      const parent = data.dir.split('/').slice(0, -1).join('/') || '/';
+      if (data.dir !== '/') {
+        const upEntry = document.createElement('div');
+        upEntry.className = 'folder-entry up-dir';
+        upEntry.innerHTML = '<span class="folder-name">..</span>';
+        upEntry.addEventListener('click', () => browseTo(parent));
+        folderList.appendChild(upEntry);
+      }
+
+      for (const folder of data.folders) {
+        const entry = document.createElement('div');
+        entry.className = 'folder-entry';
+
+        let html = '<span class="folder-name">' + escapeHtml(folder.name) + '</span>';
+        if (folder.heifCount > 0) {
+          html += '<span class="heif-count">' + folder.heifCount + ' HEIF</span>';
+        }
+        entry.innerHTML = html;
+        entry.addEventListener('click', () => browseTo(folder.path));
+        folderList.appendChild(entry);
+      }
+    } catch (e) {
+      console.error('Browse error:', e);
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  loadBtn.addEventListener('click', async () => {
+    if (!loadBtn.classList.contains('active')) return;
+    loadingScreen.textContent = 'Loading...';
+    loadingScreen.classList.add('visible');
+
+    try {
+      const res = await fetch('/api/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dir: browseDir })
+      }).then(r => r.json());
+
+      if (res.error) {
+        loadingScreen.textContent = res.error;
+        setTimeout(() => loadingScreen.classList.remove('visible'), 2000);
+        return;
+      }
+
+      await enterViewer();
+    } catch (e) {
+      loadingScreen.textContent = 'Failed to load';
+      setTimeout(() => loadingScreen.classList.remove('visible'), 2000);
+    }
+  });
+
+  backBtn.addEventListener('click', () => {
+    goBackToPicker();
+  });
+
+  function goBackToPicker() {
+    showPicker();
+  }
+
+  // ── Viewer ──
+
+  async function enterViewer() {
+    screen = 'viewer';
+    const [filesRes, ratingsRes] = await Promise.all([
+      fetch('/api/files').then(r => r.json()),
+      fetch('/api/ratings').then(r => r.json())
+    ]);
+    allFiles = filesRes;
+    ratings = ratingsRes;
+    metaCache = {};
+    filterMode = 'all';
+
+    if (allFiles.length === 0) {
+      loadingScreen.textContent = 'No HEIF files found';
+      loadingScreen.classList.add('visible');
+      setTimeout(() => {
+        loadingScreen.classList.remove('visible');
+        showPicker();
+      }, 2000);
+      return;
+    }
+
+    folderPicker.style.display = 'none';
+    buildFilmstrip();
+    rebuildFilter();
+    loadingScreen.classList.remove('visible');
+    appEl.style.display = 'flex';
+    showImage(0);
+  }
+
+  function buildFilmstrip() {
+    filmstrip.innerHTML = '';
+    allFiles.forEach((file, i) => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'thumb-wrapper';
+      wrapper.dataset.index = i;
+      wrapper.addEventListener('click', () => {
+        const filtIdx = filteredIndices.indexOf(i);
+        if (filtIdx !== -1) {
+          showImage(filtIdx);
+        } else {
+          filterMode = 'all';
+          rebuildFilter();
+          const newFiltIdx = filteredIndices.indexOf(i);
+          showImage(newFiltIdx !== -1 ? newFiltIdx : 0);
+        }
+      });
+
+      const img = document.createElement('img');
+      img.dataset.src = '/api/thumb/' + file;
+      img.alt = '';
+      img.loading = 'lazy';
+      wrapper.appendChild(img);
+
+      const dot = document.createElement('div');
+      dot.className = 'thumb-rating';
+      wrapper.appendChild(dot);
+
+      filmstrip.appendChild(wrapper);
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target.querySelector('img');
+          if (img && img.dataset.src && !img.src) {
+            img.src = img.dataset.src;
+          }
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { root: filmstrip.parentElement, rootMargin: '0px 200px' });
+
+    document.querySelectorAll('.thumb-wrapper').forEach(w => observer.observe(w));
+  }
+
+  function rebuildFilter() {
+    filteredIndices = [];
+    for (let i = 0; i < allFiles.length; i++) {
+      const basename = allFiles[i].replace(/\.[^.]+$/, '');
+      const r = ratings[basename];
+      if (filterMode === 'all') {
+        filteredIndices.push(i);
+      } else if (filterMode === 'unrated' && !r) {
+        filteredIndices.push(i);
+      } else if (filterMode === '3' && r === 3) {
+        filteredIndices.push(i);
+      } else if (filterMode === '2' && r === 2) {
+        filteredIndices.push(i);
+      } else if (filterMode === '1' && r === 1) {
+        filteredIndices.push(i);
+      }
+    }
+    filterIndicator.textContent = filterLabels[filterMode];
+    updateCounts();
+  }
+
+  function showImage(filtIdx) {
+    if (filteredIndices.length === 0) {
+      mainImage.src = '';
+      counter.textContent = '0 / 0';
+      return;
+    }
+    filtIdx = Math.max(0, Math.min(filtIdx, filteredIndices.length - 1));
+    currentIndex = filtIdx;
+    const realIdx = filteredIndices[filtIdx];
+    const file = allFiles[realIdx];
+
+    mainImage.classList.add('loading');
+    mainImage.onload = () => mainImage.classList.remove('loading');
+    mainImage.src = '/api/image/' + file;
+
+    if (filtIdx + 1 < filteredIndices.length) {
+      preloadNext.src = '/api/image/' + allFiles[filteredIndices[filtIdx + 1]];
+    }
+    if (filtIdx - 1 >= 0) {
+      preloadPrev.src = '/api/image/' + allFiles[filteredIndices[filtIdx - 1]];
+    }
+
+    counter.textContent = (filtIdx + 1) + ' / ' + filteredIndices.length;
+
+    const basename = file.replace(/\.[^.]+$/, '');
+    updateRatingIndicator(basename);
+
+    document.querySelectorAll('.thumb-wrapper.active').forEach(el => el.classList.remove('active'));
+    const activeThumb = filmstrip.children[realIdx];
+    if (activeThumb) {
+      activeThumb.classList.add('active');
+      activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+
+    loadMetadata(file);
+  }
+
+  async function loadMetadata(file) {
+    const basename = file.replace(/\.[^.]+$/, '');
+    metadataEl.querySelector('.filename').textContent = basename;
+
+    if (metaCache[file]) {
+      renderMeta(metaCache[file]);
+      return;
+    }
+
+    metadataEl.querySelector('.date-line').textContent = '';
+    metadataEl.querySelector('.exposure-line').textContent = '';
+
+    try {
+      const meta = await fetch('/api/meta/' + file).then(r => r.json());
+      metaCache[file] = meta;
+      const currentFile = allFiles[filteredIndices[currentIndex]];
+      if (currentFile === file) {
+        renderMeta(meta);
+      }
+    } catch (e) {}
+  }
+
+  function renderMeta(meta) {
+    if (meta.date) {
+      const d = new Date(meta.date);
+      metadataEl.querySelector('.date-line').textContent =
+        d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) +
+        '  ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
+    const parts = [];
+    if (meta.aperture) parts.push('f/' + meta.aperture);
+    if (meta.shutter) {
+      if (meta.shutter < 1) {
+        parts.push('1/' + Math.round(1 / meta.shutter) + 's');
+      } else {
+        parts.push(meta.shutter + 's');
+      }
+    }
+    if (meta.iso) parts.push('ISO ' + meta.iso);
+    if (meta.focalLength) parts.push(meta.focalLength + 'mm');
+
+    metadataEl.querySelector('.exposure-line').textContent = parts.join('  ');
+  }
+
+  function updateRatingIndicator(basename) {
+    const r = ratings[basename] || 0;
+    ratingIndicator.className = 'r' + r;
+    const labels = { 0: '', 1: 'REJECT', 2: 'MAYBE', 3: 'KEEP' };
+    ratingIndicator.textContent = labels[r];
+  }
+
+  function updateCounts() {
+    let keep = 0, maybe = 0, reject = 0;
+    Object.values(ratings).forEach(r => {
+      if (r === 3) keep++;
+      else if (r === 2) maybe++;
+      else if (r === 1) reject++;
+    });
+    ratingCounts.querySelector('.keep-count').textContent = 'Keep: ' + keep;
+    ratingCounts.querySelector('.maybe-count').textContent = 'Maybe: ' + maybe;
+    ratingCounts.querySelector('.reject-count').textContent = 'Reject: ' + reject;
+  }
+
+  function updateThumbDot(basename) {
+    const r = ratings[basename] || 0;
+    const idx = allFiles.findIndex(f => f.replace(/\.[^.]+$/, '') === basename);
+    if (idx === -1) return;
+    const dot = filmstrip.children[idx]?.querySelector('.thumb-rating');
+    if (dot) {
+      dot.className = 'thumb-rating' + (r ? ' r' + r : '');
+    }
+  }
+
+  async function rate(rating) {
+    if (filteredIndices.length === 0) return;
+    const realIdx = filteredIndices[currentIndex];
+    const file = allFiles[realIdx];
+    const basename = file.replace(/\.[^.]+$/, '');
+
+    if (rating === 0) {
+      delete ratings[basename];
+    } else {
+      ratings[basename] = rating;
+    }
+
+    updateRatingIndicator(basename);
+    updateThumbDot(basename);
+    updateCounts();
+
+    const labels = { 0: 'CLEAR', 1: 'REJECT', 2: 'MAYBE', 3: 'KEEP' };
+    const colors = { 0: 'var(--text-dim)', 1: 'var(--reject)', 2: 'var(--maybe)', 3: 'var(--keep)' };
+    flash.textContent = labels[rating];
+    flash.style.color = colors[rating];
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 200);
+
+    fetch('/api/rate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: file, rating })
+    });
+
+    if (rating > 0) {
+      if (filterMode !== 'all') {
+        const prevFilteredLength = filteredIndices.length;
+        rebuildFilter();
+        if (filteredIndices.length < prevFilteredLength) {
+          showImage(Math.min(currentIndex, filteredIndices.length - 1));
+        } else {
+          showImage(currentIndex + 1);
+        }
+      } else {
+        showImage(currentIndex + 1);
+      }
+    }
+  }
+
+  function toggleHelp() {
+    helpVisible = !helpVisible;
+    helpOverlay.classList.toggle('visible', helpVisible);
+  }
+
+  // ── Event listeners ──
+  helpToggle.addEventListener('click', toggleHelp);
+  helpOverlay.addEventListener('click', (e) => {
+    if (e.target === helpOverlay) toggleHelp();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    // Picker screen — no viewer shortcuts
+    if (screen === 'picker') {
+      if (e.key === '?' ) toggleHelp();
+      if (e.key === 'Escape' && helpVisible) toggleHelp();
+      return;
+    }
+
+    if (helpVisible && e.key !== '?') {
+      if (e.key === 'Escape') toggleHelp();
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowRight':
+        e.preventDefault();
+        showImage(currentIndex + (e.shiftKey ? 10 : 1));
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        showImage(currentIndex - (e.shiftKey ? 10 : 1));
+        break;
+      case 'Home':
+        e.preventDefault();
+        showImage(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        showImage(filteredIndices.length - 1);
+        break;
+      case '1':
+        rate(1);
+        break;
+      case '2':
+        rate(2);
+        break;
+      case '3':
+        rate(3);
+        break;
+      case '0':
+        rate(0);
+        break;
+      case ' ':
+        e.preventDefault();
+        metadataVisible = !metadataVisible;
+        metadataEl.classList.toggle('hidden', !metadataVisible);
+        break;
+      case 'f':
+      case 'F':
+        e.preventDefault();
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          document.documentElement.requestFullscreen();
+        }
+        break;
+      case 'Tab':
+        e.preventDefault();
+        const ci = filterCycle.indexOf(filterMode);
+        filterMode = filterCycle[(ci + 1) % filterCycle.length];
+        rebuildFilter();
+        if (filteredIndices.length > 0) {
+          showImage(0);
+        }
+        break;
+      case '?':
+        toggleHelp();
+        break;
+      case 'Escape':
+        if (helpVisible) {
+          toggleHelp();
+        } else if (currentIndex === 0) {
+          goBackToPicker();
+        }
+        break;
+    }
+  });
+
+  initPicker();
+})();
+</script>
+</body>
+</html>
