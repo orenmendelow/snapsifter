@@ -7,13 +7,17 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 // ── State directory & sessions ──
-const stateDir = path.join(os.homedir(), '.latent');
-const oldStateDir = path.join(os.homedir(), '.safelight');
+const stateDir = path.join(os.homedir(), '.shotsifter');
+const oldSafelightDir = path.join(os.homedir(), '.safelight');
+const oldLatentDir = path.join(os.homedir(), '.latent');
 
-// Migrate ~/.safelight/ → ~/.latent/ if old dir exists and new doesn't
-if (fs.existsSync(oldStateDir) && !fs.existsSync(stateDir)) {
-  fs.renameSync(oldStateDir, stateDir);
-  console.log('Migrated ~/.safelight/ → ~/.latent/');
+// Migrate ~/.safelight/ → ~/.latent/ → ~/.shotsifter/
+if (fs.existsSync(oldSafelightDir) && !fs.existsSync(oldLatentDir) && !fs.existsSync(stateDir)) {
+  fs.renameSync(oldSafelightDir, stateDir);
+  console.log('Migrated ~/.safelight/ → ~/.shotsifter/');
+} else if (fs.existsSync(oldLatentDir) && !fs.existsSync(stateDir)) {
+  fs.renameSync(oldLatentDir, stateDir);
+  console.log('Migrated ~/.latent/ → ~/.shotsifter/');
 }
 
 const sessionsFile = path.join(stateDir, 'sessions.json');
@@ -596,6 +600,153 @@ app.get('/api/meta/{*filepath}', requireActiveDir, async (req, res) => {
   }
 });
 
+// ── Sort / Unsort endpoints ──
+
+const SORT_FOLDERS = { 3: 'Liked', 2: 'Maybe', 1: 'Ditch' };
+
+app.post('/api/sort', requireActiveDir, (req, res) => {
+  const mode = (req.body && req.body.mode) || 'move';
+  if (mode !== 'move' && mode !== 'copy') {
+    return res.status(400).json({ error: 'mode must be "move" or "copy"' });
+  }
+
+  const counts = { liked: 0, maybe: 0, ditch: 0 };
+  const countKeys = { 3: 'liked', 2: 'maybe', 1: 'ditch' };
+  const updatedRatings = {};
+
+  // Group ratings by folder needed
+  const stemsByRating = {};
+  for (const [stem, rating] of Object.entries(ratings)) {
+    if (!SORT_FOLDERS[rating]) continue;
+    if (!stemsByRating[rating]) stemsByRating[rating] = [];
+    stemsByRating[rating].push(stem);
+  }
+
+  // Find all files in activeDir (flat scan + subdir scan)
+  const allFiles = walkDir(activeDir, activeDir, 5, 0);
+
+  for (const [ratingStr, stems] of Object.entries(stemsByRating)) {
+    const rating = Number(ratingStr);
+    const folderName = SORT_FOLDERS[rating];
+    const destDir = path.join(activeDir, folderName);
+    let folderCreated = false;
+
+    for (const stem of stems) {
+      // Find all files whose stem matches (strip directory prefix from stem for matching)
+      const baseStem = path.basename(stem, path.extname(stem)) || stem;
+      // The stem in ratings could already have a path prefix (e.g., "Liked/DSCF6733")
+      // Extract just the filename stem
+      const pureStem = path.basename(stem);
+
+      const matchingFiles = allFiles.filter(relPath => {
+        const fileStem = path.parse(relPath).name;
+        return fileStem === pureStem;
+      });
+
+      for (const relPath of matchingFiles) {
+        const srcPath = path.join(activeDir, relPath);
+        const fileName = path.basename(relPath);
+        const destPath = path.join(destDir, fileName);
+
+        // Already in the correct subfolder
+        if (path.dirname(relPath) === folderName) continue;
+
+        // Destination already exists — skip
+        if (fs.existsSync(destPath)) continue;
+
+        if (!folderCreated) {
+          fs.mkdirSync(destDir, { recursive: true });
+          folderCreated = true;
+        }
+
+        if (mode === 'move') {
+          fs.renameSync(srcPath, destPath);
+        } else {
+          fs.copyFileSync(srcPath, destPath);
+        }
+      }
+
+      // Update rating key to include folder prefix
+      const newKey = folderName + '/' + pureStem;
+      updatedRatings[newKey] = rating;
+      counts[countKeys[rating]]++;
+    }
+  }
+
+  // Rebuild ratings: keep unrated entries unchanged, replace sorted ones
+  const newRatings = {};
+  for (const [stem, rating] of Object.entries(ratings)) {
+    if (SORT_FOLDERS[rating]) continue; // replaced by updatedRatings
+    newRatings[stem] = rating;
+  }
+  Object.assign(newRatings, updatedRatings);
+  ratings = newRatings;
+  saveRatings();
+
+  // Re-scan
+  loadDirectory(activeDir);
+
+  res.json({ ok: true, sorted: counts });
+});
+
+app.post('/api/unsort', requireActiveDir, (req, res) => {
+  let restored = 0;
+  const sortFolderNames = Object.values(SORT_FOLDERS);
+
+  for (const folderName of sortFolderNames) {
+    const folderPath = path.join(activeDir, folderName);
+    if (!fs.existsSync(folderPath)) continue;
+
+    let entries;
+    try {
+      entries = fs.readdirSync(folderPath, { withFileTypes: true });
+    } catch (e) {
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (!entry.isFile()) continue;
+      if (entry.name.startsWith('.')) continue;
+      if (!isSupportedImage(entry.name)) continue;
+
+      const srcPath = path.join(folderPath, entry.name);
+      const destPath = path.join(activeDir, entry.name);
+
+      // Skip if file already exists in root
+      if (fs.existsSync(destPath)) continue;
+
+      fs.renameSync(srcPath, destPath);
+      restored++;
+    }
+
+    // Remove folder if empty
+    try {
+      const remaining = fs.readdirSync(folderPath);
+      if (remaining.length === 0) {
+        fs.rmdirSync(folderPath);
+      }
+    } catch (e) {}
+  }
+
+  // Update ratings keys: strip folder prefixes
+  const newRatings = {};
+  for (const [stem, rating] of Object.entries(ratings)) {
+    const parts = stem.split('/');
+    if (parts.length === 2 && sortFolderNames.includes(parts[0])) {
+      newRatings[parts[1]] = rating;
+    } else {
+      newRatings[stem] = rating;
+    }
+  }
+  ratings = newRatings;
+  saveRatings();
+
+  // Re-scan
+  loadDirectory(activeDir);
+
+  res.json({ ok: true, restored });
+});
+
 // ── Startup: migrate old state.json → sessions (no auto-resume) ──
 
 (function migrateOldState() {
@@ -628,7 +779,7 @@ app.get('/api/meta/{*filepath}', requireActiveDir, async (req, res) => {
 
 const PORT = 4000;
 app.listen(PORT, () => {
-  console.log(`Latent running at http://localhost:${PORT}`);
+  console.log(`ShotSifter running at http://localhost:${PORT}`);
   if (!activeDir) {
     console.log('No directory loaded — use the web UI to select a folder');
   }

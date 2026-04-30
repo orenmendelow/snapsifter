@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Latent</title>
+<title>ShotSifter</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='10' stroke='%23c45a30' stroke-width='2' fill='none'/%3E%3Cline x1='16' y1='2' x2='16' y2='8' stroke='%23c45a30' stroke-width='2'/%3E%3Cline x1='16' y1='24' x2='16' y2='30' stroke='%23c45a30' stroke-width='2'/%3E%3Cline x1='2' y1='16' x2='8' y2='16' stroke='%23c45a30' stroke-width='2'/%3E%3Cline x1='24' y1='16' x2='30' y2='16' stroke='%23c45a30' stroke-width='2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -66,12 +67,11 @@ body::before {
 }
 
 #landing-title {
-  font-family: var(--serif);
-  font-size: 52px;
+  font-family: var(--mono);
+  font-size: 36px;
   font-weight: 500;
   color: var(--amber);
-  letter-spacing: 16px;
-  text-transform: uppercase;
+  letter-spacing: 4px;
 }
 
 /* ── Browser section (two-panel) ── */
@@ -140,6 +140,11 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.session-parent {
+  color: var(--text-dim);
+  opacity: 0.6;
 }
 
 .session-progress-text {
@@ -249,13 +254,10 @@ body::before {
 #right-panel::-webkit-scrollbar-thumb { background: var(--amber-faint); }
 
 #right-panel-empty {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-dim);
+  padding: 24px 40px 0 0;
 }
 
 /* Preview grid */
@@ -288,6 +290,49 @@ body::before {
   background: #0a0a0a;
 }
 
+/* Preview grouped by subfolder */
+.preview-group {
+  margin-bottom: 16px;
+}
+
+.preview-group-label {
+  cursor: pointer;
+  font-size: 12px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: baseline;
+  transition: color 0.1s ease;
+}
+
+.preview-group-label:hover .preview-group-name {
+  color: var(--amber);
+}
+
+.preview-group-name {
+  color: var(--text);
+  transition: color 0.1s ease;
+}
+
+.preview-group-count {
+  color: var(--text-dim);
+  margin-left: 8px;
+  font-size: 11px;
+}
+
+.preview-group-thumbs {
+  display: flex;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.preview-group-thumbs img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #0a0a0a;
+}
+
 #load-btn {
   font-family: var(--mono);
   font-size: 13px;
@@ -317,10 +362,11 @@ body::before {
 
 /* ── Global progress bar ── */
 #global-progress {
-  height: 3px;
+  height: 5px;
   background: #111;
   flex-shrink: 0;
   width: 100%;
+  position: relative;
 }
 
 #global-progress-fill {
@@ -328,6 +374,24 @@ body::before {
   background: var(--amber);
   transition: width 0.3s ease;
   width: 0;
+}
+
+#global-progress-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+#global-progress:hover #global-progress-text {
+  opacity: 1;
 }
 
 /* ── Top bar ── */
@@ -383,12 +447,6 @@ body::before {
   color: var(--amber);
 }
 
-#filter-indicator {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--amber-dim);
-  letter-spacing: 0.5px;
-}
 
 #topbar-center {
   display: flex;
@@ -418,6 +476,24 @@ body::before {
 #rating-counts .maybe-count { color: var(--maybe); }
 #rating-counts .like-count { color: var(--like); }
 
+#sort-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  transition: color 0.1s ease, border-color 0.1s ease;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+#sort-btn:hover {
+  color: var(--amber);
+  border-color: rgba(255,255,255,0.2);
+}
+
 #help-btn {
   font-family: var(--mono);
   font-size: 13px;
@@ -429,6 +505,98 @@ body::before {
 
 #help-btn:hover {
   color: var(--amber);
+}
+
+/* ── Sort confirmation overlay ── */
+#sort-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#sort-overlay.visible {
+  display: flex;
+}
+
+#sort-content {
+  max-width: 400px;
+  padding: 40px;
+  text-align: center;
+}
+
+#sort-content h2 {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--amber);
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+
+#sort-content p {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+
+#sort-content .sort-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+#sort-content .sort-actions button {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 24px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: none;
+  transition: background 0.15s ease;
+}
+
+#sort-move-btn {
+  background: var(--amber);
+  color: var(--bg);
+}
+
+#sort-move-btn:hover {
+  background: #d4664a;
+}
+
+#sort-cancel-btn {
+  background: none;
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+#sort-cancel-btn:hover {
+  color: var(--text);
+  border-color: rgba(255,255,255,0.2) !important;
+}
+
+#sort-unsort-btn {
+  background: none;
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+#sort-unsort-btn:hover {
+  color: var(--text);
+  border-color: rgba(255,255,255,0.2) !important;
+}
+
+#sort-status {
+  font-size: 12px;
+  color: var(--amber);
+  margin-top: 16px;
 }
 
 /* ── Main image area ── */
@@ -609,6 +777,7 @@ body::before {
 .thumb-wrapper.active {
   border-color: var(--amber);
   box-shadow: 0 0 12px var(--amber-glow);
+  opacity: 1 !important;
 }
 
 .thumb-wrapper .thumb-img {
@@ -726,16 +895,16 @@ body::before {
 </head>
 <body>
 
-<div id="loading-screen"><span>Developing...</span></div>
+<div id="loading-screen"><span>Loading...</span></div>
 
 <!-- ── Landing screen ── -->
 <div id="landing">
   <div id="landing-header">
-    <div id="landing-title">Latent</div>
+    <div id="landing-title">ShotSifter</div>
   </div>
   <div id="browser-section">
     <div id="tree-panel">
-      <div class="tree-section-label">Sessions</div>
+      <div class="tree-section-label">Recent</div>
       <div id="sessions-list"></div>
       <div class="tree-divider"></div>
       <div class="tree-section-label">Volumes</div>
@@ -745,7 +914,14 @@ body::before {
       <div id="tree-home"></div>
     </div>
     <div id="right-panel">
-      <div id="right-panel-empty">Select a folder to preview</div>
+      <div id="right-panel-empty">Browse folders on the left to preview photos</div>
+      <div id="quick-start" style="display:none">
+        <div style="font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px;">Jump back in:</div>
+        <div id="quick-start-card" style="cursor: pointer; transition: color 0.1s ease;">
+          <div id="quick-start-name" style="font-family: var(--mono); font-size: 13px; color: var(--amber); transition: color 0.1s ease;"></div>
+          <div id="quick-start-detail" style="font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-top: 2px;"></div>
+        </div>
+      </div>
       <div id="preview-section">
         <div id="preview-count"></div>
         <div id="preview-grid"></div>
@@ -757,13 +933,16 @@ body::before {
 
 <!-- ── Photo viewer ── -->
 <div id="app" style="display:none">
-  <div id="global-progress"><div id="global-progress-fill"></div></div>
+  <div id="global-progress"><div id="global-progress-fill"></div><div id="global-progress-text"></div></div>
   <div id="topbar">
     <div id="topbar-left">
       <span id="back-btn">&#8592;</span>
       <span class="filter-toggle active" data-filter="all">ALL</span>
       <span class="filter-toggle inactive" data-filter="unrated">UNRATED</span>
-      <span id="filter-indicator"></span>
+      <span class="filter-toggle inactive" data-filter="3">LIKED</span>
+      <span class="filter-toggle inactive" data-filter="2">MAYBE</span>
+      <span class="filter-toggle inactive" data-filter="1">DITCHED</span>
+      <span id="sort-btn" title="Sort files into folders by rating">SORT INTO FOLDERS</span>
     </div>
     <div id="topbar-center">
       <div id="counter">0 / 0</div>
@@ -805,6 +984,19 @@ body::before {
   </div>
 </div>
 
+<div id="sort-overlay">
+  <div id="sort-content">
+    <h2>Sort Files</h2>
+    <p id="sort-summary"></p>
+    <div class="sort-actions">
+      <button id="sort-move-btn">Move</button>
+      <button id="sort-unsort-btn">Unsort</button>
+      <button id="sort-cancel-btn">Cancel</button>
+    </div>
+    <div id="sort-status"></div>
+  </div>
+</div>
+
 <div id="help-overlay">
   <div id="help-content">
     <h2>Shortcuts</h2>
@@ -816,9 +1008,8 @@ body::before {
     <div class="shortcut-row"><span class="key">3</span><span class="desc">Like</span></div>
     <div class="shortcut-row"><span class="key">0</span><span class="desc">Clear rating</span></div>
     <div class="shortcut-row"><span class="key">K</span><span class="desc">Like over previous</span></div>
-    <div class="shortcut-row"><span class="key">Z</span><span class="desc">Toggle zoom (fit / 100%)</span></div>
-    <div class="shortcut-row"><span class="key">Scroll wheel</span><span class="desc">Zoom in / out</span></div>
-    <div class="shortcut-row"><span class="key">Double-click</span><span class="desc">Toggle 100%</span></div>
+    <div class="shortcut-row"><span class="key">Z / Click image</span><span class="desc">Toggle zoom (fit / 2x max)</span></div>
+    <div class="shortcut-row"><span class="key">Scroll (when zoomed)</span><span class="desc">Pan around image</span></div>
     <div class="shortcut-row"><span class="key">Space</span><span class="desc">Toggle metadata</span></div>
     <div class="shortcut-row"><span class="key">F</span><span class="desc">Toggle fullscreen</span></div>
     <div class="shortcut-row"><span class="key">Tab</span><span class="desc">Cycle filter mode</span></div>
@@ -857,8 +1048,7 @@ body::before {
   let currentIndex = 0;
   let filteredIndices = [];
   let filterMode = 'all';
-  const filterCycle = ['all', 'unrated', '3', '1', '2'];
-  const filterLabels = { all: '', unrated: '', '1': 'Ditch', '2': 'Maybe', '3': 'Like' };
+  const filterCycle = ['all', 'unrated', '3', '2', '1'];
   let metadataVisible = true;
   let metaCache = {};
   let helpVisible = false;
@@ -901,12 +1091,19 @@ body::before {
   const filmstrip = document.getElementById('filmstrip');
   const counter = document.getElementById('counter');
   const ratingCounts = document.getElementById('rating-counts');
-  const filterIndicator = document.getElementById('filter-indicator');
   const helpOverlay = document.getElementById('help-overlay');
   const helpBtn = document.getElementById('help-btn');
+  const sortBtn = document.getElementById('sort-btn');
+  const sortOverlay = document.getElementById('sort-overlay');
+  const sortSummary = document.getElementById('sort-summary');
+  const sortMoveBtn = document.getElementById('sort-move-btn');
+  const sortUnsortBtn = document.getElementById('sort-unsort-btn');
+  const sortCancelBtn = document.getElementById('sort-cancel-btn');
+  const sortStatus = document.getElementById('sort-status');
   const loadingScreen = document.getElementById('loading-screen');
   const appEl = document.getElementById('app');
   const globalProgressFill = document.getElementById('global-progress-fill');
+  const globalProgressText = document.getElementById('global-progress-text');
 
   const preloadNext = new Image();
   const preloadPrev = new Image();
@@ -985,19 +1182,16 @@ body::before {
     mainImage.style.cursor = 'zoom-in';
   }
 
-  function applyZoom(smooth) {
-    if (smooth && !isDragging) {
-      mainImage.style.transition = 'transform 0.15s ease-out';
-    } else {
-      mainImage.style.transition = 'none';
-    }
+  function applyZoom() {
     if (zoomLevel <= 1) {
       mainImage.style.transform = '';
+      mainImage.style.transition = 'none';
       mainImage.style.maxWidth = 'calc(100vw - 20px)';
       mainImage.style.maxHeight = '100%';
       mainImage.classList.remove('zoomed');
       mainImage.style.cursor = 'zoom-in';
     } else {
+      mainImage.style.transition = isDragging ? 'none' : 'transform 0.15s ease-out';
       mainImage.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoomLevel + ')';
       mainImage.style.maxWidth = 'none';
       mainImage.style.maxHeight = 'none';
@@ -1008,50 +1202,11 @@ body::before {
 
   function showZoomIndicator() {
     if (zoomIndicatorTimeout) clearTimeout(zoomIndicatorTimeout);
-    let label;
-    if (zoomLevel <= 1) {
-      label = 'Fit';
-    } else if (Math.abs(zoomLevel - (mainImage.naturalWidth / mainImage.clientWidth)) < 0.1) {
-      label = '100%';
-    } else {
-      label = zoomLevel.toFixed(1) + 'x';
-    }
-    zoomIndicator.textContent = label;
+    zoomIndicator.textContent = zoomLevel <= 1 ? 'Fit' : Math.round(zoomLevel * 100) + '%';
     zoomIndicator.classList.add('visible');
     zoomIndicatorTimeout = setTimeout(() => {
       zoomIndicator.classList.remove('visible');
     }, 1200);
-  }
-
-  function zoomToPoint(newZoom, clientX, clientY) {
-    const rect = mainArea.getBoundingClientRect();
-    const mouseX = clientX - rect.left;
-    const mouseY = clientY - rect.top;
-
-    // Image position within the container before zoom
-    const imgRect = mainImage.getBoundingClientRect();
-    const imgX = imgRect.left - rect.left;
-    const imgY = imgRect.top - rect.top;
-
-    // Mouse position relative to image
-    const relX = (mouseX - imgX) / zoomLevel;
-    const relY = (mouseY - imgY) / zoomLevel;
-
-    const oldZoom = zoomLevel;
-    zoomLevel = Math.max(1, Math.min(8, newZoom));
-
-    if (zoomLevel <= 1) {
-      resetZoom();
-      showZoomIndicator();
-      return;
-    }
-
-    // Adjust pan so the point under cursor stays fixed
-    panX += relX * (oldZoom - zoomLevel);
-    panY += relY * (oldZoom - zoomLevel);
-
-    applyZoom(true);
-    showZoomIndicator();
   }
 
   function toggleZoom100(clientX, clientY) {
@@ -1059,57 +1214,106 @@ body::before {
       resetZoom();
       showZoomIndicator();
     } else {
-      // Zoom to 100% (actual pixels)
       const naturalW = mainImage.naturalWidth;
+      const naturalH = mainImage.naturalHeight;
       const displayW = mainImage.clientWidth;
+      const displayH = mainImage.clientHeight;
       if (naturalW && displayW) {
-        const targetZoom = naturalW / displayW;
-        zoomToPoint(targetZoom, clientX || window.innerWidth / 2, clientY || window.innerHeight / 2);
+        // Cap zoom at 2x relative to displayed size
+        const nativeZoom = naturalW / displayW;
+        const targetZoom = Math.min(nativeZoom, 2);
+
+        const rect = mainArea.getBoundingClientRect();
+        const imgRect = mainImage.getBoundingClientRect();
+
+        // Click point in mainArea coords
+        const cx = clientX != null ? clientX : (rect.left + rect.width / 2);
+        const cy = clientY != null ? clientY : (rect.top + rect.height / 2);
+
+        // Where the click is relative to the image's current top-left
+        const relX = cx - imgRect.left;
+        const relY = cy - imgRect.top;
+
+        // The image's current top-left relative to mainArea
+        const imgOffsetX = imgRect.left - rect.left;
+        const imgOffsetY = imgRect.top - rect.top;
+
+        // After zoom, the image origin moves to (imgOffsetX + panX, imgOffsetY + panY)
+        // and is scaled by targetZoom. We want the point (relX, relY) in image space
+        // to map to the same screen position (cx, cy).
+        // Screen position of point = (imgOffsetX + panX) + relX * targetZoom = cx - rect.left
+        // So panX = (cx - rect.left) - imgOffsetX - relX * targetZoom
+        panX = (cx - rect.left) - imgOffsetX - relX * targetZoom;
+        panY = (cy - rect.top) - imgOffsetY - relY * targetZoom;
+
+        zoomLevel = targetZoom;
+        applyZoom();
+        showZoomIndicator();
       }
     }
   }
 
-  // Wheel zoom handler
+  // Wheel: pan when zoomed, do nothing when fit
   mainArea.addEventListener('wheel', (e) => {
     if (screen !== 'viewer') return;
+    if (zoomLevel <= 1) return; // do nothing at fit
     e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.06 : 0.06;
-    const newZoom = zoomLevel * (1 + delta);
-    zoomToPoint(newZoom, e.clientX, e.clientY);
+    panX -= e.deltaX;
+    panY -= e.deltaY;
+    mainImage.style.transition = 'none';
+    mainImage.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoomLevel + ')';
   }, { passive: false });
 
-  // Double-click to toggle 100%
-  mainArea.addEventListener('dblclick', (e) => {
-    if (screen !== 'viewer') return;
-    e.preventDefault();
-    toggleZoom100(e.clientX, e.clientY);
-  });
-
-  // Drag to pan when zoomed
+  // Single click to toggle zoom — track mousedown position to avoid firing after drag
+  let mouseDownPos = null;
   mainArea.addEventListener('mousedown', (e) => {
-    if (screen !== 'viewer' || zoomLevel <= 1) return;
+    if (screen !== 'viewer') return;
     if (e.button !== 0) return;
-    isDragging = true;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-    dragStartPanX = panX;
-    dragStartPanY = panY;
-    mainImage.classList.add('dragging');
-    e.preventDefault();
+    mouseDownPos = { x: e.clientX, y: e.clientY };
+
+    if (zoomLevel > 1) {
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      dragStartPanX = panX;
+      dragStartPanY = panY;
+      mainImage.classList.add('dragging');
+      e.preventDefault();
+    }
   });
 
   window.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
     panX = dragStartPanX + (e.clientX - dragStartX);
     panY = dragStartPanY + (e.clientY - dragStartY);
-    applyZoom();
+    mainImage.style.transition = 'none';
+    mainImage.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoomLevel + ')';
   });
 
-  window.addEventListener('mouseup', () => {
-    if (!isDragging) return;
-    isDragging = false;
-    mainImage.classList.remove('dragging');
-    if (zoomLevel > 1) mainImage.style.cursor = 'grab';
+  window.addEventListener('mouseup', (e) => {
+    const wasDragging = isDragging;
+    if (isDragging) {
+      isDragging = false;
+      mainImage.classList.remove('dragging');
+      if (zoomLevel > 1) mainImage.style.cursor = 'grab';
+    }
+
+    // Single-click toggle: only if mouse didn't move and target is in the main image area
+    if (screen === 'viewer' && mouseDownPos && !wasDragging) {
+      const dx = e.clientX - mouseDownPos.x;
+      const dy = e.clientY - mouseDownPos.y;
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) {
+        // Make sure click is on the image or main-area, not filmstrip/topbar/UI
+        const target = e.target;
+        if (target === mainImage || target === mainArea || target.closest('#main-area')) {
+          // Exclude clicks on overlaid UI elements
+          if (!target.closest('#metadata') && !target.closest('#rating-mark') && !target.closest('#zoom-indicator') && !target.closest('#flash-label') && !target.closest('#enlarger-flash')) {
+            toggleZoom100(e.clientX, e.clientY);
+          }
+        }
+      }
+    }
+    mouseDownPos = null;
   });
 
   // ── Landing screen ──
@@ -1319,13 +1523,12 @@ body::before {
 
       if (data.photoCount > 0) {
         rightPanelEmpty.style.display = 'none';
+        document.getElementById('quick-start').style.display = 'none';
         previewSection.classList.add('visible');
 
-        if (data.hasRatings) {
-          loadBtn.textContent = 'Resume';
-        } else {
-          loadBtn.textContent = 'Develop';
-        }
+        // Check if subfolders have photos
+        const foldersWithPhotos = (data.folders || []).filter(f => f.photoCount > 0);
+        const hasSubfolderPhotos = foldersWithPhotos.length > 0;
 
         let countText = data.photoCount + ' photo' + (data.photoCount === 1 ? '' : 's');
         if (data.hasRatings) {
@@ -1334,13 +1537,107 @@ body::before {
         previewCount.textContent = countText;
         previewGrid.innerHTML = '';
 
-        const filesToPreview = selectedPhotoFiles.slice(0, 24);
-        const dirB64 = btoa(unescape(encodeURIComponent(data.dir)));
-        for (const f of filesToPreview) {
-          const img = document.createElement('img');
-          img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(f);
-          img.alt = '';
-          previewGrid.appendChild(img);
+        if (hasSubfolderPhotos) {
+          // Grouped view by subfolder
+          const groups = [];
+
+          // "This folder" group for direct photos
+          const subfolderTotal = foldersWithPhotos.reduce((sum, f) => sum + f.photoCount, 0);
+          const directCount = data.photoCount - subfolderTotal;
+          if (directCount > 0 && selectedPhotoFiles.length > 0) {
+            groups.push({
+              name: 'This folder',
+              path: data.dir,
+              photoCount: directCount,
+              previewFiles: selectedPhotoFiles.slice(0, 6),
+              dirForThumb: data.dir,
+              isCurrentDir: true
+            });
+          }
+
+          // Subfolder groups (up to 5)
+          for (const folder of foldersWithPhotos.slice(0, 5)) {
+            groups.push({
+              name: folder.name,
+              path: folder.path,
+              photoCount: folder.photoCount,
+              previewFiles: (folder.previewFiles || []).slice(0, 6),
+              dirForThumb: folder.path,
+              isCurrentDir: false
+            });
+          }
+
+          for (const group of groups) {
+            const groupEl = document.createElement('div');
+            groupEl.className = 'preview-group';
+
+            const labelEl = document.createElement('div');
+            labelEl.className = 'preview-group-label';
+
+            const nameEl = document.createElement('span');
+            nameEl.className = 'preview-group-name';
+            nameEl.textContent = group.name;
+            labelEl.appendChild(nameEl);
+
+            const countEl = document.createElement('span');
+            countEl.className = 'preview-group-count';
+            countEl.textContent = group.photoCount + ' photo' + (group.photoCount === 1 ? '' : 's');
+            labelEl.appendChild(countEl);
+
+            if (!group.isCurrentDir) {
+              labelEl.addEventListener('click', () => {
+                selectNode(group.path);
+                const treeRow = document.querySelector('.tree-node-row[data-path="' + CSS.escape(group.path) + '"]');
+                if (treeRow) {
+                  const chevron = treeRow.querySelector('.tree-chevron');
+                  const childrenEl = treeRow.nextElementSibling;
+                  if (chevron && childrenEl && !treeState[group.path]?.expanded) {
+                    const depth = Math.round(parseInt(treeRow.style.paddingLeft) / 16) + 1;
+                    toggleNode(group.path, chevron, childrenEl, depth);
+                  }
+                }
+              });
+            }
+
+            groupEl.appendChild(labelEl);
+
+            const thumbsEl = document.createElement('div');
+            thumbsEl.className = 'preview-group-thumbs';
+
+            const thumbDirB64 = btoa(unescape(encodeURIComponent(group.dirForThumb)));
+            for (const f of group.previewFiles) {
+              const img = document.createElement('img');
+              img.src = '/api/preview-thumb/' + thumbDirB64 + '/' + encodeURIComponent(f);
+              img.alt = '';
+              thumbsEl.appendChild(img);
+            }
+
+            groupEl.appendChild(thumbsEl);
+            previewGrid.appendChild(groupEl);
+          }
+
+          // Button for parent with subfolders
+          if (data.hasRatings) {
+            loadBtn.textContent = 'Resume All (' + data.photoCount + ' photos)';
+          } else {
+            loadBtn.textContent = 'Review All (' + data.photoCount + ' photos)';
+          }
+        } else {
+          // Flat grid (leaf folder)
+          const filesToPreview = selectedPhotoFiles.slice(0, 24);
+          const dirB64 = btoa(unescape(encodeURIComponent(data.dir)));
+          for (const f of filesToPreview) {
+            const img = document.createElement('img');
+            img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(f);
+            img.alt = '';
+            previewGrid.appendChild(img);
+          }
+
+          if (data.hasRatings) {
+            loadBtn.textContent = 'Resume';
+          } else {
+            loadBtn.textContent = 'Develop';
+          }
         }
       } else {
         showEmptyPreview('No photos in this folder');
@@ -1353,8 +1650,9 @@ body::before {
   function showEmptyPreview(msg) {
     previewSection.classList.remove('visible');
     previewGrid.innerHTML = '';
-    rightPanelEmpty.style.display = 'flex';
-    rightPanelEmpty.textContent = msg || 'Select a folder to preview';
+    rightPanelEmpty.style.display = '';
+    rightPanelEmpty.textContent = msg || 'Browse folders on the left to preview photos';
+    document.getElementById('quick-start').style.display = 'none';
     selectedPhotoCount = 0;
   }
 
@@ -1363,7 +1661,39 @@ body::before {
       const sessions = await fetch('/api/sessions').then(r => r.json());
       sessionsList.innerHTML = '';
 
-      if (!sessions || sessions.length === 0) return;
+      const quickStart = document.getElementById('quick-start');
+      const quickStartCard = document.getElementById('quick-start-card');
+      const quickStartName = document.getElementById('quick-start-name');
+      const quickStartDetail = document.getElementById('quick-start-detail');
+
+      if (!sessions || sessions.length === 0) {
+        quickStart.style.display = 'none';
+        return;
+      }
+
+      // Populate quick-start with most recent accessible session
+      const recentAccessible = sessions.find(s => s.accessible !== false);
+      if (recentAccessible && !selectedPath) {
+        const qs = recentAccessible;
+        const qsFolderName = qs.name || qs.dir.split('/').filter(Boolean).pop() || qs.dir;
+        const qsDirParts = qs.dir.split('/').filter(Boolean);
+        let qsDisplayName = qsFolderName;
+        if (qsDirParts.length > 1) {
+          const parentName = qsDirParts[qsDirParts.length - 2];
+          qsDisplayName = parentName + ' / ' + qsFolderName;
+        }
+        quickStartName.textContent = qsDisplayName;
+        const qsTotal = qs.fileCount || 0;
+        const qsRated = qs.ratedCount || 0;
+        quickStartDetail.textContent = qsTotal + ' photos, ' + qsRated + ' rated';
+        quickStart.style.display = '';
+        rightPanelEmpty.style.display = 'none';
+        quickStartCard.onclick = () => resumeSession(qs);
+        quickStartCard.onmouseenter = () => { quickStartName.style.color = '#d4664a'; };
+        quickStartCard.onmouseleave = () => { quickStartName.style.color = 'var(--amber)'; };
+      } else {
+        quickStart.style.display = 'none';
+      }
 
       for (const s of sessions) {
         const row = document.createElement('div');
@@ -1371,7 +1701,16 @@ body::before {
 
         const name = document.createElement('span');
         name.className = 'session-name';
-        name.textContent = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+        const folderName = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+        const dirParts = s.dir.split('/').filter(Boolean);
+        if (dirParts.length > 1) {
+          const parentName = dirParts[dirParts.length - 2];
+          const parentSpan = document.createElement('span');
+          parentSpan.className = 'session-parent';
+          parentSpan.textContent = parentName + ' / ';
+          name.appendChild(parentSpan);
+        }
+        name.appendChild(document.createTextNode(folderName));
         row.appendChild(name);
 
         if (s.accessible === false) {
@@ -1404,7 +1743,7 @@ body::before {
   }
 
   async function resumeSession(s) {
-    loadingScreen.querySelector('span').textContent = 'Developing...';
+    loadingScreen.querySelector('span').textContent = 'Loading...';
     loadingScreen.classList.add('visible');
     try {
       const res = await fetch('/api/load', {
@@ -1421,7 +1760,7 @@ body::before {
 
       loadedDir = s.dir;
       sessionId = s.id || null;
-      await enterViewer(s.position || 0);
+      await enterViewer(-1);
     } catch (e) {
       loadingScreen.querySelector('span').textContent = 'Failed to load';
       setTimeout(() => loadingScreen.classList.remove('visible'), 2000);
@@ -1430,7 +1769,7 @@ body::before {
 
   loadBtn.addEventListener('click', async () => {
     if (selectedPhotoCount === 0) return;
-    loadingScreen.querySelector('span').textContent = 'Developing...';
+    loadingScreen.querySelector('span').textContent = 'Loading...';
     loadingScreen.classList.add('visible');
 
     try {
@@ -1484,11 +1823,6 @@ body::before {
         el.classList.add('inactive');
       }
     });
-    if (filterMode === '2' || filterMode === '1' || filterMode === '3') {
-      filterIndicator.textContent = filterLabels[filterMode];
-    } else {
-      filterIndicator.textContent = '';
-    }
   }
 
   // ── Viewer ──
@@ -1530,9 +1864,15 @@ body::before {
     loadingScreen.classList.remove('visible');
     appEl.style.display = 'flex';
 
-    const pos = startPosition || 0;
-    const filtIdx = Math.min(pos, filteredIndices.length - 1);
-    showImage(Math.max(0, filtIdx));
+    if (startPosition === -1) {
+      // Resume: find first unrated photo
+      const unratedIdx = findNextUnrated(0);
+      showImage(unratedIdx !== -1 ? unratedIdx : 0);
+    } else {
+      const pos = startPosition || 0;
+      const filtIdx = Math.min(pos, filteredIndices.length - 1);
+      showImage(Math.max(0, filtIdx));
+    }
   }
 
   function buildFilmstrip() {
@@ -1579,6 +1919,11 @@ body::before {
       }
       wrapper.appendChild(mark);
 
+      // Dim reviewed photos based on rating
+      if (r === 1) wrapper.style.opacity = '0.25';
+      else if (r === 2) wrapper.style.opacity = '0.6';
+      // r === 3 or unrated: full opacity (default 1)
+
       filmstrip.appendChild(wrapper);
     });
 
@@ -1615,6 +1960,17 @@ body::before {
       }
     }
     updateCounts();
+
+    // Update filmstrip visibility to match filter
+    const filteredSet = new Set(filteredIndices);
+    const thumbs = filmstrip.children;
+    for (let i = 0; i < thumbs.length; i++) {
+      if (filterMode === 'all') {
+        thumbs[i].style.display = '';
+      } else {
+        thumbs[i].style.display = filteredSet.has(i) ? '' : 'none';
+      }
+    }
   }
 
   function showImage(filtIdx) {
@@ -1783,6 +2139,12 @@ body::before {
         mark.innerHTML = '';
       }
     }
+
+    // Update opacity based on rating
+    if (r === 1) wrapper.style.opacity = '0.25';
+    else if (r === 2) wrapper.style.opacity = '0.6';
+    else wrapper.style.opacity = '1';
+    // .active class has opacity: 1 !important, so active thumb stays bright
   }
 
   function updateCounts() {
@@ -1801,6 +2163,7 @@ body::before {
     const total = allFiles.length;
     if (total === 0) {
       globalProgressFill.style.width = '0%';
+      globalProgressText.textContent = '';
       return;
     }
     let reviewed = 0;
@@ -1809,6 +2172,7 @@ body::before {
       if (ratings[basename]) reviewed++;
     }
     globalProgressFill.style.width = ((reviewed / total) * 100) + '%';
+    globalProgressText.textContent = reviewed + ' / ' + total + ' rated';
   }
 
   function findNextUnrated(fromFiltIdx) {
@@ -1986,6 +2350,94 @@ body::before {
     helpVisible = !helpVisible;
     helpOverlay.classList.toggle('visible', helpVisible);
   }
+
+  // ── Sort ──
+  function showSortOverlay() {
+    let ditch = 0, maybe = 0, like = 0;
+    Object.values(ratings).forEach(r => {
+      if (r === 1) ditch++;
+      else if (r === 2) maybe++;
+      else if (r === 3) like++;
+    });
+    const total = ditch + maybe + like;
+    const unrated = allFiles.length - total;
+    sortSummary.textContent = like + ' liked, ' + maybe + ' maybe, ' + ditch + ' ditched, ' + unrated + ' unrated. Move rated files into Liked/, Maybe/, Ditch/ subfolders?';
+    sortStatus.textContent = '';
+    sortOverlay.classList.add('visible');
+  }
+
+  function hideSortOverlay() {
+    sortOverlay.classList.remove('visible');
+  }
+
+  sortBtn.addEventListener('click', showSortOverlay);
+  sortCancelBtn.addEventListener('click', hideSortOverlay);
+  sortOverlay.addEventListener('click', (e) => {
+    if (e.target === sortOverlay) hideSortOverlay();
+  });
+
+  sortMoveBtn.addEventListener('click', async () => {
+    sortStatus.textContent = 'Sorting...';
+    sortMoveBtn.disabled = true;
+    try {
+      const res = await fetch('/api/sort', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'move' })
+      }).then(r => r.json());
+      if (res.error) {
+        sortStatus.textContent = res.error;
+      } else {
+        sortStatus.textContent = 'Moved ' + res.sorted.liked + ' liked, ' + res.sorted.maybe + ' maybe, ' + res.sorted.ditch + ' ditched';
+        const [filesRes, ratingsRes] = await Promise.all([
+          fetch('/api/files').then(r => r.json()),
+          fetch('/api/ratings').then(r => r.json())
+        ]);
+        allFiles = filesRes;
+        ratings = ratingsRes;
+        buildFilmstrip();
+        rebuildFilter();
+        updateCounts();
+        updateGlobalProgress();
+        if (filteredIndices.length > 0) showImage(0);
+        setTimeout(hideSortOverlay, 1500);
+      }
+    } catch (e) {
+      sortStatus.textContent = 'Sort failed';
+    }
+    sortMoveBtn.disabled = false;
+  });
+
+  sortUnsortBtn.addEventListener('click', async () => {
+    sortStatus.textContent = 'Restoring...';
+    sortUnsortBtn.disabled = true;
+    try {
+      const res = await fetch('/api/unsort', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      }).then(r => r.json());
+      if (res.error) {
+        sortStatus.textContent = res.error;
+      } else {
+        sortStatus.textContent = 'Restored ' + res.restored + ' files';
+        const [filesRes, ratingsRes] = await Promise.all([
+          fetch('/api/files').then(r => r.json()),
+          fetch('/api/ratings').then(r => r.json())
+        ]);
+        allFiles = filesRes;
+        ratings = ratingsRes;
+        buildFilmstrip();
+        rebuildFilter();
+        updateCounts();
+        updateGlobalProgress();
+        if (filteredIndices.length > 0) showImage(0);
+        setTimeout(hideSortOverlay, 1500);
+      }
+    } catch (e) {
+      sortStatus.textContent = 'Unsort failed';
+    }
+    sortUnsortBtn.disabled = false;
+  });
 
   // ── Event listeners ──
   helpBtn.addEventListener('click', toggleHelp);
