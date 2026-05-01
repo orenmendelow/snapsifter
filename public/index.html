@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ShotSifter</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='10' stroke='%23c45a30' stroke-width='2' fill='none'/%3E%3Cline x1='16' y1='2' x2='16' y2='8' stroke='%23c45a30' stroke-width='2'/%3E%3Cline x1='16' y1='24' x2='16' y2='30' stroke='%23c45a30' stroke-width='2'/%3E%3Cline x1='2' y1='16' x2='8' y2='16' stroke='%23c45a30' stroke-width='2'/%3E%3Cline x1='24' y1='16' x2='30' y2='16' stroke='%23c45a30' stroke-width='2'/%3E%3C/svg%3E">
+<title>SnapSifter</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' stroke='%23c45a30' stroke-width='2' fill='none'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23c45a30'/%3E%3Cpath d='M16 3 L14 8 A9 9 0 0 1 22.5 7.5 L24.5 3' fill='%23c45a30' opacity='0.9'/%3E%3Cpath d='M27.3 8.5 L22.5 11 A9 9 0 0 1 25 19 L29.5 18' fill='%23c45a30' opacity='0.9'/%3E%3Cpath d='M26 25 L21.5 21 A9 9 0 0 1 17.5 24.5 L19 29.5' fill='%23c45a30' opacity='0.9'/%3E%3Cpath d='M13 29.5 L14.5 24.5 A9 9 0 0 1 7.5 21 L4 25' fill='%23c45a30' opacity='0.9'/%3E%3Cpath d='M2.5 18 L7 19 A9 9 0 0 1 9.5 11 L4.7 8.5' fill='%23c45a30' opacity='0.9'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -120,12 +120,10 @@ body::before {
 
 .session-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 5px 16px;
+  flex-direction: column;
+  padding: 8px 16px;
   cursor: pointer;
   transition: color 0.1s ease;
-  font-size: 12px;
   font-family: var(--mono);
   color: var(--text);
 }
@@ -135,39 +133,23 @@ body::before {
 .session-row.dimmed:hover { opacity: 0.3; color: var(--text); }
 
 .session-name {
-  flex: 1;
-  min-width: 0;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.session-parent {
-  color: var(--text-dim);
-  opacity: 0.6;
-}
-
-.session-progress-text {
-  color: var(--amber);
-  font-variant-numeric: tabular-nums;
-  margin-left: 8px;
-  flex-shrink: 0;
+.session-detail {
   font-size: 11px;
-}
-
-.session-time {
   color: var(--text-dim);
-  margin-left: 8px;
-  flex-shrink: 0;
-  font-size: 10px;
+  margin-top: 2px;
 }
 
 .session-disconnected-label {
   color: var(--ditch);
-  margin-left: 8px;
-  flex-shrink: 0;
   font-size: 10px;
   opacity: 0.7;
+  margin-top: 2px;
 }
 
 /* ── Tree nodes ── */
@@ -282,7 +264,11 @@ body::before {
   margin-bottom: 14px;
 }
 
-#preview-grid img {
+#preview-grid.grouped {
+  display: block;
+}
+
+#preview-grid:not(.grouped) > img {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
@@ -292,15 +278,22 @@ body::before {
 
 /* Preview grouped by subfolder */
 .preview-group {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.preview-group:last-child {
+  border-bottom: none;
 }
 
 .preview-group-label {
   cursor: pointer;
-  font-size: 12px;
-  margin-bottom: 6px;
+  font-size: 13px;
+  margin-bottom: 8px;
   display: flex;
   align-items: baseline;
+  gap: 8px;
   transition: color 0.1s ease;
 }
 
@@ -310,12 +303,12 @@ body::before {
 
 .preview-group-name {
   color: var(--text);
+  font-weight: 500;
   transition: color 0.1s ease;
 }
 
 .preview-group-count {
   color: var(--text-dim);
-  margin-left: 8px;
   font-size: 11px;
 }
 
@@ -615,7 +608,6 @@ body::before {
   max-height: 100%;
   object-fit: contain;
   transition: opacity 0.12s ease;
-  transform-origin: 0 0;
   cursor: zoom-in;
 }
 
@@ -626,11 +618,7 @@ body::before {
 #main-image.zoomed {
   max-width: none;
   max-height: none;
-  cursor: grab;
-}
-
-#main-image.zoomed.dragging {
-  cursor: grabbing;
+  cursor: zoom-out;
 }
 
 /* ── Zoom indicator ── */
@@ -900,7 +888,7 @@ body::before {
 <!-- ── Landing screen ── -->
 <div id="landing">
   <div id="landing-header">
-    <div id="landing-title">ShotSifter</div>
+    <div id="landing-title">SnapSifter</div>
   </div>
   <div id="browser-section">
     <div id="tree-panel">
@@ -916,7 +904,7 @@ body::before {
     <div id="right-panel">
       <div id="right-panel-empty">Browse folders on the left to preview photos</div>
       <div id="quick-start" style="display:none">
-        <div style="font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px;">Jump back in:</div>
+        <div style="font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px;">Resume</div>
         <div id="quick-start-card" style="cursor: pointer; transition: color 0.1s ease;">
           <div id="quick-start-name" style="font-family: var(--mono); font-size: 13px; color: var(--amber); transition: color 0.1s ease;"></div>
           <div id="quick-start-detail" style="font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-top: 2px;"></div>
@@ -967,14 +955,16 @@ body::before {
       <div id="meta-left">
         <span class="meta-filename"></span>
         <span class="meta-date"></span>
-        <span class="meta-film-sim"></span>
         <span class="meta-camera"></span>
-        <span class="meta-lens"></span>
+        <span class="meta-exposure"></span>
+        <span class="meta-dimensions"></span>
       </div>
       <div id="meta-right">
-        <span class="meta-exposure"></span>
+        <span class="meta-lens"></span>
+        <span class="meta-film-sim"></span>
         <span class="meta-exposure-mode"></span>
         <span class="meta-flash"></span>
+        <span class="meta-gps"></span>
       </div>
     </div>
   </div>
@@ -1008,7 +998,8 @@ body::before {
     <div class="shortcut-row"><span class="key">3</span><span class="desc">Like</span></div>
     <div class="shortcut-row"><span class="key">0</span><span class="desc">Clear rating</span></div>
     <div class="shortcut-row"><span class="key">K</span><span class="desc">Like over previous</span></div>
-    <div class="shortcut-row"><span class="key">Z / Click image</span><span class="desc">Toggle zoom (fit / 2x max)</span></div>
+    <div class="shortcut-row"><span class="key">N</span><span class="desc">Next unrated photo</span></div>
+    <div class="shortcut-row"><span class="key">Z / Click image</span><span class="desc">Toggle zoom (fit / 3x max)</span></div>
     <div class="shortcut-row"><span class="key">Scroll (when zoomed)</span><span class="desc">Pan around image</span></div>
     <div class="shortcut-row"><span class="key">Space</span><span class="desc">Toggle metadata</span></div>
     <div class="shortcut-row"><span class="key">F</span><span class="desc">Toggle fullscreen</span></div>
@@ -1059,11 +1050,6 @@ body::before {
   let zoomLevel = 1;
   let panX = 0;
   let panY = 0;
-  let isDragging = false;
-  let dragStartX = 0;
-  let dragStartY = 0;
-  let dragStartPanX = 0;
-  let dragStartPanY = 0;
   let zoomIndicatorTimeout = null;
 
   // Flash label state
@@ -1178,7 +1164,7 @@ body::before {
     panX = 0;
     panY = 0;
     applyZoom();
-    mainImage.classList.remove('zoomed', 'dragging');
+    mainImage.classList.remove('zoomed');
     mainImage.style.cursor = 'zoom-in';
   }
 
@@ -1186,17 +1172,16 @@ body::before {
     if (zoomLevel <= 1) {
       mainImage.style.transform = '';
       mainImage.style.transition = 'none';
+      mainImage.style.transformOrigin = '';
       mainImage.style.maxWidth = 'calc(100vw - 20px)';
       mainImage.style.maxHeight = '100%';
       mainImage.classList.remove('zoomed');
       mainImage.style.cursor = 'zoom-in';
     } else {
-      mainImage.style.transition = isDragging ? 'none' : 'transform 0.15s ease-out';
-      mainImage.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoomLevel + ')';
-      mainImage.style.maxWidth = 'none';
-      mainImage.style.maxHeight = 'none';
+      mainImage.style.transition = 'transform 0.15s ease-out';
+      mainImage.style.transform = 'scale(' + zoomLevel + ')';
       mainImage.classList.add('zoomed');
-      if (!isDragging) mainImage.style.cursor = 'grab';
+      mainImage.style.cursor = 'zoom-out';
     }
   }
 
@@ -1215,98 +1200,61 @@ body::before {
       showZoomIndicator();
     } else {
       const naturalW = mainImage.naturalWidth;
-      const naturalH = mainImage.naturalHeight;
       const displayW = mainImage.clientWidth;
-      const displayH = mainImage.clientHeight;
       if (naturalW && displayW) {
-        // Cap zoom at 2x relative to displayed size
-        const nativeZoom = naturalW / displayW;
-        const targetZoom = Math.min(nativeZoom, 2);
+        zoomLevel = Math.min(naturalW / displayW, 3);
 
-        const rect = mainArea.getBoundingClientRect();
+        // Set transform-origin to click point on the image
         const imgRect = mainImage.getBoundingClientRect();
+        const ox = clientX != null ? clientX - imgRect.left : imgRect.width / 2;
+        const oy = clientY != null ? clientY - imgRect.top : imgRect.height / 2;
+        mainImage.style.transformOrigin = ox + 'px ' + oy + 'px';
 
-        // Click point in mainArea coords
-        const cx = clientX != null ? clientX : (rect.left + rect.width / 2);
-        const cy = clientY != null ? clientY : (rect.top + rect.height / 2);
-
-        // Where the click is relative to the image's current top-left
-        const relX = cx - imgRect.left;
-        const relY = cy - imgRect.top;
-
-        // The image's current top-left relative to mainArea
-        const imgOffsetX = imgRect.left - rect.left;
-        const imgOffsetY = imgRect.top - rect.top;
-
-        // After zoom, the image origin moves to (imgOffsetX + panX, imgOffsetY + panY)
-        // and is scaled by targetZoom. We want the point (relX, relY) in image space
-        // to map to the same screen position (cx, cy).
-        // Screen position of point = (imgOffsetX + panX) + relX * targetZoom = cx - rect.left
-        // So panX = (cx - rect.left) - imgOffsetX - relX * targetZoom
-        panX = (cx - rect.left) - imgOffsetX - relX * targetZoom;
-        panY = (cy - rect.top) - imgOffsetY - relY * targetZoom;
-
-        zoomLevel = targetZoom;
+        panX = 0;
+        panY = 0;
         applyZoom();
         showZoomIndicator();
       }
     }
   }
 
-  // Wheel: pan when zoomed, do nothing when fit
-  mainArea.addEventListener('wheel', (e) => {
+  // Mousemove pan: move transform-origin to track mouse across the image
+  mainArea.addEventListener('mousemove', (e) => {
     if (screen !== 'viewer') return;
-    if (zoomLevel <= 1) return; // do nothing at fit
-    e.preventDefault();
-    panX -= e.deltaX;
-    panY -= e.deltaY;
-    mainImage.style.transition = 'none';
-    mainImage.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoomLevel + ')';
-  }, { passive: false });
+    if (zoomLevel <= 1) return;
 
-  // Single click to toggle zoom — track mousedown position to avoid firing after drag
+    const rect = mainArea.getBoundingClientRect();
+    const imgW = mainImage.clientWidth;
+    const imgH = mainImage.clientHeight;
+
+    // Mouse as fraction of viewport
+    const mx = (e.clientX - rect.left) / rect.width;
+    const my = (e.clientY - rect.top) / rect.height;
+
+    // Map to image-space origin point
+    mainImage.style.transformOrigin = (mx * imgW) + 'px ' + (my * imgH) + 'px';
+    mainImage.style.transition = 'none';
+    mainImage.style.transform = 'scale(' + zoomLevel + ')';
+  });
+
+  // Click to toggle zoom — track mousedown to distinguish clicks from mouse moves
   let mouseDownPos = null;
+  const CLICK_THRESHOLD = 5;
+
   mainArea.addEventListener('mousedown', (e) => {
     if (screen !== 'viewer') return;
     if (e.button !== 0) return;
     mouseDownPos = { x: e.clientX, y: e.clientY };
-
-    if (zoomLevel > 1) {
-      isDragging = true;
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
-      dragStartPanX = panX;
-      dragStartPanY = panY;
-      mainImage.classList.add('dragging');
-      e.preventDefault();
-    }
-  });
-
-  window.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    panX = dragStartPanX + (e.clientX - dragStartX);
-    panY = dragStartPanY + (e.clientY - dragStartY);
-    mainImage.style.transition = 'none';
-    mainImage.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + zoomLevel + ')';
+    if (zoomLevel > 1) e.preventDefault();
   });
 
   window.addEventListener('mouseup', (e) => {
-    const wasDragging = isDragging;
-    if (isDragging) {
-      isDragging = false;
-      mainImage.classList.remove('dragging');
-      if (zoomLevel > 1) mainImage.style.cursor = 'grab';
-    }
-
-    // Single-click toggle: only if mouse didn't move and target is in the main image area
-    if (screen === 'viewer' && mouseDownPos && !wasDragging) {
+    if (screen === 'viewer' && mouseDownPos) {
       const dx = e.clientX - mouseDownPos.x;
       const dy = e.clientY - mouseDownPos.y;
-      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) {
-        // Make sure click is on the image or main-area, not filmstrip/topbar/UI
+      if (Math.abs(dx) < CLICK_THRESHOLD && Math.abs(dy) < CLICK_THRESHOLD) {
         const target = e.target;
         if (target === mainImage || target === mainArea || target.closest('#main-area')) {
-          // Exclude clicks on overlaid UI elements
           if (!target.closest('#metadata') && !target.closest('#rating-mark') && !target.closest('#zoom-indicator') && !target.closest('#flash-label') && !target.closest('#enlarger-flash')) {
             toggleZoom100(e.clientX, e.clientY);
           }
@@ -1538,6 +1486,7 @@ body::before {
         previewGrid.innerHTML = '';
 
         if (hasSubfolderPhotos) {
+          previewGrid.classList.add('grouped');
           // Grouped view by subfolder
           const groups = [];
 
@@ -1609,6 +1558,7 @@ body::before {
               const img = document.createElement('img');
               img.src = '/api/preview-thumb/' + thumbDirB64 + '/' + encodeURIComponent(f);
               img.alt = '';
+              img.onerror = function() { this.remove(); };
               thumbsEl.appendChild(img);
             }
 
@@ -1616,13 +1566,19 @@ body::before {
             previewGrid.appendChild(groupEl);
           }
 
-          // Button for parent with subfolders
-          if (data.hasRatings) {
+          // Hide review button when all photos are in subfolders (not a leaf directory)
+          const directCount2 = data.photoCount - foldersWithPhotos.reduce((s, f) => s + f.photoCount, 0);
+          if (directCount2 === 0) {
+            loadBtn.style.display = 'none';
+          } else if (data.hasRatings) {
+            loadBtn.style.display = '';
             loadBtn.textContent = 'Resume All (' + data.photoCount + ' photos)';
           } else {
+            loadBtn.style.display = '';
             loadBtn.textContent = 'Review All (' + data.photoCount + ' photos)';
           }
         } else {
+          previewGrid.classList.remove('grouped');
           // Flat grid (leaf folder)
           const filesToPreview = selectedPhotoFiles.slice(0, 24);
           const dirB64 = btoa(unescape(encodeURIComponent(data.dir)));
@@ -1630,9 +1586,11 @@ body::before {
             const img = document.createElement('img');
             img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(f);
             img.alt = '';
+            img.onerror = function() { this.remove(); };
             previewGrid.appendChild(img);
           }
 
+          loadBtn.style.display = '';
           if (data.hasRatings) {
             loadBtn.textContent = 'Resume';
           } else {
@@ -1676,13 +1634,7 @@ body::before {
       if (recentAccessible && !selectedPath) {
         const qs = recentAccessible;
         const qsFolderName = qs.name || qs.dir.split('/').filter(Boolean).pop() || qs.dir;
-        const qsDirParts = qs.dir.split('/').filter(Boolean);
-        let qsDisplayName = qsFolderName;
-        if (qsDirParts.length > 1) {
-          const parentName = qsDirParts[qsDirParts.length - 2];
-          qsDisplayName = parentName + ' / ' + qsFolderName;
-        }
-        quickStartName.textContent = qsDisplayName;
+        quickStartName.textContent = qsFolderName;
         const qsTotal = qs.fileCount || 0;
         const qsRated = qs.ratedCount || 0;
         quickStartDetail.textContent = qsTotal + ' photos, ' + qsRated + ' rated';
@@ -1699,39 +1651,25 @@ body::before {
         const row = document.createElement('div');
         row.className = 'session-row' + (s.accessible === false ? ' dimmed' : '');
 
-        const name = document.createElement('span');
+        const name = document.createElement('div');
         name.className = 'session-name';
         const folderName = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
-        const dirParts = s.dir.split('/').filter(Boolean);
-        if (dirParts.length > 1) {
-          const parentName = dirParts[dirParts.length - 2];
-          const parentSpan = document.createElement('span');
-          parentSpan.className = 'session-parent';
-          parentSpan.textContent = parentName + ' / ';
-          name.appendChild(parentSpan);
-        }
-        name.appendChild(document.createTextNode(folderName));
+        name.textContent = folderName;
         row.appendChild(name);
 
         if (s.accessible === false) {
-          const disc = document.createElement('span');
+          const disc = document.createElement('div');
           disc.className = 'session-disconnected-label';
           disc.textContent = 'disconnected';
           row.appendChild(disc);
         } else {
           const reviewed = s.ratedCount || 0;
           const total = s.fileCount || 0;
-
-          const progress = document.createElement('span');
-          progress.className = 'session-progress-text';
-          progress.textContent = reviewed + '/' + total;
-          row.appendChild(progress);
+          const detail = document.createElement('div');
+          detail.className = 'session-detail';
+          detail.textContent = reviewed + ' of ' + total + ' rated';
+          row.appendChild(detail);
         }
-
-        const time = document.createElement('span');
-        time.className = 'session-time';
-        time.textContent = relativeTime(s.lastOpened);
-        row.appendChild(time);
 
         if (s.accessible !== false) {
           row.addEventListener('click', () => resumeSession(s));
@@ -2039,6 +1977,8 @@ body::before {
     metadataEl.querySelector('.meta-lens').textContent = '';
     metadataEl.querySelector('.meta-exposure-mode').textContent = '';
     metadataEl.querySelector('.meta-flash').textContent = '';
+    metadataEl.querySelector('.meta-dimensions').textContent = '';
+    metadataEl.querySelector('.meta-gps').textContent = '';
 
     try {
       const meta = await fetch('/api/meta/' + file).then(r => r.json());
@@ -2051,53 +1991,16 @@ body::before {
   }
 
   function renderMeta(meta) {
+    // Line 1: Date/time
     if (meta.date) {
       const d = new Date(meta.date);
       metadataEl.querySelector('.meta-date').textContent =
-        d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) +
-        '  ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+        '  ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     }
 
-    const parts = [];
-    if (meta.aperture) parts.push('f/' + meta.aperture);
-    if (meta.shutter) {
-      if (meta.shutter < 1) {
-        parts.push('1/' + Math.round(1 / meta.shutter) + 's');
-      } else {
-        parts.push(meta.shutter + 's');
-      }
-    }
-    if (meta.iso) parts.push('ISO ' + meta.iso);
-    if (meta.focalLength) {
-      let fl = meta.focalLength + 'mm';
-      if (meta.focalLength35 && meta.focalLength35 !== meta.focalLength) {
-        fl += ' (' + meta.focalLength35 + 'mm eq)';
-      }
-      parts.push(fl);
-    }
-
-    metadataEl.querySelector('.meta-exposure').textContent = parts.join('  ');
-
-    // Exposure mode + metering
-    const modeParts = [];
-    if (meta.exposureProgram) modeParts.push(meta.exposureProgram);
-    if (meta.meteringMode) modeParts.push(meta.meteringMode);
-    metadataEl.querySelector('.meta-exposure-mode').textContent = modeParts.join('  ');
-
-    // Flash
-    if (meta.flash) {
-      const flashStr = typeof meta.flash === 'object' ? (meta.flash.fired ? 'Flash fired' : '') : (meta.flash || '');
-      metadataEl.querySelector('.meta-flash').textContent = flashStr;
-    }
-
-    // Film simulation + white balance
-    const line4Parts = [];
-    if (meta.filmSimulation) line4Parts.push(meta.filmSimulation);
-    if (meta.whiteBalance) line4Parts.push(meta.whiteBalance);
-    metadataEl.querySelector('.meta-film-sim').textContent = line4Parts.join('  ');
-
-    // Camera model
-    const camModel = meta.camera || meta.model || '';
+    // Line 2: Camera make + model
+    const camModel = meta.camera || '';
     const camMake = meta.make || '';
     let camText = '';
     if (camMake && camModel && camModel.toLowerCase().startsWith(camMake.toLowerCase())) {
@@ -2107,9 +2010,70 @@ body::before {
     }
     metadataEl.querySelector('.meta-camera').textContent = camText;
 
-    // Lens
+    // Line 3: Focal length, aperture, shutter, ISO
+    const parts = [];
+    if (meta.focalLength) {
+      let fl = meta.focalLength + 'mm';
+      if (meta.focalLength35 && meta.focalLength35 !== meta.focalLength) {
+        fl += ' (' + meta.focalLength35 + 'mm eq)';
+      }
+      parts.push(fl);
+    }
+    if (meta.aperture) parts.push('f/' + meta.aperture);
+    if (meta.shutter) {
+      if (meta.shutter < 1) {
+        parts.push('1/' + Math.round(1 / meta.shutter) + 's');
+      } else {
+        parts.push(meta.shutter + 's');
+      }
+    }
+    if (meta.iso) parts.push('ISO ' + meta.iso);
+    if (meta.exposureCompensation != null && meta.exposureCompensation !== 0) {
+      const sign = meta.exposureCompensation > 0 ? '+' : '';
+      parts.push(sign + meta.exposureCompensation + ' EV');
+    }
+    metadataEl.querySelector('.meta-exposure').textContent = parts.join('  ');
+
+    // Line 4: Dimensions + file size
+    const dimParts = [];
+    if (meta.imageWidth && meta.imageHeight) {
+      dimParts.push(meta.imageWidth + ' \u00d7 ' + meta.imageHeight);
+    }
+    if (meta.fileSize) {
+      const mb = (meta.fileSize / (1024 * 1024)).toFixed(1);
+      dimParts.push(mb + ' MB');
+    }
+    if (meta.colorSpace) {
+      dimParts.push(meta.colorSpace);
+    }
+    metadataEl.querySelector('.meta-dimensions').textContent = dimParts.join('  \u2022  ');
+
+    // Right column line 1: Lens
     if (meta.lens) {
       metadataEl.querySelector('.meta-lens').textContent = meta.lens;
+    }
+
+    // Right column line 2: Film simulation + white balance
+    const line4Parts = [];
+    if (meta.filmSimulation) line4Parts.push(meta.filmSimulation);
+    if (meta.whiteBalance) line4Parts.push('WB: ' + meta.whiteBalance);
+    metadataEl.querySelector('.meta-film-sim').textContent = line4Parts.join('  ');
+
+    // Right column line 3: Exposure mode + metering
+    const modeParts = [];
+    if (meta.exposureProgram) modeParts.push(meta.exposureProgram);
+    if (meta.meteringMode) modeParts.push(meta.meteringMode);
+    metadataEl.querySelector('.meta-exposure-mode').textContent = modeParts.join('  \u2022  ');
+
+    // Right column line 4: Flash
+    if (meta.flash) {
+      const flashStr = typeof meta.flash === 'object' ? (meta.flash.fired ? 'Flash fired' : 'No flash') : (meta.flash || '');
+      metadataEl.querySelector('.meta-flash').textContent = flashStr;
+    }
+
+    // Right column line 5: GPS
+    if (meta.gps) {
+      metadataEl.querySelector('.meta-gps').textContent = meta.gps.lat.toFixed(4) + ', ' + meta.gps.lng.toFixed(4);
     }
   }
 
@@ -2241,23 +2205,7 @@ body::before {
       if (filterMode === 'all') {
         const nextIdx = currentIndex + 1;
         if (nextIdx < filteredIndices.length) {
-          const nextRealIdx = filteredIndices[nextIdx];
-          const nextBasename = allFiles[nextRealIdx].replace(/\.[^.]+$/, '');
-          if (ratings[nextBasename]) {
-            const unratedIdx = findNextUnrated(nextIdx);
-            if (unratedIdx !== -1) {
-              showImage(unratedIdx);
-            } else {
-              showImage(nextIdx);
-            }
-          } else {
-            showImage(nextIdx);
-          }
-        } else {
-          const unratedIdx = findNextUnrated(0);
-          if (unratedIdx !== -1) {
-            showImage(unratedIdx);
-          }
+          showImage(nextIdx);
         }
       } else {
         const prevFilteredLength = filteredIndices.length;
@@ -2269,6 +2217,14 @@ body::before {
         }
       }
     }
+  }
+
+  // ── Jump to next unrated ──
+  function jumpToNextUnrated() {
+    if (filteredIndices.length === 0) return;
+    let unratedIdx = findNextUnrated(currentIndex + 1);
+    if (unratedIdx === -1) unratedIdx = findNextUnrated(0);
+    if (unratedIdx !== -1) showImage(unratedIdx);
   }
 
   // ── Keep over previous ──
@@ -2317,23 +2273,7 @@ body::before {
     if (filterMode === 'all') {
       const nextIdx = currentIndex + 1;
       if (nextIdx < filteredIndices.length) {
-        const nextRealIdx = filteredIndices[nextIdx];
-        const nextBasename = allFiles[nextRealIdx].replace(/\.[^.]+$/, '');
-        if (ratings[nextBasename]) {
-          const unratedIdx = findNextUnrated(nextIdx);
-          if (unratedIdx !== -1) {
-            showImage(unratedIdx);
-          } else {
-            showImage(nextIdx);
-          }
-        } else {
-          showImage(nextIdx);
-        }
-      } else {
-        const unratedIdx = findNextUnrated(0);
-        if (unratedIdx !== -1) {
-          showImage(unratedIdx);
-        }
+        showImage(nextIdx);
       }
     } else {
       const prevFilteredLength = filteredIndices.length;
@@ -2490,6 +2430,11 @@ body::before {
       case 'K':
         e.preventDefault();
         likeOverPrevious();
+        break;
+      case 'n':
+      case 'N':
+        e.preventDefault();
+        jumpToNextUnrated();
         break;
       case 'z':
       case 'Z':

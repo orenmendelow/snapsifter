@@ -7,17 +7,21 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 // ── State directory & sessions ──
-const stateDir = path.join(os.homedir(), '.shotsifter');
+const stateDir = path.join(os.homedir(), '.snapsifter');
 const oldSafelightDir = path.join(os.homedir(), '.safelight');
 const oldLatentDir = path.join(os.homedir(), '.latent');
+const oldShotsifterDir = path.join(os.homedir(), '.shotsifter');
 
-// Migrate ~/.safelight/ → ~/.latent/ → ~/.shotsifter/
-if (fs.existsSync(oldSafelightDir) && !fs.existsSync(oldLatentDir) && !fs.existsSync(stateDir)) {
+// Migrate ~/.safelight/ → ~/.latent/ → ~/.shotsifter/ → ~/.snapsifter/
+if (fs.existsSync(oldShotsifterDir) && !fs.existsSync(stateDir)) {
+  fs.renameSync(oldShotsifterDir, stateDir);
+  console.log('Migrated ~/.shotsifter/ → ~/.snapsifter/');
+} else if (fs.existsSync(oldSafelightDir) && !fs.existsSync(oldLatentDir) && !fs.existsSync(oldShotsifterDir) && !fs.existsSync(stateDir)) {
   fs.renameSync(oldSafelightDir, stateDir);
-  console.log('Migrated ~/.safelight/ → ~/.shotsifter/');
-} else if (fs.existsSync(oldLatentDir) && !fs.existsSync(stateDir)) {
+  console.log('Migrated ~/.safelight/ → ~/.snapsifter/');
+} else if (fs.existsSync(oldLatentDir) && !fs.existsSync(oldShotsifterDir) && !fs.existsSync(stateDir)) {
   fs.renameSync(oldLatentDir, stateDir);
-  console.log('Migrated ~/.latent/ → ~/.shotsifter/');
+  console.log('Migrated ~/.latent/ → ~/.snapsifter/');
 }
 
 const sessionsFile = path.join(stateDir, 'sessions.json');
@@ -294,9 +298,11 @@ app.get('/api/browse', (req, res) => {
     const entries = fs.readdirSync(resolved, { withFileTypes: true });
     const folders = [];
 
+    const systemDirs = new Set(['Library', 'Applications', 'node_modules', 'usr', 'bin', 'sbin', 'etc', 'var', 'tmp', 'private']);
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       if (entry.name.startsWith('.')) continue;
+      if (systemDirs.has(entry.name)) continue;
 
       const fullPath = path.join(resolved, entry.name);
       let photoCount = 0;
@@ -320,15 +326,18 @@ app.get('/api/browse', (req, res) => {
 
     folders.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Count supported image files recursively in the current directory
-    let currentPhotoCount = 0;
+    // Sum photo count from visible folders only (excludes system dirs filtered above)
+    let currentPhotoCount = folders.reduce((sum, f) => sum + f.photoCount, 0);
+    // Also count direct photos in this directory (not in subfolders)
     let currentPreviewFiles = [];
     try {
-      const allPhotos = walkDir(resolved, resolved, 3, 0).sort();
-      currentPhotoCount = allPhotos.length;
-      if (currentPhotoCount > 0) {
-        currentPreviewFiles = allPhotos.slice(0, 16);
-      }
+      const directEntries = fs.readdirSync(resolved, { withFileTypes: true });
+      const directPhotos = directEntries
+        .filter(e => e.isFile() && isSupportedImage(e.name) && !e.name.startsWith('.') && !e.name.startsWith('._'))
+        .map(e => e.name)
+        .sort();
+      currentPhotoCount += directPhotos.length;
+      currentPreviewFiles = directPhotos.slice(0, 16);
     } catch (e) {}
 
     const currentHasRatings = fs.existsSync(path.join(resolved, 'ratings.json'));
@@ -567,16 +576,15 @@ app.get('/api/meta/{*filepath}', requireActiveDir, async (req, res) => {
   }
 
   try {
-    const exif = await exifr.parse(srcPath, {
-      pick: ['DateTimeOriginal', 'FNumber', 'ExposureTime', 'ISO', 'FocalLength', 'FocalLengthIn35mmFormat', 'LensModel', 'Model', 'Make', 'FilmSimulation', 'WhiteBalance', 'MeteringMode', 'ExposureProgram', 'ExposureMode', 'Flash']
-    });
+    const exif = await exifr.parse(srcPath, true);
+    const stat = fs.statSync(srcPath);
 
     if (!exif) {
-      return res.json({});
+      return res.json({ fileSize: stat.size });
     }
 
     const meta = {
-      date: exif.DateTimeOriginal ? exif.DateTimeOriginal.toISOString() : null,
+      date: exif.DateTimeOriginal ? exif.DateTimeOriginal.toISOString() : (exif.CreateDate ? exif.CreateDate.toISOString() : null),
       aperture: exif.FNumber || null,
       shutter: exif.ExposureTime || null,
       iso: exif.ISO || null,
@@ -591,6 +599,12 @@ app.get('/api/meta/{*filepath}', requireActiveDir, async (req, res) => {
       exposureProgram: exif.ExposureProgram || null,
       exposureMode: exif.ExposureMode || null,
       flash: exif.Flash || null,
+      exposureCompensation: exif.ExposureCompensation != null ? exif.ExposureCompensation : null,
+      colorSpace: exif.ColorSpace || null,
+      imageWidth: exif.ExifImageWidth || exif.ImageWidth || null,
+      imageHeight: exif.ExifImageHeight || exif.ImageHeight || null,
+      fileSize: stat.size,
+      gps: (exif.latitude && exif.longitude) ? { lat: exif.latitude, lng: exif.longitude } : null,
     };
 
     res.json(meta);
@@ -622,14 +636,21 @@ app.post('/api/sort', requireActiveDir, (req, res) => {
     stemsByRating[rating].push(stem);
   }
 
-  // Find all files in activeDir (flat scan + subdir scan)
-  const allFiles = walkDir(activeDir, activeDir, 5, 0);
+  // Find ALL files in activeDir (not just supported images — need to catch RAW pairs like .RAF)
+  const allFiles = [];
+  try {
+    const entries = fs.readdirSync(activeDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isFile() && !entry.name.startsWith('.') && !entry.name.startsWith('._')) {
+        allFiles.push(entry.name);
+      }
+    }
+  } catch (e) {}
 
   for (const [ratingStr, stems] of Object.entries(stemsByRating)) {
     const rating = Number(ratingStr);
     const folderName = SORT_FOLDERS[rating];
     const destDir = path.join(activeDir, folderName);
-    let folderCreated = false;
 
     for (const stem of stems) {
       // Find all files whose stem matches (strip directory prefix from stem for matching)
@@ -646,18 +667,18 @@ app.post('/api/sort', requireActiveDir, (req, res) => {
       for (const relPath of matchingFiles) {
         const srcPath = path.join(activeDir, relPath);
         const fileName = path.basename(relPath);
-        const destPath = path.join(destDir, fileName);
+        const ext = path.extname(fileName).replace('.', '').toUpperCase();
+        const extDir = path.join(destDir, ext);
 
-        // Already in the correct subfolder
-        if (path.dirname(relPath) === folderName) continue;
+        // Already in the correct subfolder (e.g., Liked/JPG/)
+        const relDir = path.dirname(relPath);
+        if (relDir === folderName || relDir === folderName + '/' + ext) continue;
 
         // Destination already exists — skip
+        const destPath = path.join(extDir, fileName);
         if (fs.existsSync(destPath)) continue;
 
-        if (!folderCreated) {
-          fs.mkdirSync(destDir, { recursive: true });
-          folderCreated = true;
-        }
+        fs.mkdirSync(extDir, { recursive: true });
 
         if (mode === 'move') {
           fs.renameSync(srcPath, destPath);
@@ -666,8 +687,10 @@ app.post('/api/sort', requireActiveDir, (req, res) => {
         }
       }
 
-      // Update rating key to include folder prefix
-      const newKey = folderName + '/' + pureStem;
+      // Update rating key to include folder prefix (use first ext subfolder found)
+      const firstMatch = matchingFiles[0];
+      const firstExt = firstMatch ? path.extname(path.basename(firstMatch)).replace('.', '').toUpperCase() : '';
+      const newKey = folderName + '/' + (firstExt ? firstExt + '/' : '') + pureStem;
       updatedRatings[newKey] = rating;
       counts[countKeys[rating]]++;
     }
@@ -705,21 +728,51 @@ app.post('/api/unsort', requireActiveDir, (req, res) => {
     }
 
     for (const entry of entries) {
-      if (!entry.isFile()) continue;
       if (entry.name.startsWith('.')) continue;
-      if (!isSupportedImage(entry.name)) continue;
 
-      const srcPath = path.join(folderPath, entry.name);
-      const destPath = path.join(activeDir, entry.name);
+      if (entry.isDirectory()) {
+        // Extension subfolder (e.g., Liked/JPG/)
+        const extFolderPath = path.join(folderPath, entry.name);
+        let subEntries;
+        try {
+          subEntries = fs.readdirSync(extFolderPath, { withFileTypes: true });
+        } catch (e) {
+          continue;
+        }
 
-      // Skip if file already exists in root
-      if (fs.existsSync(destPath)) continue;
+        for (const subEntry of subEntries) {
+          if (!subEntry.isFile()) continue;
+          if (subEntry.name.startsWith('.')) continue;
 
-      fs.renameSync(srcPath, destPath);
-      restored++;
+          const srcPath = path.join(extFolderPath, subEntry.name);
+          const destPath = path.join(activeDir, subEntry.name);
+
+          if (fs.existsSync(destPath)) continue;
+
+          fs.renameSync(srcPath, destPath);
+          restored++;
+        }
+
+        // Remove ext subfolder if empty
+        try {
+          const remaining = fs.readdirSync(extFolderPath);
+          if (remaining.length === 0) {
+            fs.rmdirSync(extFolderPath);
+          }
+        } catch (e) {}
+      } else if (entry.isFile()) {
+        // Legacy: files directly in rating folder (old structure)
+        const srcPath = path.join(folderPath, entry.name);
+        const destPath = path.join(activeDir, entry.name);
+
+        if (fs.existsSync(destPath)) continue;
+
+        fs.renameSync(srcPath, destPath);
+        restored++;
+      }
     }
 
-    // Remove folder if empty
+    // Remove rating folder if empty
     try {
       const remaining = fs.readdirSync(folderPath);
       if (remaining.length === 0) {
@@ -728,11 +781,15 @@ app.post('/api/unsort', requireActiveDir, (req, res) => {
     } catch (e) {}
   }
 
-  // Update ratings keys: strip folder prefixes
+  // Update ratings keys: strip folder prefixes (handles both Liked/stem and Liked/JPG/stem)
   const newRatings = {};
   for (const [stem, rating] of Object.entries(ratings)) {
     const parts = stem.split('/');
-    if (parts.length === 2 && sortFolderNames.includes(parts[0])) {
+    if (parts.length === 3 && sortFolderNames.includes(parts[0])) {
+      // New format: Liked/JPG/DSCF6733
+      newRatings[parts[2]] = rating;
+    } else if (parts.length === 2 && sortFolderNames.includes(parts[0])) {
+      // Legacy format: Liked/DSCF6733
       newRatings[parts[1]] = rating;
     } else {
       newRatings[stem] = rating;
@@ -779,7 +836,7 @@ app.post('/api/unsort', requireActiveDir, (req, res) => {
 
 const PORT = 4000;
 app.listen(PORT, () => {
-  console.log(`ShotSifter running at http://localhost:${PORT}`);
+  console.log(`SnapSifter running at http://localhost:${PORT}`);
   if (!activeDir) {
     console.log('No directory loaded — use the web UI to select a folder');
   }
