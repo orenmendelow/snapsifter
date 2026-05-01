@@ -769,6 +769,10 @@ body::before {
 .thumb-wrapper.active {
   border-color: var(--amber);
   box-shadow: 0 0 12px var(--amber-glow);
+}
+
+.thumb-wrapper.active .thumb-img,
+.thumb-wrapper.active .thumb-label {
   opacity: 1 !important;
 }
 
@@ -1861,10 +1865,9 @@ body::before {
       }
       wrapper.appendChild(mark);
 
-      // Dim reviewed photos based on rating
-      if (r === 1) wrapper.style.opacity = '0.25';
-      else if (r === 2) wrapper.style.opacity = '0.6';
-      // r === 3 or unrated: full opacity (default 1)
+      // Dim reviewed photos based on rating (img + label only, not the mark)
+      if (r === 1) { img.style.opacity = '0.25'; label.style.opacity = '0.25'; }
+      else if (r === 2) { img.style.opacity = '0.6'; label.style.opacity = '0.6'; }
 
       filmstrip.appendChild(wrapper);
     });
@@ -2108,11 +2111,12 @@ body::before {
       }
     }
 
-    // Update opacity based on rating
-    if (r === 1) wrapper.style.opacity = '0.25';
-    else if (r === 2) wrapper.style.opacity = '0.6';
-    else wrapper.style.opacity = '1';
-    // .active class has opacity: 1 !important, so active thumb stays bright
+    // Update opacity on img + label only (mark stays full opacity)
+    const img = wrapper.querySelector('.thumb-img');
+    const label = wrapper.querySelector('.thumb-label');
+    const dimVal = r === 1 ? '0.25' : r === 2 ? '0.6' : '1';
+    if (img) img.style.opacity = dimVal;
+    if (label) label.style.opacity = dimVal;
   }
 
   function updateCounts() {
