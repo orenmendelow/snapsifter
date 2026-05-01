@@ -804,6 +804,547 @@ app.post('/api/unsort', requireActiveDir, (req, res) => {
   res.json({ ok: true, restored });
 });
 
+// ── Recipe CRUD endpoints ──
+
+function recipesFilePath() {
+  return path.join(activeDir, 'recipes.json');
+}
+
+function loadRecipes() {
+  const fp = recipesFilePath();
+  try {
+    if (fs.existsSync(fp)) {
+      return JSON.parse(fs.readFileSync(fp, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Failed to parse recipes.json:', e.message);
+  }
+  return { recipes: {}, activeRecipe: null };
+}
+
+function saveRecipes(data) {
+  fs.writeFileSync(recipesFilePath(), JSON.stringify(data, null, 2));
+}
+
+app.get('/api/recipes', requireActiveDir, (req, res) => {
+  res.json(loadRecipes());
+});
+
+app.post('/api/recipe', requireActiveDir, (req, res) => {
+  const { title, params } = req.body;
+  const data = loadRecipes();
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const recipe = { id, title, created: now, modified: now, params };
+  data.recipes[id] = recipe;
+  saveRecipes(data);
+  res.json(recipe);
+});
+
+app.put('/api/recipe/:id', requireActiveDir, (req, res) => {
+  const { id } = req.params;
+  const data = loadRecipes();
+  if (!data.recipes[id]) {
+    return res.status(404).json({ error: 'Recipe not found' });
+  }
+  const recipe = data.recipes[id];
+  if (req.body.title !== undefined) recipe.title = req.body.title;
+  if (req.body.params !== undefined) recipe.params = req.body.params;
+  recipe.modified = new Date().toISOString();
+  saveRecipes(data);
+  res.json(recipe);
+});
+
+app.delete('/api/recipe/:id', requireActiveDir, (req, res) => {
+  const { id } = req.params;
+  const data = loadRecipes();
+  if (!data.recipes[id]) {
+    return res.status(404).json({ error: 'Recipe not found' });
+  }
+  delete data.recipes[id];
+  if (data.activeRecipe === id) {
+    data.activeRecipe = null;
+  }
+  saveRecipes(data);
+  res.json({ ok: true });
+});
+
+app.put('/api/recipes/active', requireActiveDir, (req, res) => {
+  const { id } = req.body;
+  const data = loadRecipes();
+  if (id !== null && !data.recipes[id]) {
+    return res.status(404).json({ error: 'Recipe not found' });
+  }
+  data.activeRecipe = id;
+  saveRecipes(data);
+  res.json({ ok: true, activeRecipe: id });
+});
+
+// ── FP1 generation ──
+
+function slugify(str) {
+  return str.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, ' ');
+}
+
+const FP1_FILM_SIM_MAP = {
+  'Provia': 'Provia', 'Velvia': 'Velvia', 'Astia': 'Astia',
+  'Classic': 'Classic', 'ClassicNeg': 'ClassicNEGA', 'Nostalgic': 'NostalgicNEGA',
+  'RealaACE': 'RealaACE', 'ProNegStd': 'NEGAStd', 'ProNegHi': 'NEGAhi',
+  'Eterna': 'Eterna', 'BleachBypass': 'BleachBypass',
+  'Acros': 'Acros', 'AcrosYe': 'AcrosYe', 'AcrosR': 'AcrosR', 'AcrosG': 'AcrosG',
+  'Mono': 'BW', 'MonoYe': 'BYe', 'MonoR': 'BR', 'MonoG': 'BG', 'Sepia': 'Sepia',
+};
+
+function generateFP1XML(recipe) {
+  const p = recipe.params || {};
+
+  const filmSim = FP1_FILM_SIM_MAP[p.filmSimulation] || p.filmSimulation || 'Provia';
+  const grain = (p.grainEffect || 'Off').toUpperCase();
+  const grainSize = (p.grainSize || 'Small').toUpperCase();
+  const chrome = (p.colorChromeEffect || 'OFF').toUpperCase();
+  const chromeBlue = (p.colorChromeFXBlue || 'OFF').toUpperCase();
+  const wb = p.whiteBalance || 'Auto';
+  const wbR = p.wbShiftR != null ? p.wbShiftR : 0;
+  const wbB = p.wbShiftB != null ? p.wbShiftB : 0;
+  const colorTemp = p.colorTemperature ? `${p.colorTemperature}K` : '0K';
+  const dr = p.dynamicRange || 100;
+  const highlight = p.highlightTone != null ? p.highlightTone : 0;
+  const shadow = p.shadowTone != null ? p.shadowTone : 0;
+  const color = p.color != null ? p.color : 0;
+  const sharpness = p.sharpness != null ? p.sharpness : 0;
+  const nr = p.noiseReduction != null ? p.noiseReduction : 0;
+  const clarity = p.clarity != null ? p.clarity : 0;
+
+  const label = slugify(recipe.title || 'Untitled');
+
+  return `<?xml version="1.0" encoding="utf-8"?>
+<ConversionProfile application="XRFC" version="1.12.0.0">
+    <PropertyGroup device="X100VI" version="X100VI_0100" label="${label}">
+        <SerialNumber>5935373131322503252913201629C3</SerialNumber>
+        <TetherRAWConditonCode>X100VI_0100</TetherRAWConditonCode>
+        <Editable>TRUE</Editable>
+        <SourceFileName/>
+        <Fileerror>NONE</Fileerror>
+        <RotationAngle>0</RotationAngle>
+        <StructVer>65536</StructVer>
+        <IOPCode>FF179503</IOPCode>
+        <ShootingCondition>OFF</ShootingCondition>
+        <FileType>JPG</FileType>
+        <ImageSize>L3x2</ImageSize>
+        <ImageQuality>Fine</ImageQuality>
+        <ExposureBias>0</ExposureBias>
+        <DynamicRange>${dr}</DynamicRange>
+        <WideDRange>0</WideDRange>
+        <FilmSimulation>${filmSim}</FilmSimulation>
+        <BlackImageTone>0</BlackImageTone>
+        <MonochromaticColor_RG>0</MonochromaticColor_RG>
+        <GrainEffect>${grain}</GrainEffect>
+        <GrainEffectSize>${grainSize}</GrainEffectSize>
+        <ChromeEffect>${chrome}</ChromeEffect>
+        <ColorChromeBlue>${chromeBlue}</ColorChromeBlue>
+        <SmoothSkinEffect>OFF</SmoothSkinEffect>
+        <WBShootCond>ON</WBShootCond>
+        <WhiteBalance>${wb}</WhiteBalance>
+        <WBShiftR>${wbR}</WBShiftR>
+        <WBShiftB>${wbB}</WBShiftB>
+        <WBColorTemp>${colorTemp}</WBColorTemp>
+        <HighlightTone>${highlight}</HighlightTone>
+        <ShadowTone>${shadow}</ShadowTone>
+        <Color>${color}</Color>
+        <Sharpness>${sharpness}</Sharpness>
+        <NoisReduction>${nr}</NoisReduction>
+        <Clarity>${clarity}</Clarity>
+        <LensModulationOpt>ON</LensModulationOpt>
+        <ColorSpace>sRGB</ColorSpace>
+        <HDR/>
+        <DigitalTeleConv>OFF</DigitalTeleConv>
+        <PortraitEnhancer/>
+    </PropertyGroup>
+</ConversionProfile>`;
+}
+
+app.post('/api/recipe/:id/fp1', requireActiveDir, (req, res) => {
+  const { id } = req.params;
+  const data = loadRecipes();
+  const recipe = data.recipes[id];
+  if (!recipe) {
+    return res.status(404).json({ error: 'Recipe not found' });
+  }
+
+  const xml = generateFP1XML(recipe);
+  const xrsDir = path.join(
+    os.homedir(),
+    'Library', 'Application Support', 'com.fujifilm.denji',
+    'X RAW STUDIO', 'X100VI', 'X100VI_0100'
+  );
+  fs.mkdirSync(xrsDir, { recursive: true });
+
+  const filename = `${slugify(recipe.title || 'Untitled')}.FP1`;
+  const fp1Path = path.join(xrsDir, filename);
+  fs.writeFileSync(fp1Path, xml, 'utf8');
+
+  res.json({ path: fp1Path, label: recipe.title || 'Untitled' });
+});
+
+// ── Grid selection helpers ──
+
+function extractExifBatch(dir) {
+  let rawOutput;
+  try {
+    rawOutput = execSync(
+      `exiftool -json -FocalLength -ISO -ExposureTime -FNumber -DateTimeOriginal -WhiteBalance "${dir}"/*.RAF`,
+      { stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 50 * 1024 * 1024 }
+    );
+  } catch (e) {
+    // exiftool exits non-zero if no files match — check if there's stdout anyway
+    if (e.stdout && e.stdout.length > 0) {
+      rawOutput = e.stdout;
+    } else {
+      return [];
+    }
+  }
+  try {
+    return JSON.parse(rawOutput.toString());
+  } catch (e) {
+    console.error('Failed to parse exiftool JSON:', e.message);
+    return [];
+  }
+}
+
+function parseExifEntry(entry) {
+  // FocalLength: "23 mm" or "23mm" or 23
+  let focalLength = null;
+  if (entry.FocalLength != null) {
+    const m = String(entry.FocalLength).match(/([\d.]+)/);
+    if (m) focalLength = parseFloat(m[1]);
+  }
+
+  let iso = entry.ISO != null ? Number(entry.ISO) : null;
+
+  // ExposureTime: "1/125" or "0.5" or number
+  let exposureTime = null;
+  if (entry.ExposureTime != null) {
+    const s = String(entry.ExposureTime);
+    if (s.includes('/')) {
+      const parts = s.split('/');
+      exposureTime = parseFloat(parts[0]) / parseFloat(parts[1]);
+    } else {
+      exposureTime = parseFloat(s);
+    }
+    if (isNaN(exposureTime)) exposureTime = null;
+  }
+
+  let fNumber = null;
+  if (entry.FNumber != null) {
+    fNumber = parseFloat(String(entry.FNumber));
+    if (isNaN(fNumber)) fNumber = null;
+  }
+
+  // DateTimeOriginal: "2026:04:15 14:32:10" or similar
+  let hourOfDay = null;
+  if (entry.DateTimeOriginal != null) {
+    const m = String(entry.DateTimeOriginal).match(/(\d{2}):(\d{2}):(\d{2})$/);
+    if (m) hourOfDay = parseInt(m[1], 10) + parseInt(m[2], 10) / 60;
+  }
+
+  let wb = entry.WhiteBalance != null ? String(entry.WhiteBalance) : null;
+
+  return { focalLength, iso, exposureTime, fNumber, hourOfDay, wb };
+}
+
+function wbToNumeric(wb) {
+  if (!wb) return 0.5;
+  const lower = wb.toLowerCase();
+  if (lower === 'auto' || lower.includes('auto')) return 0;
+  if (lower.includes('daylight') || lower.includes('fine')) return 0.2;
+  if (lower.includes('shade') || lower.includes('cloudy')) return 0.4;
+  if (lower.includes('fluorescent')) return 0.6;
+  if (lower.includes('incandescent') || lower.includes('tungsten')) return 0.8;
+  return 0.5;
+}
+
+function buildFeatureVectors(entries) {
+  const parsed = entries.map(e => ({
+    file: path.basename(e.SourceFile || ''),
+    raw: e,
+    ...parseExifEntry(e),
+  }));
+
+  // Collect non-null values per dimension for median + min/max
+  const dims = ['focalLength', 'iso', 'exposureTime', 'fNumber', 'hourOfDay'];
+  const values = {};
+  for (const d of dims) values[d] = [];
+  for (const p of parsed) {
+    for (const d of dims) {
+      if (p[d] != null && !isNaN(p[d]) && p[d] > 0) values[d].push(p[d]);
+    }
+  }
+
+  // Compute medians
+  const medians = {};
+  for (const d of dims) {
+    const sorted = values[d].slice().sort((a, b) => a - b);
+    medians[d] = sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : 1;
+  }
+
+  // Fill missing with median, apply log where needed
+  const logDims = ['focalLength', 'iso', 'exposureTime'];
+  const vectors = parsed.map(p => {
+    const v = {};
+    for (const d of dims) {
+      v[d] = (p[d] != null && !isNaN(p[d]) && p[d] > 0) ? p[d] : medians[d];
+    }
+    for (const d of logDims) {
+      v[d] = Math.log(v[d]);
+    }
+    v.wb = wbToNumeric(p.wb);
+    return { file: p.file, rawExif: p, values: v };
+  });
+
+  // Min-max normalize each dimension (hourOfDay uses /24 instead)
+  const allDims = ['focalLength', 'iso', 'exposureTime', 'fNumber', 'hourOfDay', 'wb'];
+  const mins = {}, maxs = {};
+  for (const d of allDims) {
+    mins[d] = Infinity; maxs[d] = -Infinity;
+    for (const vec of vectors) {
+      mins[d] = Math.min(mins[d], vec.values[d]);
+      maxs[d] = Math.max(maxs[d], vec.values[d]);
+    }
+  }
+
+  for (const vec of vectors) {
+    for (const d of allDims) {
+      if (d === 'hourOfDay') {
+        vec.values[d] = vec.values[d] / 24;
+      } else {
+        const range = maxs[d] - mins[d];
+        vec.values[d] = range > 0 ? (vec.values[d] - mins[d]) / range : 0.5;
+      }
+    }
+    vec.vector = allDims.map(d => vec.values[d]);
+  }
+
+  return vectors;
+}
+
+function euclideanDist(a, b) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) {
+    const diff = a[i] - b[i];
+    sum += diff * diff;
+  }
+  return Math.sqrt(sum);
+}
+
+function farthestPointSampling(vectors, count, fixedIndices, excludeIndices) {
+  if (vectors.length === 0) return [];
+  count = Math.min(count, vectors.length);
+
+  const selected = [];
+  const excluded = new Set(excludeIndices || []);
+
+  if (fixedIndices && fixedIndices.length > 0) {
+    for (const idx of fixedIndices) {
+      selected.push(idx);
+    }
+  } else {
+    const candidates = [];
+    for (let i = 0; i < vectors.length; i++) {
+      if (!excluded.has(i)) candidates.push(i);
+    }
+    if (candidates.length === 0) return [];
+    selected.push(candidates[Math.floor(Math.random() * candidates.length)]);
+  }
+
+  while (selected.length < count) {
+    let bestIdx = -1;
+    let bestDist = -1;
+
+    for (let i = 0; i < vectors.length; i++) {
+      if (selected.includes(i) || excluded.has(i)) continue;
+
+      let minDist = Infinity;
+      for (const si of selected) {
+        const d = euclideanDist(vectors[i].vector, vectors[si].vector);
+        if (d < minDist) minDist = d;
+      }
+
+      if (minDist > bestDist) {
+        bestDist = minDist;
+        bestIdx = i;
+      }
+    }
+
+    if (bestIdx === -1) break;
+    selected.push(bestIdx);
+  }
+
+  return selected;
+}
+
+function formatExifSummary(rawExif) {
+  const fl = rawExif.focalLength != null ? `${rawExif.focalLength}mm` : null;
+  const iso = rawExif.iso;
+  const ap = rawExif.fNumber != null ? `f/${rawExif.fNumber}` : null;
+
+  let shutter = null;
+  if (rawExif.exposureTime != null) {
+    if (rawExif.exposureTime >= 1) {
+      shutter = `${rawExif.exposureTime}s`;
+    } else {
+      shutter = `1/${Math.round(1 / rawExif.exposureTime)}`;
+    }
+  }
+
+  let time = null;
+  if (rawExif.hourOfDay != null) {
+    const h = Math.floor(rawExif.hourOfDay);
+    const m = Math.round((rawExif.hourOfDay - h) * 60);
+    time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
+  return {
+    focalLength: fl,
+    iso: iso,
+    aperture: ap,
+    shutterSpeed: shutter,
+    time: time,
+    wb: rawExif.wb || null,
+  };
+}
+
+// ── Grid selection endpoints ──
+
+app.get('/api/grid-select', (req, res) => {
+  const dir = req.query.dir;
+  const count = parseInt(req.query.count, 10) || 9;
+
+  if (!dir || !path.isAbsolute(dir)) {
+    return res.status(400).json({ error: 'dir must be an absolute path' });
+  }
+  if (!fs.existsSync(dir)) {
+    return res.status(404).json({ error: 'Directory not found' });
+  }
+
+  let allFiles;
+  try {
+    allFiles = fs.readdirSync(dir).filter(f => {
+      return f.toUpperCase().endsWith('.RAF') && !f.startsWith('.') && !f.startsWith('._');
+    });
+  } catch (e) {
+    return res.status(500).json({ error: 'Cannot read directory' });
+  }
+
+  if (allFiles.length === 0) {
+    return res.json({ selected: [], totalAvailable: 0 });
+  }
+
+  const exifEntries = extractExifBatch(dir);
+  if (exifEntries.length === 0) {
+    const shuffled = allFiles.sort(() => Math.random() - 0.5).slice(0, count);
+    return res.json({
+      selected: shuffled.map(f => ({ file: f, focalLength: null, iso: null, aperture: null, shutterSpeed: null, time: null, wb: null })),
+      totalAvailable: allFiles.length,
+    });
+  }
+
+  const vectors = buildFeatureVectors(exifEntries);
+  const selectedIndices = farthestPointSampling(vectors, count, null, null);
+
+  const selected = selectedIndices.map(i => {
+    const v = vectors[i];
+    return { file: v.file, ...formatExifSummary(v.rawExif) };
+  });
+
+  res.json({ selected, totalAvailable: allFiles.length });
+});
+
+app.post('/api/grid-replace', (req, res) => {
+  const { dir, selected, replaceIndex, count } = req.body;
+  const targetCount = count || 9;
+
+  if (!dir || !path.isAbsolute(dir)) {
+    return res.status(400).json({ error: 'dir must be an absolute path' });
+  }
+  if (!fs.existsSync(dir)) {
+    return res.status(404).json({ error: 'Directory not found' });
+  }
+  if (!Array.isArray(selected) || typeof replaceIndex !== 'number') {
+    return res.status(400).json({ error: 'selected (array) and replaceIndex (number) required' });
+  }
+  if (replaceIndex < 0 || replaceIndex >= selected.length) {
+    return res.status(400).json({ error: 'replaceIndex out of bounds' });
+  }
+
+  const exifEntries = extractExifBatch(dir);
+  if (exifEntries.length === 0) {
+    return res.status(500).json({ error: 'No EXIF data extracted' });
+  }
+
+  const vectors = buildFeatureVectors(exifEntries);
+
+  const fileToIdx = {};
+  vectors.forEach((v, i) => { fileToIdx[v.file] = i; });
+
+  const fixedIndices = [];
+  const excludeIndices = [];
+  for (let i = 0; i < selected.length; i++) {
+    const idx = fileToIdx[selected[i]];
+    if (idx == null) continue;
+    if (i === replaceIndex) {
+      excludeIndices.push(idx);
+    } else {
+      fixedIndices.push(idx);
+    }
+  }
+
+  const selectedIndices = farthestPointSampling(vectors, targetCount, fixedIndices, excludeIndices);
+
+  const result = selectedIndices.map(i => {
+    const v = vectors[i];
+    return { file: v.file, ...formatExifSummary(v.rawExif) };
+  });
+
+  res.json({ selected: result, totalAvailable: vectors.length });
+});
+
+app.post('/api/grid-shuffle', (req, res) => {
+  const { dir, count } = req.body;
+  const targetCount = count || 9;
+
+  if (!dir || !path.isAbsolute(dir)) {
+    return res.status(400).json({ error: 'dir must be an absolute path' });
+  }
+  if (!fs.existsSync(dir)) {
+    return res.status(404).json({ error: 'Directory not found' });
+  }
+
+  const exifEntries = extractExifBatch(dir);
+  if (exifEntries.length === 0) {
+    let allFiles;
+    try {
+      allFiles = fs.readdirSync(dir).filter(f => f.toUpperCase().endsWith('.RAF') && !f.startsWith('.') && !f.startsWith('._'));
+    } catch (e) {
+      return res.status(500).json({ error: 'Cannot read directory' });
+    }
+    const shuffled = allFiles.sort(() => Math.random() - 0.5).slice(0, targetCount);
+    return res.json({
+      selected: shuffled.map(f => ({ file: f, focalLength: null, iso: null, aperture: null, shutterSpeed: null, time: null, wb: null })),
+      totalAvailable: allFiles.length,
+    });
+  }
+
+  const vectors = buildFeatureVectors(exifEntries);
+  const selectedIndices = farthestPointSampling(vectors, targetCount, null, null);
+
+  const result = selectedIndices.map(i => {
+    const v = vectors[i];
+    return { file: v.file, ...formatExifSummary(v.rawExif) };
+  });
+
+  res.json({ selected: result, totalAvailable: vectors.length });
+});
+
 // ── Startup: migrate old state.json → sessions (no auto-resume) ──
 
 (function migrateOldState() {

@@ -59,8 +59,6 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 ## Open bugs / unresolved feedback (verbatim from Oren)
 
-- **Rating mark overlaps metadata**: `#rating-mark` is positioned `bottom: 24px; right: 28px`. `#metadata` is `bottom: 16px`. When metadata is visible and a photo is rated, the rating icon sits on top of the metadata. Move rating mark higher (e.g. above metadata) or to a non-overlapping position. Both should be visible simultaneously.
-- **Progress counter "50/901" position**: `#counter` is in `#topbar-center`. Oren says it's in an odd spot — should be more to the right. Consider moving it to `#topbar-right` or adjusting layout.
 - **General UI/UX**: "much of the UI/UX needs to be more intuitive" — ongoing.
 - **Progress bar**: Increased to 5px with hover text. May still be too subtle.
 - **No logo**: Favicon is aperture SVG. No app logo yet.
@@ -68,6 +66,148 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 ## Distribution
 
 Distributed as a zip (`SnapSifter.zip` on Desktop). Contains launch.command for double-click start. macOS only (requires sips). Brother (Eytan) testing — needs `xattr -cr ~/Downloads/SnapSifter` after download to bypass Gatekeeper.
+
+## Recipe Editor — Film Simulation Workflow
+
+New mode in SnapSifter for dialing in Fujifilm film simulation recipes and batch-applying them to liked RAFs via X RAW Studio.
+
+### Camera
+- Model: X100VI
+- Serial: 5AA21758
+- FP1 device string: `X100VI`, version: `X100VI_0100` (verify from existing FP1 or X RAW Studio)
+
+### Architecture
+
+**SnapSifter owns**: recipe editing UI, recipe storage, FP1 export, diverse grid selection, grid display with before/after toggle, recipe card view, swap/shuffle grid photos.
+
+**X RAW Studio owns**: actual RAF→HIF rendering via camera hardware. Manual step — user connects camera via USB, loads FP1, processes files.
+
+### Recipe data model (`recipes.json` in photo directory)
+
+```json
+{
+  "recipes": {
+    "recipe-id-uuid": {
+      "id": "uuid",
+      "title": "Warm Street",
+      "created": "2026-05-01T...",
+      "modified": "2026-05-01T...",
+      "params": {
+        "filmSimulation": "ClassicNeg",
+        "grainEffect": "Strong",
+        "grainSize": "Small",
+        "colorChromeEffect": "Weak",
+        "colorChromeFXBlue": "Off",
+        "whiteBalance": "Auto",
+        "wbShiftR": 3,
+        "wbShiftB": -2,
+        "dynamicRange": 200,
+        "highlightTone": -1,
+        "shadowTone": 2,
+        "color": 1,
+        "sharpness": -2,
+        "noiseReduction": -4,
+        "clarity": 0
+      }
+    }
+  },
+  "activeRecipe": "recipe-id-uuid"
+}
+```
+
+### X100VI recipe parameters (complete)
+
+| Parameter | Key | Values |
+|-----------|-----|--------|
+| Film Simulation | filmSimulation | Provia, Velvia, Astia, Classic, ClassicNeg, Nostalgic, RealaACE, ProNegStd, ProNegHi, Eterna, BleachBypass, Acros, AcrosYe, AcrosR, AcrosG, Mono, MonoYe, MonoR, MonoG, Sepia |
+| Grain Effect | grainEffect | Off, Weak, Strong |
+| Grain Size | grainSize | Small, Large |
+| Color Chrome Effect | colorChromeEffect | Off, Weak, Strong |
+| Color Chrome FX Blue | colorChromeFXBlue | Off, Weak, Strong |
+| White Balance | whiteBalance | Auto, AutoWhite, AutoAmbiance, Daylight, Shade, Fluorescent1, Fluorescent2, Fluorescent3, Incandescent, Underwater, ColorTemp, Custom1, Custom2, Custom3 |
+| WB Shift R | wbShiftR | -9 to +9 |
+| WB Shift B | wbShiftB | -9 to +9 |
+| Color Temperature | colorTemperature | 2500-10000 (when whiteBalance=ColorTemp) |
+| Dynamic Range | dynamicRange | 100, 200, 400 |
+| Highlight Tone | highlightTone | -2 to +4 |
+| Shadow Tone | shadowTone | -2 to +4 |
+| Color | color | -4 to +4 |
+| Sharpness | sharpness | -4 to +4 |
+| Noise Reduction | noiseReduction | -4 to +4 |
+| Clarity | clarity | -5 to +5 |
+
+### FP1 generation
+
+XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifilm.denji/X RAW STUDIO/X100VI/X100VI_0100/`. X RAW Studio must be quit and reopened to pick up new/changed FP1 files.
+
+**FP1 format constraints (hard-won):**
+- Filename MUST use `.FP1` (uppercase extension). Lowercase `.fp1` is silently ignored.
+- Label attribute MUST NOT contain dashes (`-`). Dashes cause silent rejection. Use alphanumeric + spaces only.
+- `version` on ConversionProfile: `1.12.0.0` (matches X RAW Studio V1.31)
+- `SerialNumber`: `5935373131322503252913201629C3` (full hex from camera)
+- `TetherRAWConditonCode`: `X100VI_0100` (not empty)
+- `IOPCode`: `FF179503` (X100VI-specific)
+- Required structural elements: `SourceFileName/`, `Fileerror`, `RotationAngle`, `StructVer` (65536), `ShootingCondition`, `FileType`, `ImageSize`, `ImageQuality`, `WBShootCond`, `HDR/`, `DigitalTeleConv`, `PortraitEnhancer/`
+- Film simulation names differ from display names: ClassicNeg→ClassicNEGA, Nostalgic→NostalgicNEGA, ProNegStd→NEGAStd, ProNegHi→NEGAhi, Mono→BW
+- `ExposureBias`: `0` for zero (not `P0P0`)
+- `WideDRange`: `0` (not `OFF`)
+- X RAW Studio cannot browse ExFAT volumes — needs Full Disk Access + Removable Volumes permission in System Settings
+
+### Diverse grid selection algorithm
+
+1. Extract EXIF from all RAFs in Liked/RAF/ (focal length, ISO, time of day, WB)
+2. Generate JPEG thumbs via sips for image analysis
+3. Compute feature vector per image via Sharp .stats() (R/G/B mean, stdev, entropy)
+4. Farthest-point sampling: pick first randomly, then greedily maximize minimum distance to selected set
+5. Default grid size: 9 photos (3x3)
+
+### API endpoints (new)
+
+- `GET /api/recipes` — list saved recipes
+- `POST /api/recipe` `{title, params}` — create recipe draft
+- `PUT /api/recipe/:id` `{title?, params?}` — update recipe
+- `DELETE /api/recipe/:id` — delete recipe
+- `POST /api/recipe/:id/fp1` — generate and save FP1 file for X RAW Studio
+- `GET /api/grid-select?dir=...&count=9` — select diverse photos, return file list + feature data
+- `POST /api/grid-replace` `{current[], replace: index}` — swap one grid photo for next best diverse pick
+- `POST /api/grid-shuffle` `{count: 9}` — fully re-randomize grid selection
+
+### UI screens
+
+**Recipe Editor** (new screen, accessible from viewer or folder picker):
+- Left: recipe parameter controls (dropdowns + sliders matching Fuji menu structure)
+- Right: photo grid (3x3 default) with before/after toggle
+- Top: recipe title (editable), save/load/export buttons
+- Grid photos individually swappable (click X → replaced with next diverse pick) or shuffle all
+- Toggle button: "RAW" vs recipe title — cycles grid between unedited renders and processed versions
+
+### Implementation phases
+
+**Phase 1 — Foundation (COMPLETE)**
+- A: Recipe data model + CRUD endpoints in server.js — DONE
+- B: Diverse grid selection algorithm + endpoint (EXIF-based farthest-point sampling) — DONE
+- C: FP1 XML generation module — DONE, validated end-to-end with X RAW Studio + X100VI
+
+**Phase 2 — UI (after Phase 1)**
+- D: Recipe editor UI (parameter controls, save/load)
+- E: Grid display UI (responsive grid, swap/shuffle)
+
+**Phase 3 — Comparison + Polish**
+- F: Before/after toggle (detect processed files in preview folder, show side by side in grid)
+- G: Recipe card view (printable/copyable format)
+- H: Batch workflow guidance (instructions for X RAW Studio step, status tracking)
+
+### Workflow (user perspective)
+
+1. Sort photos in SnapSifter (existing feature) → Liked/RAF/ has the keepers
+2. Open Recipe Editor → grid auto-populates with diverse picks from Liked/RAF/
+3. Dial in recipe params → save draft with a title
+4. Export FP1 → file appears in X RAW Studio's profile directory
+5. Connect X100VI via USB → open X RAW Studio → select grid RAFs → apply profile → convert to HIF → output to a preview folder
+6. Back in SnapSifter → toggle grid to show processed versions → evaluate
+7. Tweak recipe → repeat 4-6 until satisfied
+8. Batch-apply: in X RAW Studio, select all Liked/RAF/ files → convert → output HIF to Liked/HIF/ (overwrites)
+9. RAFs in Liked/RAF/ are never modified
 
 ## Anti-patterns discovered
 
