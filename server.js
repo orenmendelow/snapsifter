@@ -36,6 +36,30 @@ let ratingsFile = null;
 let files = [];
 let ratings = {};
 
+// Recipe Lab directory state (independent from Photo Cull)
+let recipeDir = null;
+const recipeSessionFile = path.join(stateDir, 'recipe-session.json');
+
+function loadRecipeSession() {
+  try {
+    if (fs.existsSync(recipeSessionFile)) {
+      const data = JSON.parse(fs.readFileSync(recipeSessionFile, 'utf8'));
+      if (data.dir && fs.existsSync(data.dir)) {
+        recipeDir = data.dir;
+        console.log('Restored recipe dir:', recipeDir);
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load recipe session:', e.message);
+  }
+}
+
+function saveRecipeSession() {
+  fs.writeFileSync(recipeSessionFile, JSON.stringify({ dir: recipeDir, lastOpened: new Date().toISOString() }, null, 2));
+}
+
+loadRecipeSession();
+
 // ── Sessions persistence ──
 
 function loadSessions() {
@@ -205,6 +229,13 @@ function saveRatings() {
 function requireActiveDir(req, res, next) {
   if (!activeDir) {
     return res.status(400).json({ error: 'No directory loaded. POST /api/load first.' });
+  }
+  next();
+}
+
+function requireRecipeDir(req, res, next) {
+  if (!recipeDir) {
+    return res.status(400).json({ error: 'No recipe directory loaded. POST /api/recipe-load first.' });
   }
   next();
 }
@@ -472,18 +503,59 @@ app.get('/api/preview-thumb/:dir/{*filepath}', (req, res) => {
 
   // Use a hash of the full path to avoid collisions
   const pathHash = crypto.createHash('md5').update(srcPath).digest('hex').slice(0, 12);
-  const cacheName = pathHash + '_preview.jpg';
+  const cacheName = pathHash + '_preview800.jpg';
   const cachePath = path.join(previewCacheDir, cacheName);
 
   try {
     if (!fs.existsSync(cachePath)) {
-      generateThumb(srcPath, cachePath, 300);
+      generateThumb(srcPath, cachePath, 800);
     }
     res.type('image/jpeg');
     res.send(fs.readFileSync(cachePath));
   } catch (err) {
     console.error(`Error creating preview thumbnail for ${filename}:`, err.message);
     res.status(500).send('Thumbnail creation failed');
+  }
+});
+
+// Full-size preview image for folder browser (dir is base64-encoded)
+app.get('/api/preview-image/:dir/{*filepath}', (req, res) => {
+  const dirDecoded = Buffer.from(req.params.dir, 'base64').toString('utf8');
+  const filepath = req.params.filepath;
+  const filename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
+
+  const srcPath = path.join(dirDecoded, filename);
+  if (!fs.existsSync(srcPath)) {
+    return res.status(404).send('File not found');
+  }
+
+  // JPG/JPEG — serve directly
+  const upper = srcPath.toUpperCase();
+  if (upper.endsWith('.JPG') || upper.endsWith('.JPEG')) {
+    try {
+      res.type('image/jpeg');
+      res.send(fs.readFileSync(srcPath));
+    } catch (err) {
+      res.status(500).send('Read failed');
+    }
+    return;
+  }
+
+  fs.mkdirSync(previewCacheDir, { recursive: true });
+
+  const pathHash = crypto.createHash('md5').update(srcPath).digest('hex').slice(0, 12);
+  const cacheName = pathHash + '_full.jpg';
+  const cachePath = path.join(previewCacheDir, cacheName);
+
+  try {
+    if (!fs.existsSync(cachePath)) {
+      generateThumb(srcPath, cachePath, 2000);
+    }
+    res.type('image/jpeg');
+    res.send(fs.readFileSync(cachePath));
+  } catch (err) {
+    console.error('Error creating full preview for ' + filename + ':', err.message);
+    res.status(500).send('Conversion failed');
   }
 });
 
@@ -815,10 +887,25 @@ app.post('/api/unsort', requireActiveDir, (req, res) => {
   res.json({ ok: true, restored });
 });
 
+// ── Recipe Lab directory endpoints ──
+
+app.post('/api/recipe-load', (req, res) => {
+  const { dir } = req.body;
+  if (!dir) return res.status(400).json({ error: 'dir is required' });
+  if (!fs.existsSync(dir)) return res.status(400).json({ error: 'Directory does not exist' });
+  recipeDir = dir;
+  saveRecipeSession();
+  res.json({ ok: true, dir: recipeDir });
+});
+
+app.get('/api/recipe-status', (req, res) => {
+  res.json({ loaded: !!recipeDir, dir: recipeDir });
+});
+
 // ── Recipe CRUD endpoints ──
 
 function recipesFilePath() {
-  return path.join(activeDir, 'recipes.json');
+  return path.join(recipeDir, 'recipes.json');
 }
 
 function loadRecipes() {
@@ -837,11 +924,11 @@ function saveRecipes(data) {
   fs.writeFileSync(recipesFilePath(), JSON.stringify(data, null, 2));
 }
 
-app.get('/api/recipes', requireActiveDir, (req, res) => {
+app.get('/api/recipes', requireRecipeDir, (req, res) => {
   res.json(loadRecipes());
 });
 
-app.post('/api/recipe', requireActiveDir, (req, res) => {
+app.post('/api/recipe', requireRecipeDir, (req, res) => {
   const { title, params } = req.body;
   const data = loadRecipes();
   const id = crypto.randomUUID();
@@ -852,7 +939,7 @@ app.post('/api/recipe', requireActiveDir, (req, res) => {
   res.json(recipe);
 });
 
-app.put('/api/recipe/:id', requireActiveDir, (req, res) => {
+app.put('/api/recipe/:id', requireRecipeDir, (req, res) => {
   const { id } = req.params;
   const data = loadRecipes();
   if (!data.recipes[id]) {
@@ -866,7 +953,7 @@ app.put('/api/recipe/:id', requireActiveDir, (req, res) => {
   res.json(recipe);
 });
 
-app.delete('/api/recipe/:id', requireActiveDir, (req, res) => {
+app.delete('/api/recipe/:id', requireRecipeDir, (req, res) => {
   const { id } = req.params;
   const data = loadRecipes();
   if (!data.recipes[id]) {
@@ -880,7 +967,7 @@ app.delete('/api/recipe/:id', requireActiveDir, (req, res) => {
   res.json({ ok: true });
 });
 
-app.put('/api/recipes/active', requireActiveDir, (req, res) => {
+app.put('/api/recipes/active', requireRecipeDir, (req, res) => {
   const { id } = req.body;
   const data = loadRecipes();
   if (id !== null && !data.recipes[id]) {
@@ -974,7 +1061,7 @@ function generateFP1XML(recipe) {
 </ConversionProfile>`;
 }
 
-app.post('/api/recipe/:id/fp1', requireActiveDir, (req, res) => {
+app.post('/api/recipe/:id/fp1', requireRecipeDir, (req, res) => {
   const { id } = req.params;
   const data = loadRecipes();
   const recipe = data.recipes[id];
@@ -1225,6 +1312,19 @@ function formatExifSummary(rawExif) {
 }
 
 // ── Grid selection endpoints ──
+
+app.get('/api/raf-count', (req, res) => {
+  const dir = req.query.dir;
+  if (!dir) return res.status(400).json({ error: 'dir param required' });
+  if (!fs.existsSync(dir)) return res.json({ count: 0, dir });
+  try {
+    const entries = fs.readdirSync(dir);
+    const rafCount = entries.filter(f => f.toUpperCase().endsWith('.RAF')).length;
+    res.json({ count: rafCount, dir });
+  } catch (e) {
+    res.json({ count: 0, dir });
+  }
+});
 
 app.get('/api/grid-select', (req, res) => {
   const dir = req.query.dir;

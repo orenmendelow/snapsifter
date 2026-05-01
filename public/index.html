@@ -204,12 +204,12 @@ body::before {
 #recipe-main {
   flex: 1;
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 420px 1fr;
   min-height: 0;
   overflow: hidden;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   #recipe-main {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr 360px;
@@ -408,10 +408,11 @@ body::before {
 #recipe-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
   min-height: 0;
+  overflow-y: auto;
+  align-content: start;
 }
 
 .recipe-grid-cell {
@@ -419,12 +420,13 @@ body::before {
   overflow: hidden;
   background: #0a0a0a;
   border-radius: 2px;
+  aspect-ratio: auto;
 }
 
 .recipe-grid-cell img {
   width: 100%;
-  height: 100%;
-  object-fit: contain;
+  height: auto;
+  display: block;
   background: #0a0a0a;
 }
 
@@ -443,18 +445,17 @@ body::before {
 
 .recipe-grid-cell .cell-swap {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
+  top: 6px;
+  right: 6px;
+  font-size: 9px;
+  font-family: var(--mono);
+  letter-spacing: 1px;
   color: var(--text-dim);
   cursor: pointer;
-  opacity: 0.4;
+  opacity: 0;
   transition: opacity 0.15s, color 0.15s;
+  padding: 3px 6px;
+  background: rgba(0,0,0,0.6);
 }
 .recipe-grid-cell:hover .cell-swap { opacity: 1; }
 .recipe-grid-cell .cell-swap:hover { color: var(--amber); }
@@ -466,6 +467,79 @@ body::before {
   0%, 100% { background: #0a0a0a; }
   50% { background: #141414; }
 }
+#recipe-grid.stale {
+  opacity: 0.35;
+  filter: grayscale(0.6);
+  pointer-events: none;
+  transition: opacity 0.3s, filter 0.3s;
+}
+#recipe-grid.stale .cell-swap { display: none; }
+
+/* ── Recipe browser panels (inside #browser-section) ── */
+#recipe-tree-panel {
+  overflow-y: auto;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  padding: 12px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--amber-faint) transparent;
+}
+#recipe-tree-panel::-webkit-scrollbar { width: 4px; }
+#recipe-tree-panel::-webkit-scrollbar-track { background: transparent; }
+#recipe-tree-panel::-webkit-scrollbar-thumb { background: var(--amber-faint); }
+#recipe-right-panel {
+  overflow-y: auto;
+  padding: 24px 40px 40px;
+}
+#recipe-browser-empty {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+#recipe-folder-info {
+  display: none;
+}
+#recipe-folder-info.visible {
+  display: block;
+}
+#recipe-folder-name {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--amber);
+  margin-bottom: 4px;
+}
+#recipe-folder-detail {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+#recipe-load-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 10px 28px;
+  background: transparent;
+  color: var(--amber);
+  border: 1px solid var(--amber-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 16px;
+}
+#recipe-load-btn:hover {
+  border-color: var(--amber);
+  color: var(--text);
+}
+#recipe-dir-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  cursor: pointer;
+  margin-left: 12px;
+  transition: color 0.1s ease;
+  letter-spacing: 0.5px;
+}
+#recipe-dir-label:hover { color: var(--amber); }
 
 #recipe-lightbox {
   display: none;
@@ -1476,6 +1550,24 @@ body::before {
         <button id="load-btn">Develop</button>
       </div>
     </div>
+    <div id="recipe-tree-panel" style="display:none">
+      <div class="tree-section-label">Recent</div>
+      <div id="recipe-sessions-list"></div>
+      <div class="tree-divider"></div>
+      <div class="tree-section-label">Volumes</div>
+      <div id="recipe-tree-volumes"></div>
+      <div class="tree-divider"></div>
+      <div class="tree-section-label">Home</div>
+      <div id="recipe-tree-home"></div>
+    </div>
+    <div id="recipe-right-panel" style="display:none">
+      <div id="recipe-browser-empty">Browse folders on the left to find a photo directory</div>
+      <div id="recipe-folder-info">
+        <div id="recipe-folder-name"></div>
+        <div id="recipe-folder-detail"></div>
+        <button id="recipe-load-btn">Load</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1573,6 +1665,7 @@ body::before {
 <div id="recipe-editor">
   <div id="recipe-topbar">
     <span id="recipe-back-btn">&#8592;</span>
+    <span id="recipe-dir-label"></span>
     <span id="recipe-title-display">Untitled Recipe</span>
     <input id="recipe-title-input" type="text" spellcheck="false">
     <div id="recipe-picker-wrap">
@@ -1647,6 +1740,7 @@ body::before {
   let metaCache = {};
   let helpVisible = false;
   let loadedDir = '';
+  let activeToolTab = 'cull';
   let sessionId = null;
 
   // Zoom state
@@ -1884,6 +1978,15 @@ body::before {
     var tr = document.getElementById('tool-recipe');
     if (tc) tc.classList.add('active');
     if (tr) tr.classList.remove('active');
+    activeToolTab = 'cull';
+    var rtp = document.getElementById('recipe-tree-panel');
+    var rrp = document.getElementById('recipe-right-panel');
+    if (rtp) rtp.style.display = 'none';
+    if (rrp) rrp.style.display = 'none';
+    var tp = document.getElementById('tree-panel');
+    var rp = document.getElementById('right-panel');
+    if (tp) tp.style.display = '';
+    if (rp) rp.style.display = '';
     selectedPath = '';
     selectedPhotoCount = 0;
     selectedPhotoFiles = [];
@@ -3123,6 +3226,16 @@ body::before {
   const recipeDeleteConfirm = document.getElementById('recipe-delete-confirm');
   const recipeDeleteYes = document.getElementById('recipe-delete-yes');
   const recipeDeleteNo = document.getElementById('recipe-delete-no');
+  const recipeTreeVolumes = document.getElementById('recipe-tree-volumes');
+  const recipeTreeHome = document.getElementById('recipe-tree-home');
+  const recipeBrowserEmpty = document.getElementById('recipe-browser-empty');
+  const recipeFolderInfo = document.getElementById('recipe-folder-info');
+  const recipeFolderName = document.getElementById('recipe-folder-name');
+  const recipeFolderDetail = document.getElementById('recipe-folder-detail');
+  const recipeLoadBtn = document.getElementById('recipe-load-btn');
+  const recipeDirLabel = document.getElementById('recipe-dir-label');
+  const recipeTopbar = document.getElementById('recipe-topbar');
+  const recipeMain = document.getElementById('recipe-main');
 
   let recipeState = {
     recipes: {},
@@ -3135,6 +3248,10 @@ body::before {
     dirty: false,
     autoSaveTimer: null
   };
+
+  let recipeTreeState = {};
+  let recipeSelectedPath = '';
+  let recipeLoadedDir = null;
 
   const RECIPE_DEFAULTS = {
     filmSimulation: 'Provia',
@@ -3182,12 +3299,20 @@ body::before {
     ]},
   ];
 
-  function showRecipeEditor() {
+  async function showRecipeEditor() {
     screen = 'recipe';
     landing.classList.add('hidden');
     landing.style.display = 'none';
     appEl.style.display = 'none';
     recipeEditor.style.display = 'flex';
+    recipeTopbar.style.display = 'flex';
+    recipeMain.style.display = 'flex';
+    // Set dir label
+    if (recipeLoadedDir) {
+      const dirName = recipeLoadedDir.split('/').filter(Boolean).pop();
+      recipeDirLabel.textContent = dirName;
+      recipeDirLabel.title = recipeLoadedDir;
+    }
     loadRecipes();
     loadRecipeGrid();
   }
@@ -3227,6 +3352,7 @@ body::before {
     recipeTitleDisplay.textContent = recipeState.currentTitle;
     recipeSaveBtn.classList.add('hidden');
     renderParams();
+    recipeGridEl.classList.remove('stale');
   }
 
   function createNewRecipeLocal() {
@@ -3237,6 +3363,7 @@ body::before {
     recipeTitleDisplay.textContent = recipeState.currentTitle;
     recipeSaveBtn.classList.remove('hidden');
     renderParams();
+    recipeGridEl.classList.remove('stale');
   }
 
   async function saveRecipe() {
@@ -3260,6 +3387,7 @@ body::before {
   function markDirty() {
     recipeState.dirty = true;
     recipeSaveBtn.classList.remove('hidden');
+    recipeGridEl.classList.add('stale');
     if (recipeState.autoSaveTimer) clearTimeout(recipeState.autoSaveTimer);
     recipeState.autoSaveTimer = setTimeout(() => { saveRecipe(); }, 2000);
   }
@@ -3468,14 +3596,14 @@ body::before {
   // ── Grid ──
 
   async function loadRecipeGrid() {
-    if (!loadedDir) {
+    if (!recipeLoadedDir) {
       try {
-        const st = await fetch('/api/status').then(r => r.json());
-        if (st.dir) loadedDir = st.dir;
+        const st = await fetch('/api/recipe-status').then(r => r.json());
+        if (st.loaded && st.dir) recipeLoadedDir = st.dir;
       } catch(e) {}
     }
-    if (!loadedDir) { recipeGridCount.textContent = 'No directory loaded'; return; }
-    recipeState.gridDir = loadedDir + '/Liked/RAF/';
+    if (!recipeLoadedDir) { recipeGridCount.textContent = 'No directory loaded'; return; }
+    recipeState.gridDir = recipeLoadedDir + '/Liked/RAF/';
 
     // Show loading state
     recipeGridEl.innerHTML = '';
@@ -3490,6 +3618,7 @@ body::before {
       recipeState.gridPhotos = res.selected || [];
       recipeGridCount.textContent = res.totalAvailable + ' available';
       renderGrid();
+      recipeGridEl.classList.remove('stale');
     } catch(e) {
       recipeGridEl.innerHTML = '';
       recipeGridCount.textContent = 'No RAF files found';
@@ -3500,7 +3629,8 @@ body::before {
   const recipeLightboxImg = document.getElementById('recipe-lightbox-img');
 
   function openRecipeLightbox(file) {
-    recipeLightboxImg.src = '/api/image/' + encodeURIComponent('Liked/RAF/' + file);
+    const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
+    recipeLightboxImg.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(file);
     recipeLightbox.classList.add('visible');
   }
   recipeLightbox.addEventListener('click', () => {
@@ -3510,12 +3640,13 @@ body::before {
 
   function renderGrid() {
     recipeGridEl.innerHTML = '';
+    const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
     recipeState.gridPhotos.forEach((photo, idx) => {
       const cell = document.createElement('div');
       cell.className = 'recipe-grid-cell';
 
       const img = document.createElement('img');
-      img.src = '/api/thumb/' + encodeURIComponent('Liked/RAF/' + photo.file);
+      img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(photo.file);
       img.alt = photo.file;
       img.loading = 'lazy';
       cell.appendChild(img);
@@ -3531,7 +3662,7 @@ body::before {
 
       const swapBtn = document.createElement('div');
       swapBtn.className = 'cell-swap';
-      swapBtn.textContent = '↻';
+      swapBtn.textContent = 'SWAP';
       swapBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         replaceGridCell(idx);
@@ -3635,6 +3766,248 @@ body::before {
   recipeTitleInput.addEventListener('blur', commitTitle);
   recipeTitleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') recipeTitleInput.blur(); });
 
+  // ── Recipe tree (folder picker) ──
+
+  async function initRecipeTree() {
+    // Load recent cull sessions as quick-access entries
+    const recipeSessionsList = document.getElementById('recipe-sessions-list');
+    recipeSessionsList.innerHTML = '';
+    try {
+      const sessions = await fetch('/api/sessions').then(r => r.json());
+      if (sessions && sessions.length > 0) {
+        for (const s of sessions) {
+          if (s.accessible === false) continue;
+          const row = document.createElement('div');
+          row.className = 'session-row';
+          const name = document.createElement('div');
+          name.className = 'session-name';
+          name.textContent = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+          row.appendChild(name);
+          const detail = document.createElement('div');
+          detail.className = 'session-detail';
+          detail.textContent = (s.ratedCount || 0) + ' of ' + (s.fileCount || 0) + ' rated';
+          row.appendChild(detail);
+          row.addEventListener('click', () => {
+            selectRecipeNode(s.dir);
+          });
+          recipeSessionsList.appendChild(row);
+        }
+      }
+    } catch (e) {}
+
+    try {
+      const volumes = await fetch('/api/volumes').then(r => r.json());
+      recipeTreeVolumes.innerHTML = '';
+      for (const v of volumes) {
+        renderRecipeTreeRoot(recipeTreeVolumes, v.name, v.path, 1);
+      }
+    } catch (e) {}
+
+    recipeTreeHome.innerHTML = '';
+    const homeDir = '/Users/' + (await getHomeUser());
+    renderRecipeTreeRoot(recipeTreeHome, homeDir.split('/').pop(), homeDir, 1);
+  }
+
+  function renderRecipeTreeRoot(container, name, treePath, depth) {
+    const node = document.createElement('div');
+    const row = document.createElement('div');
+    row.className = 'tree-node-row';
+    row.dataset.path = treePath;
+    row.style.paddingLeft = (depth * 16) + 'px';
+
+    const chevron = document.createElement('span');
+    chevron.className = 'tree-chevron';
+    chevron.textContent = '▶';
+    row.appendChild(chevron);
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'tree-node-name';
+    nameEl.textContent = name;
+    row.appendChild(nameEl);
+
+    const childrenEl = document.createElement('div');
+    childrenEl.className = 'tree-children';
+
+    chevron.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleRecipeNode(treePath, chevron, childrenEl, depth + 1);
+    });
+
+    row.addEventListener('click', () => {
+      selectRecipeNode(treePath);
+      if (!recipeTreeState[treePath] || !recipeTreeState[treePath].expanded) {
+        toggleRecipeNode(treePath, chevron, childrenEl, depth + 1);
+      }
+    });
+
+    node.appendChild(row);
+    node.appendChild(childrenEl);
+    container.appendChild(node);
+  }
+
+  async function toggleRecipeNode(treePath, chevron, childrenEl, childDepth) {
+    if (!recipeTreeState[treePath]) {
+      recipeTreeState[treePath] = { expanded: false, children: null, loaded: false };
+    }
+    const state = recipeTreeState[treePath];
+
+    if (state.expanded) {
+      state.expanded = false;
+      chevron.classList.remove('expanded');
+      childrenEl.classList.remove('expanded');
+      return;
+    }
+
+    if (!state.loaded) {
+      try {
+        const data = await fetch('/api/browse?dir=' + encodeURIComponent(treePath)).then(r => r.json());
+        if (data.error) return;
+        state.children = data.folders || [];
+        state.loaded = true;
+      } catch (e) {
+        return;
+      }
+    }
+
+    childrenEl.innerHTML = '';
+    if (state.children.length === 0) {
+      chevron.classList.add('empty');
+      return;
+    }
+
+    for (const folder of state.children) {
+      renderRecipeTreeChild(childrenEl, folder, childDepth);
+    }
+
+    state.expanded = true;
+    chevron.classList.add('expanded');
+    childrenEl.classList.add('expanded');
+  }
+
+  function renderRecipeTreeChild(container, folder, depth) {
+    if (depth > 8) return;
+
+    const node = document.createElement('div');
+    const row = document.createElement('div');
+    row.className = 'tree-node-row';
+    row.dataset.path = folder.path;
+    row.style.paddingLeft = (depth * 16) + 'px';
+
+    if (folder.path === recipeSelectedPath) {
+      row.classList.add('selected');
+    }
+
+    const chevron = document.createElement('span');
+    chevron.className = 'tree-chevron';
+    chevron.textContent = '▶';
+    row.appendChild(chevron);
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'tree-node-name';
+    nameEl.textContent = folder.name;
+    row.appendChild(nameEl);
+
+    if (folder.photoCount > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'tree-node-badge';
+      badge.textContent = folder.photoCount;
+      row.appendChild(badge);
+    }
+
+    const childrenEl = document.createElement('div');
+    childrenEl.className = 'tree-children';
+
+    chevron.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleRecipeNode(folder.path, chevron, childrenEl, depth + 1);
+    });
+
+    row.addEventListener('click', () => {
+      selectRecipeNode(folder.path);
+    });
+
+    node.appendChild(row);
+    node.appendChild(childrenEl);
+    container.appendChild(node);
+  }
+
+  async function selectRecipeNode(nodePath) {
+    // Update selected highlight
+    document.getElementById('recipe-tree-panel').querySelectorAll('.tree-node-row.selected').forEach(el => el.classList.remove('selected'));
+    const target = document.getElementById('recipe-tree-panel').querySelector('.tree-node-row[data-path="' + CSS.escape(nodePath) + '"]');
+    if (target) target.classList.add('selected');
+
+    // Determine base dir and RAF dir from the selected path
+    // User might click: the parent dir, Liked, Liked/RAF, or even deeper
+    const normalized = nodePath.replace(/\/+$/, '');
+    const parts = normalized.split('/');
+    let baseDir = null;
+    let rafDir = null;
+
+    if (parts.length >= 2 && parts[parts.length - 1] === 'RAF' && parts[parts.length - 2] === 'Liked') {
+      // Clicked on Liked/RAF itself
+      rafDir = normalized;
+      baseDir = parts.slice(0, -2).join('/');
+    } else if (parts[parts.length - 1] === 'Liked') {
+      // Clicked on Liked — check for RAF subfolder
+      rafDir = normalized + '/RAF';
+      baseDir = parts.slice(0, -1).join('/');
+    } else {
+      // Check if this dir has Liked/RAF underneath
+      rafDir = normalized + '/Liked/RAF';
+      baseDir = normalized;
+    }
+
+    try {
+      const rafData = await fetch('/api/raf-count?dir=' + encodeURIComponent(rafDir)).then(r => r.json());
+      if (rafData.count > 0) {
+        recipeSelectedPath = baseDir;
+        recipeBrowserEmpty.style.display = 'none';
+        recipeFolderInfo.classList.add('visible');
+        const folderName = baseDir.split('/').filter(Boolean).pop();
+        recipeFolderName.textContent = folderName;
+        recipeFolderDetail.textContent = rafData.count + ' RAF files in Liked/RAF/';
+        recipeLoadBtn.textContent = 'Load';
+        recipeLoadBtn.style.display = '';
+      } else {
+        recipeSelectedPath = nodePath;
+        recipeBrowserEmpty.style.display = 'none';
+        recipeFolderInfo.classList.add('visible');
+        const folderName = nodePath.split('/').filter(Boolean).pop();
+        recipeFolderName.textContent = folderName;
+        recipeFolderDetail.textContent = 'No Liked/RAF/ folder found here';
+        recipeLoadBtn.style.display = 'none';
+      }
+    } catch (e) {
+      recipeSelectedPath = nodePath;
+      recipeBrowserEmpty.style.display = '';
+      recipeFolderInfo.classList.remove('visible');
+    }
+  }
+
+  recipeLoadBtn.addEventListener('click', async () => {
+    if (!recipeSelectedPath) return;
+    try {
+      const res = await fetch('/api/recipe-load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dir: recipeSelectedPath })
+      }).then(r => r.json());
+      if (res.ok) {
+        recipeLoadedDir = recipeSelectedPath;
+        showRecipeEditor();
+      }
+    } catch (e) {}
+  });
+
+  recipeDirLabel.addEventListener('click', () => {
+    showLanding();
+    // Re-activate Recipe Lab tab
+    setTimeout(() => {
+      toolRecipeBtn.click();
+    }, 0);
+  });
+
   // ── Event bindings ──
 
   recipeBackBtn.addEventListener('click', showLanding);
@@ -3647,14 +4020,56 @@ body::before {
 
   const toolCullBtn = document.getElementById('tool-cull');
   const toolRecipeBtn = document.getElementById('tool-recipe');
-
   toolCullBtn.addEventListener('click', () => {
+    if (activeToolTab === 'cull') return;
+    activeToolTab = 'cull';
     toolCullBtn.classList.add('active');
     toolRecipeBtn.classList.remove('active');
+    // Show Photo Cull panels, hide Recipe Lab panels
+    document.getElementById('tree-panel').style.display = '';
+    document.getElementById('right-panel').style.display = '';
+    document.getElementById('recipe-tree-panel').style.display = 'none';
+    document.getElementById('recipe-right-panel').style.display = 'none';
   });
+
   toolRecipeBtn.addEventListener('click', () => {
-    showRecipeEditor();
+    if (activeToolTab === 'recipe') return;
+    activeToolTab = 'recipe';
+    toolRecipeBtn.classList.add('active');
+    toolCullBtn.classList.remove('active');
+    // Hide Photo Cull panels, show Recipe Lab panels
+    document.getElementById('tree-panel').style.display = 'none';
+    document.getElementById('right-panel').style.display = 'none';
+    document.getElementById('recipe-tree-panel').style.display = '';
+    document.getElementById('recipe-right-panel').style.display = '';
+    // Check if recipe dir already loaded — if so, show resume option
+    checkRecipeDirAndMaybeOpen();
+    // Init tree
+    initRecipeTree();
   });
+
+  async function checkRecipeDirAndMaybeOpen() {
+    try {
+      const status = await fetch('/api/recipe-status').then(r => r.json());
+      if (status.loaded && status.dir) {
+        recipeLoadedDir = status.dir;
+        recipeBrowserEmpty.style.display = 'none';
+        recipeFolderInfo.classList.add('visible');
+        const dirName = status.dir.split('/').filter(Boolean).pop();
+        recipeFolderName.textContent = dirName;
+        recipeSelectedPath = status.dir;
+        // Get RAF count for detail text
+        try {
+          const rafData = await fetch('/api/raf-count?dir=' + encodeURIComponent(status.dir + '/Liked/RAF')).then(r => r.json());
+          recipeFolderDetail.textContent = rafData.count > 0 ? rafData.count + ' RAF files' : 'Previously loaded';
+        } catch(e2) {
+          recipeFolderDetail.textContent = 'Previously loaded';
+        }
+        recipeLoadBtn.textContent = 'Resume';
+        recipeLoadBtn.style.display = '';
+      }
+    } catch(e) {}
+  }
 
 
   fetch('/api/status').then(r => r.json()).then(s => {

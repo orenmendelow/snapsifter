@@ -163,25 +163,38 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 
 ### API endpoints (new)
 
-- `GET /api/recipes` — list saved recipes
+- `POST /api/recipe-load` `{dir}` — set Recipe Lab's directory (independent from Photo Cull), persists to `~/.snapsifter/recipe-session.json`
+- `GET /api/recipe-status` — returns `{loaded, dir}` for Recipe Lab
+- `GET /api/recipes` — list saved recipes (requires `recipeDir`)
 - `POST /api/recipe` `{title, params}` — create recipe draft
 - `PUT /api/recipe/:id` `{title?, params?}` — update recipe
 - `DELETE /api/recipe/:id` — delete recipe
 - `POST /api/recipe/:id/fp1` — generate and save FP1 file for X RAW Studio
+- `GET /api/raf-count?dir=...` — count .RAF files in a directory (no middleware required)
 - `GET /api/grid-select?dir=...&count=9` — select diverse photos, return file list + feature data
 - `POST /api/grid-replace` `{current[], replace: index}` — swap one grid photo for next best diverse pick
 - `POST /api/grid-shuffle` `{count: 9}` — fully re-randomize grid selection
+- `GET /api/preview-thumb/:dir/{*filepath}` — 800px thumbnail (dir is base64-encoded), no middleware
+- `GET /api/preview-image/:dir/{*filepath}` — 2000px full-size (dir is base64-encoded), no middleware
 
 ### UI screens
 
 **Recipe Lab** (separate tool from Photo Cull — co-equal entry from landing):
-- Left: recipe parameter controls (custom dropdowns + sliders, amber fill-from-center)
-- Right: photo grid (3x3) with per-cell swap (↻) and shuffle all
-- Top: recipe title (click-to-edit), recipe picker dropdown, save/export FP1 buttons
-- Click grid photo to enlarge in lightbox overlay
-- Grid photos shown uncropped (object-fit: contain) with EXIF overlay (filename, focal length, ISO, aperture)
+- Left: recipe parameter controls (420px panel, custom dropdowns + sliders, amber fill-from-center)
+- Right: photo grid (auto-fill layout, responsive to mixed aspect ratios) with per-cell "SWAP" button and shuffle all
+- Top: recipe title (click-to-edit), recipe picker dropdown, save/export FP1 buttons, dir label (clickable to change folder)
+- Click grid photo to enlarge in lightbox overlay (2000px full-size via `/api/preview-image/`)
+- Grid photos shown uncropped with EXIF overlay (filename, focal length, ISO, aperture)
+- Grid greys out (opacity + desaturation) when recipe params change — signals photos are stale
 
-**Landing page architecture**: Two co-equal tools in header tabs: "Photo Cull" and "Recipe Lab". Photo Cull shows existing folder browser → viewer. Recipe Lab opens recipe editor screen. These are independent workflows.
+**Landing page architecture**: Two co-equal tools in header tabs: "Photo Cull" and "Recipe Lab". Both share the same `#browser-section` layout — tabs swap the tree/right panels. Photo Cull tab shows cull tree → viewer. Recipe Lab tab shows recipe tree (with Recent sessions from cull history) → recipe editor. These are independent workflows with independent server state (`activeDir` vs `recipeDir`).
+
+### Recipe Lab server state
+
+- `recipeDir` — independent from Photo Cull's `activeDir`, set via `POST /api/recipe-load`
+- Persisted to `~/.snapsifter/recipe-session.json`
+- Recipe CRUD endpoints use `requireRecipeDir` middleware (not `requireActiveDir`)
+- `recipes.json` stored in `recipeDir` (not `activeDir`)
 
 ### Implementation phases
 
@@ -190,37 +203,55 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - B: Diverse grid selection algorithm + endpoint (EXIF-based farthest-point sampling) — DONE
 - C: FP1 XML generation module — DONE, validated end-to-end with X RAW Studio + X100VI
 
-**Phase 2 — UI (IN PROGRESS — partially built, needs fixes)**
-- D: Recipe editor UI (parameter controls, save/load) — BUILT but needs polish
-- E: Grid display UI (responsive grid, swap/shuffle) — BUILT but needs directory picker
-- CRITICAL: Recipe Lab has NO directory picker. It blindly uses `loadedDir` from cull session. Needs its own folder browser or volume picker to select Liked/RAF/ path independently.
+**Phase 2 — UI (BUILT — needs architectural rethink per Oren feedback)**
+- D: Recipe editor UI (parameter controls, save/load) — BUILT, params panel needs to be wider
+- E: Grid display UI (responsive grid, swap/shuffle) — BUILT with independent dir picker
+- F: Recipe Lab has own folder browser on landing page with Recent sessions + tree
+- G: Grid uses `/api/preview-thumb/` (800px) for cells, `/api/preview-image/` (2000px) for lightbox
+- H: Stale grid indicator (grey out when params dirty) — BUILT
+
+**ARCHITECTURAL RETHINK NEEDED (from Oren feedback session 5):**
+- Grid must show **HEIF from Liked/HIF/** — NOT RAF thumbnails. HEIFs are fast (already camera-processed). RAFs are only for X RAW Studio processing.
+- Deduce current recipe settings from RAF EXIF metadata (film sim, WB, tone, etc.)
+- Recent sessions should load directly — no intermediate "Load" button
+- Left params panel still too narrow
+- Grid layout needs centering fix
+- Need split-view zoom comparison (synchronized pan/zoom across two recipe outputs)
+- Need session history to compare recipe iterations (maintain previous HEIF exports)
+- Need recipe library (browse/view saved recipes with example photos) — wishlist item
+- Full feedback documented in memory: `feedback_recipe_lab_v1.md`
 
 **Phase 3 — Comparison + Polish**
-- F: Before/after toggle (detect processed files in preview folder, show side by side in grid)
-- G: Recipe card view (printable/copyable format)
-- H: Batch workflow guidance (instructions for X RAW Studio step, status tracking)
+- F: Split-view zoom comparison (side-by-side synchronized zoom/pan for grain/bloom inspection across recipe outputs)
+- G: Recipe iteration history (maintain previous HEIF exports during session for back-and-forth comparison)
+- H: Recipe card view (printable/copyable format)
+- I: Recipe library (browse saved recipes with example photos)
+- J: Batch workflow guidance (instructions for X RAW Studio step, status tracking)
 
-### Workflow (user perspective)
+### Workflow (user perspective — revised)
 
-1. Sort photos in SnapSifter (existing feature) → Liked/RAF/ has the keepers
-2. Open Recipe Editor → grid auto-populates with diverse picks from Liked/RAF/
-3. Dial in recipe params → save draft with a title
-4. Export FP1 → file appears in X RAW Studio's profile directory
-5. Connect X100VI via USB → open X RAW Studio → select grid RAFs → apply profile → convert to HIF → output to a preview folder
-6. Back in SnapSifter → toggle grid to show processed versions → evaluate
-7. Tweak recipe → repeat 4-6 until satisfied
-8. Batch-apply: in X RAW Studio, select all Liked/RAF/ files → convert → output HIF to Liked/HIF/ (overwrites)
-9. RAFs in Liked/RAF/ are never modified
+1. Sort photos in SnapSifter (existing feature) → Liked/HIF/ and Liked/RAF/ have the keepers
+2. Open Recipe Lab → grid shows diverse picks from **Liked/HIF/** (fast loading)
+3. Recipe params auto-populated from RAF EXIF metadata (current camera settings)
+4. Tweak recipe params → grid fades (stale indicator) → offer to run simulation
+5. Export FP1 → file appears in X RAW Studio's profile directory
+6. Connect X100VI via USB → open X RAW Studio → select grid RAFs → apply profile → convert → output to preview folder
+7. Back in SnapSifter → compare new output vs previous iterations (split-view zoom)
+8. Repeat 4-7 until satisfied with recipe
+9. Batch-apply final recipe to all Liked/RAF/ files via X RAW Studio
+10. RAFs in Liked/RAF/ are never modified
 
 ## Anti-patterns discovered
 
 - **Zoom math with translate + transform-origin: 0 0**: Failed repeatedly. Flex centering offsets, maxWidth/maxHeight changes, and stale imgRect all cause position errors. The working approach is: keep image flex-centered, use `transform-origin` at the desired point + `scale()` only. No translate. Mouse pan = moving transform-origin.
 - **Server restart required**: After editing server.js, the server MUST be restarted (`kill port 4000, node server.js`). Forgetting this caused sort bugs that appeared unfixed.
 - **CSS display:none override**: Setting `el.style.display = ''` does NOT override a CSS rule of `display: none`. Must set to explicit value like `'inline-block'` or `'flex'`.
-- **Recipe Lab needs its own directory picker**: Cannot depend on cull session's `loadedDir`. Must have independent folder selection UI to locate Liked/RAF/ photos.
-- **The two tools are SEPARATE**: Photo Cull and Recipe Lab are independent workflows. No crossover buttons between them. Landing page is the hub where user chooses which tool to use.
+- **Recipe Lab needs its own directory picker**: Cannot depend on cull session's `loadedDir`. Must have independent folder selection UI. DONE — uses own `recipeDir` server state.
+- **The two tools are SEPARATE**: Photo Cull and Recipe Lab are independent workflows. No crossover buttons between them. Landing page is the hub where user chooses which tool to use. Both tabs share the same browser-section layout.
 - **RAF thumbnails need format flag**: `sips` requires `-s format jpeg` for RAF→JPEG conversion (same as HEIF). Without it, output format is undefined.
-- **Grid-select is slow**: `exiftool` parsing all RAFs in a directory is inherently slow. Need EXIF caching strategy for repeat visits.
+- **Grid should show HEIF not RAF**: Loading RAFs via sips is slow. Grid should display Liked/HIF/ files (already camera-processed, fast). RAFs only used for X RAW Studio processing.
+- **Grid-select is slow**: `exiftool` parsing all RAFs in a directory is inherently slow. Switching to HEIF display eliminates this for the grid. EXIF caching still useful for diverse selection algorithm.
+- **No intermediate Load button for recent sessions**: When user clicks a previously culled session in Recipe Lab, load directly.
 
 ## Session endpoints
 
