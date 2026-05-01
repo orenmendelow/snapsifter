@@ -174,12 +174,14 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 
 ### UI screens
 
-**Recipe Editor** (new screen, accessible from viewer or folder picker):
-- Left: recipe parameter controls (dropdowns + sliders matching Fuji menu structure)
-- Right: photo grid (3x3 default) with before/after toggle
-- Top: recipe title (editable), save/load/export buttons
-- Grid photos individually swappable (click X → replaced with next diverse pick) or shuffle all
-- Toggle button: "RAW" vs recipe title — cycles grid between unedited renders and processed versions
+**Recipe Lab** (separate tool from Photo Cull — co-equal entry from landing):
+- Left: recipe parameter controls (custom dropdowns + sliders, amber fill-from-center)
+- Right: photo grid (3x3) with per-cell swap (↻) and shuffle all
+- Top: recipe title (click-to-edit), recipe picker dropdown, save/export FP1 buttons
+- Click grid photo to enlarge in lightbox overlay
+- Grid photos shown uncropped (object-fit: contain) with EXIF overlay (filename, focal length, ISO, aperture)
+
+**Landing page architecture**: Two co-equal tools in header tabs: "Photo Cull" and "Recipe Lab". Photo Cull shows existing folder browser → viewer. Recipe Lab opens recipe editor screen. These are independent workflows.
 
 ### Implementation phases
 
@@ -188,9 +190,10 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - B: Diverse grid selection algorithm + endpoint (EXIF-based farthest-point sampling) — DONE
 - C: FP1 XML generation module — DONE, validated end-to-end with X RAW Studio + X100VI
 
-**Phase 2 — UI (after Phase 1)**
-- D: Recipe editor UI (parameter controls, save/load)
-- E: Grid display UI (responsive grid, swap/shuffle)
+**Phase 2 — UI (IN PROGRESS — partially built, needs fixes)**
+- D: Recipe editor UI (parameter controls, save/load) — BUILT but needs polish
+- E: Grid display UI (responsive grid, swap/shuffle) — BUILT but needs directory picker
+- CRITICAL: Recipe Lab has NO directory picker. It blindly uses `loadedDir` from cull session. Needs its own folder browser or volume picker to select Liked/RAF/ path independently.
 
 **Phase 3 — Comparison + Polish**
 - F: Before/after toggle (detect processed files in preview folder, show side by side in grid)
@@ -213,4 +216,13 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 
 - **Zoom math with translate + transform-origin: 0 0**: Failed repeatedly. Flex centering offsets, maxWidth/maxHeight changes, and stale imgRect all cause position errors. The working approach is: keep image flex-centered, use `transform-origin` at the desired point + `scale()` only. No translate. Mouse pan = moving transform-origin.
 - **Server restart required**: After editing server.js, the server MUST be restarted (`kill port 4000, node server.js`). Forgetting this caused sort bugs that appeared unfixed.
+- **CSS display:none override**: Setting `el.style.display = ''` does NOT override a CSS rule of `display: none`. Must set to explicit value like `'inline-block'` or `'flex'`.
+- **Recipe Lab needs its own directory picker**: Cannot depend on cull session's `loadedDir`. Must have independent folder selection UI to locate Liked/RAF/ photos.
+- **The two tools are SEPARATE**: Photo Cull and Recipe Lab are independent workflows. No crossover buttons between them. Landing page is the hub where user chooses which tool to use.
+- **RAF thumbnails need format flag**: `sips` requires `-s format jpeg` for RAF→JPEG conversion (same as HEIF). Without it, output format is undefined.
+- **Grid-select is slow**: `exiftool` parsing all RAFs in a directory is inherently slow. Need EXIF caching strategy for repeat visits.
+
+## Session endpoints
+
+- `DELETE /api/session/:id` — removes a session from Recent list (sessions.json). The ratings.json in the directory is preserved for potential re-import.
 - **walkDir only finds supported images**: For sort stem-matching (RAW pairs), must scan ALL files in directory, not use walkDir which filters by isSupportedImage.

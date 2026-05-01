@@ -211,7 +211,7 @@ function requireActiveDir(req, res, next) {
 
 function generateThumb(srcPath, destPath, size) {
   const upper = srcPath.toUpperCase();
-  const needsConversion = upper.endsWith('.HIF') || upper.endsWith('.HEIF');
+  const needsConversion = upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.RAF');
   if (needsConversion) {
     execSync(`sips -s format jpeg -Z ${size} ${JSON.stringify(srcPath)} --out ${JSON.stringify(destPath)}`, { stdio: 'pipe' });
   } else {
@@ -283,6 +283,17 @@ app.get('/api/sessions', (req, res) => {
   });
 
   res.json(result);
+});
+
+// Delete a session
+app.delete('/api/session/:id', (req, res) => {
+  const { id } = req.params;
+  const data = loadSessions();
+  const idx = data.findIndex(s => s.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Session not found' });
+  data.splice(idx, 1);
+  saveSessions(data);
+  res.json({ ok: true });
 });
 
 // Browse directories
