@@ -1082,7 +1082,7 @@ app.post('/api/recipe/:id/fp1', requireRecipeDir, (req, res) => {
   const fp1Path = path.join(xrsDir, filename);
   fs.writeFileSync(fp1Path, xml, 'utf8');
 
-  res.json({ path: fp1Path, label: recipe.title || 'Untitled' });
+  res.json({ ok: true, path: fp1Path, label: recipe.title || 'Untitled' });
 });
 
 // ── Grid selection helpers ──
@@ -1671,20 +1671,30 @@ app.get('/api/recipe-exif-defaults', async (req, res) => {
 
 app.get('/api/camera-status', (req, res) => {
   try {
+    // Try system_profiler first
     const output = execSync('system_profiler SPUSBDataType 2>/dev/null', {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 5000
     });
-    const fujiMatch = output.match(/FUJIFILM.*?(?=\n\n|\n\s*\S+:.*?:)/s);
-    if (fujiMatch || /fuji|x100|x-t|x-s|x-h|x-e|x-pro|gfx/i.test(output)) {
-      res.json({ connected: true });
-    } else {
-      res.json({ connected: false });
+    if (/fuji|x100|x-t|x-s|x-h|x-e|x-pro|gfx/i.test(output)) {
+      return res.json({ connected: true });
     }
-  } catch (e) {
-    res.json({ connected: false });
-  }
+  } catch (e) {}
+
+  try {
+    // Fallback: ioreg (camera appears as "USB PTP Camera" on some Macs)
+    const ioreg = execSync('ioreg -p IOUSB -l 2>/dev/null', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 5000
+    });
+    if (/fuji|x100|USB PTP Camera/i.test(ioreg)) {
+      return res.json({ connected: true });
+    }
+  } catch (e) {}
+
+  res.json({ connected: false });
 });
 
 // ── Grid selection endpoints ──

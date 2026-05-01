@@ -205,21 +205,22 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - B: Diverse grid selection algorithm + endpoint (EXIF-based farthest-point sampling) — DONE
 - C: FP1 XML generation module — DONE, validated end-to-end with X RAW Studio + X100VI
 
-**Phase 2 — UI (session 7 fixes applied)**
+**Phase 2 — UI (session 8 complete)**
 - D: Recipe editor UI — BUILT, params panel 520px via grid-template-columns
-- E: Grid display — 3x3 fixed layout (`repeat(3, 1fr)`), full uncropped photos, EXIF overlay
+- E: Grid display — masonry layout (`column-count: 3`), 12 photos, full uncropped, EXIF overlay
 - F: Recipe Lab folder browser + recent sessions direct-load (no intermediate button)
 - G: Grid uses `/api/preview-thumb/` (800px) for cells, `/api/preview-image/` (2000px) for lightbox
-- H: Stale grid indicator (grey out when params dirty) — BUILT
+- H: Stale overlay — dark overlay with "EXPORT FP1 TO X RAW STUDIO" button + "REVERT CHANGES" link, auto-clears when params match clean snapshot
 - I: Lightbox with prev/next arrows (click + keyboard) and counter
 - J: Swap picks randomly from full HIF folder (not diversity-constrained)
 - K: EXIF defaults deduction via exiftool (exifr can't parse RAF)
 - L: EXIF batch caching (in-memory, invalidates on file count change)
-- M: Camera USB detection endpoint + topbar indicator (polls every 10s)
+- M: Camera USB detection via system_profiler + ioreg fallback (polls every 10s)
 - N: UI brightness pass — text-dim #999, borders 0.12-0.18 opacity, slider rails #555
+- O: Recipe management — picker dropdown with per-recipe DUP/DEL actions, film sim subtitle, MODIFIED badge, dynamic count header, DELETE button in topbar with confirm dialog
+- P: Photo Cull keyboard handler skips recipe screen and focused inputs (was intercepting 'n' during title edit)
 
 **Still needed (from Oren feedback):**
-- Grid photos STILL NOT DISPLAYING IN FULL per Oren — needs investigation in browser
 - Split-view zoom comparison (synchronized pan/zoom across two recipe outputs)
 - Session history to compare recipe iterations (maintain previous HEIF exports)
 - Recipe library (browse saved recipes with example photos) — wishlist
@@ -261,6 +262,10 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - **WB fine tune units**: exiftool reports WB shift as internal values (e.g. `Red +40`). Divide by 20 to get camera-display range (-9 to +9). So `+40` = `+2`, `-120` = `-6`.
 - **EXIF batch is slow**: exiftool on 714 RAFs takes ~10s. Cache results in memory keyed by directory, invalidate when file count changes. grid-select/replace/shuffle all share the cache.
 - **Swap must be random**: Farthest-point sampling for swap always returns the same deterministic result. Swap should pick randomly from the full HIF folder excluding current grid photos.
+- **system_profiler SPUSBDataType can return empty**: On some Macs this command returns nothing. Camera detection needs `ioreg -p IOUSB -l` as fallback — camera appears as "USB PTP Camera" not "FUJIFILM".
+- **FP1 export response must include `ok: true`**: Frontend checks `res.ok` to show success/failure toast. Missing this field causes false "Export failed" messages.
+- **Grid cell overflow: hidden clips photos**: Masonry cells must NOT have `overflow: hidden` — portrait images get clipped by shorter landscape siblings. Use `overflow: visible` (default).
+- **Photo Cull keydown handler catches all keys globally**: Must check `screen !== 'recipe'` and `activeElement` is not INPUT/TEXTAREA, otherwise recipe title editing is broken (e.g., 'n' triggers jumpToNextUnrated).
 
 ## Session endpoints
 

@@ -142,9 +142,9 @@ body::before {
   margin-top: 4px;
   background: #111;
   border: 1px solid rgba(255,255,255,0.18);
-  min-width: 200px;
+  min-width: 280px;
   z-index: 100;
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
@@ -157,24 +157,68 @@ body::before {
   align-items: center;
   gap: 8px;
   transition: color 0.1s;
+  position: relative;
 }
-.recipe-picker-item:hover { color: var(--amber); }
+.recipe-picker-item:hover { background: rgba(255,255,255,0.04); }
 .recipe-picker-item.active {
   color: var(--amber);
-  font-weight: 500;
 }
-.recipe-picker-item.active::before {
-  content: '';
+.recipe-picker-item .recipe-item-dot {
   width: 5px;
   height: 5px;
   background: var(--amber);
   border-radius: 50%;
   flex-shrink: 0;
 }
+.recipe-picker-item .recipe-item-info {
+  flex: 1;
+  min-width: 0;
+}
+.recipe-picker-item .recipe-item-name {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recipe-picker-item .recipe-item-sub {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 1px;
+  letter-spacing: 0.5px;
+}
+.recipe-picker-item .recipe-item-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.recipe-picker-item:hover .recipe-item-actions { opacity: 1; }
+.recipe-picker-item .recipe-item-action {
+  font-size: 9px;
+  font-family: var(--mono);
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+  background: rgba(255,255,255,0.06);
+  border: none;
+  transition: color 0.1s;
+}
+.recipe-picker-item .recipe-item-action:hover { color: var(--text); }
+.recipe-picker-item .recipe-item-action.danger:hover { color: #cc4444; }
+.recipe-picker-item .recipe-item-modified {
+  font-size: 8px;
+  color: var(--amber);
+  letter-spacing: 0.5px;
+  font-family: var(--mono);
+  opacity: 0.7;
+}
 .recipe-picker-item.new-recipe {
   border-top: 1px solid rgba(255,255,255,0.12);
   color: var(--amber);
   font-size: 11px;
+  padding: 10px 12px;
 }
 
 #camera-status {
@@ -217,6 +261,8 @@ body::before {
 .recipe-action-btn.primary { color: var(--amber); border-color: var(--amber-dim); }
 .recipe-action-btn.primary:hover { border-color: var(--amber); }
 .recipe-action-btn.hidden { display: none; }
+.recipe-action-btn.danger-text { color: #cc4444; border-color: rgba(204,68,68,0.3); }
+.recipe-action-btn.danger-text:hover { border-color: #cc4444; }
 
 #recipe-main {
   flex: 1;
@@ -396,6 +442,7 @@ body::before {
 
 /* ── Grid panel ── */
 #recipe-grid-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   padding: 20px 24px;
@@ -424,20 +471,18 @@ body::before {
 
 #recipe-grid {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  column-count: 3;
+  column-gap: 8px;
   min-height: 0;
   overflow-y: auto;
-  align-content: start;
-  justify-content: center;
 }
 
 .recipe-grid-cell {
   position: relative;
-  overflow: hidden;
   background: #0a0a0a;
   border-radius: 2px;
+  break-inside: avoid;
+  margin-bottom: 8px;
 }
 
 .recipe-grid-cell img {
@@ -478,19 +523,67 @@ body::before {
 .recipe-grid-cell .cell-swap:hover { color: var(--amber); }
 
 .recipe-grid-cell.loading {
+  min-height: 180px;
   animation: cell-pulse 1.5s ease-in-out infinite;
 }
 @keyframes cell-pulse {
   0%, 100% { background: #0a0a0a; }
   50% { background: #141414; }
 }
-#recipe-grid.stale {
-  opacity: 0.35;
-  filter: grayscale(0.6);
-  pointer-events: none;
-  transition: opacity 0.3s, filter 0.3s;
-}
 #recipe-grid.stale .cell-swap { display: none; }
+
+#recipe-stale-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 10;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+}
+#recipe-stale-overlay.visible {
+  display: flex;
+}
+#recipe-stale-overlay .stale-message {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  letter-spacing: 0.5px;
+}
+#recipe-stale-overlay .stale-export-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+#recipe-stale-overlay .stale-export-btn:hover {
+  background: rgba(204,153,51,0.15);
+}
+#recipe-stale-overlay .stale-revert-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 4px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+#recipe-stale-overlay .stale-revert-btn:hover {
+  color: #fff;
+}
 
 /* ── Recipe browser panels (inside #browser-section) ── */
 #recipe-tree-panel {
@@ -1729,6 +1822,7 @@ body::before {
     <div id="recipe-actions">
       <button class="recipe-action-btn primary hidden" id="recipe-save-btn">SAVE</button>
       <button class="recipe-action-btn" id="recipe-export-btn">EXPORT FP1</button>
+      <button class="recipe-action-btn danger-text hidden" id="recipe-delete-btn">DELETE</button>
     </div>
   </div>
   <div id="recipe-main">
@@ -1739,6 +1833,11 @@ body::before {
         <span id="recipe-grid-count"></span>
       </div>
       <div id="recipe-grid"></div>
+      <div id="recipe-stale-overlay">
+        <span class="stale-message">RECIPE CHANGED</span>
+        <button class="stale-export-btn" id="stale-export-btn">EXPORT FP1 TO X RAW STUDIO</button>
+        <button class="stale-revert-btn" id="stale-revert-btn">REVERT CHANGES</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3167,11 +3266,13 @@ body::before {
   });
 
   document.addEventListener('keydown', (e) => {
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
     if (screen === 'landing') {
       if (e.key === '?') toggleHelp();
       if (e.key === 'Escape' && helpVisible) toggleHelp();
       return;
     }
+    if (screen === 'recipe') return;
 
     if (helpVisible && e.key !== '?') {
       if (e.key === 'Escape') toggleHelp();
@@ -3299,6 +3400,7 @@ body::before {
     activeRecipe: null,
     currentId: null,
     currentParams: {},
+    cleanParams: null,
     currentTitle: 'Untitled Recipe',
     gridPhotos: [],
     gridDir: '',
@@ -3458,6 +3560,7 @@ body::before {
     const r = recipeState.recipes[id];
     if (!r) return;
     recipeState.currentId = id;
+    document.getElementById('recipe-delete-btn').classList.remove('hidden');
     recipeState.currentTitle = r.title || 'Untitled';
     recipeState.currentParams = { ...RECIPE_DEFAULTS, ...r.params };
     recipeState.dirty = false;
@@ -3466,10 +3569,13 @@ body::before {
     clearExifIndicator();
     renderParams();
     recipeGridEl.classList.remove('stale');
+    recipeState.cleanParams = { ...recipeState.currentParams };
+    document.getElementById('recipe-stale-overlay').classList.remove('visible');
   }
 
   function createNewRecipeLocal() {
     recipeState.currentId = null;
+    document.getElementById('recipe-delete-btn').classList.add('hidden');
     recipeState.currentTitle = 'Untitled Recipe';
     recipeState.currentParams = { ...RECIPE_DEFAULTS };
     recipeState.dirty = true;
@@ -3478,6 +3584,8 @@ body::before {
     clearExifIndicator();
     renderParams();
     recipeGridEl.classList.remove('stale');
+    recipeState.cleanParams = { ...recipeState.currentParams };
+    document.getElementById('recipe-stale-overlay').classList.remove('visible');
   }
 
   async function saveRecipe() {
@@ -3501,9 +3609,24 @@ body::before {
   function markDirty() {
     recipeState.dirty = true;
     recipeSaveBtn.classList.remove('hidden');
-    recipeGridEl.classList.add('stale');
     if (recipeState.autoSaveTimer) clearTimeout(recipeState.autoSaveTimer);
     recipeState.autoSaveTimer = setTimeout(() => { saveRecipe(); }, 2000);
+
+    if (recipeState.cleanParams && paramsMatchClean()) {
+      recipeGridEl.classList.remove('stale');
+      document.getElementById('recipe-stale-overlay').classList.remove('visible');
+    } else {
+      recipeGridEl.classList.add('stale');
+      document.getElementById('recipe-stale-overlay').classList.add('visible');
+    }
+  }
+
+  function paramsMatchClean() {
+    if (!recipeState.cleanParams) return false;
+    for (const key of Object.keys(RECIPE_DEFAULTS)) {
+      if (String(recipeState.currentParams[key]) !== String(recipeState.cleanParams[key])) return false;
+    }
+    return true;
   }
 
   function markDirtyNoAutoSave() {
@@ -3511,14 +3634,30 @@ body::before {
     recipeSaveBtn.classList.remove('hidden');
   }
 
-  async function deleteRecipe() {
-    if (!recipeState.currentId) return;
-    await fetch('/api/recipe/' + recipeState.currentId, { method: 'DELETE' });
-    recipeState.currentId = null;
+  let pendingDeleteId = null;
+
+  async function deleteRecipe(id) {
+    const targetId = id || recipeState.currentId;
+    if (!targetId) return;
+    await fetch('/api/recipe/' + targetId, { method: 'DELETE' });
+    if (targetId === recipeState.currentId) recipeState.currentId = null;
     await loadRecipes();
-    const ids = Object.keys(recipeState.recipes);
-    if (ids.length > 0) selectRecipe(ids[0]);
-    else createNewRecipeLocal();
+    if (!recipeState.currentId) {
+      const ids = Object.keys(recipeState.recipes);
+      if (ids.length > 0) selectRecipe(ids[0]);
+      else createNewRecipeLocal();
+    }
+  }
+
+  async function duplicateRecipe(id) {
+    const r = recipeState.recipes[id];
+    if (!r) return;
+    const payload = { title: (r.title || 'Untitled') + ' copy', params: { ...r.params } };
+    const res = await fetch('/api/recipe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r => r.json());
+    if (res.id) {
+      await loadRecipes();
+      selectRecipe(res.id);
+    }
   }
 
   async function exportFP1() {
@@ -3721,19 +3860,21 @@ body::before {
 
     // Show loading state
     recipeGridEl.innerHTML = '';
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 12; i++) {
       const cell = document.createElement('div');
       cell.className = 'recipe-grid-cell loading';
       recipeGridEl.appendChild(cell);
     }
 
     try {
-      const res = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=9').then(r => r.json());
+      const res = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=12').then(r => r.json());
       if (res.hifDir) recipeState.gridDir = res.hifDir;
       recipeState.gridPhotos = res.selected || [];
       recipeGridCount.textContent = res.totalAvailable + ' available';
       renderGrid();
       recipeGridEl.classList.remove('stale');
+      recipeState.cleanParams = { ...recipeState.currentParams };
+      document.getElementById('recipe-stale-overlay').classList.remove('visible');
     } catch(e) {
       recipeGridEl.innerHTML = '';
       recipeGridCount.textContent = 'No photos found in Liked/';
@@ -3788,6 +3929,22 @@ body::before {
       recipeLightbox.classList.remove('visible');
       recipeLightboxImg.src = '';
     }
+  });
+
+  document.getElementById('stale-export-btn').addEventListener('click', () => {
+    exportFP1();
+  });
+
+  document.getElementById('stale-revert-btn').addEventListener('click', () => {
+    if (!recipeState.cleanParams) return;
+    if (recipeState.autoSaveTimer) { clearTimeout(recipeState.autoSaveTimer); recipeState.autoSaveTimer = null; }
+    recipeState.currentParams = { ...recipeState.cleanParams };
+    renderParams();
+    recipeGridEl.classList.remove('stale');
+    document.getElementById('recipe-stale-overlay').classList.remove('visible');
+    recipeState.dirty = false;
+    recipeSaveBtn.classList.add('hidden');
+    saveRecipe();
   });
 
   function renderGrid() {
@@ -3847,7 +4004,7 @@ body::before {
 
   async function shuffleGrid() {
     recipeGridEl.innerHTML = '';
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 12; i++) {
       const cell = document.createElement('div');
       cell.className = 'recipe-grid-cell loading';
       recipeGridEl.appendChild(cell);
@@ -3870,15 +4027,70 @@ body::before {
     recipePickerDropdown.innerHTML = '';
     const header = document.createElement('div');
     header.style.cssText = 'padding: 8px 12px 4px; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim);';
-    header.textContent = 'Saved Recipes';
+    header.textContent = ids.length + ' SAVED RECIPE' + (ids.length !== 1 ? 'S' : '');
     recipePickerDropdown.appendChild(header);
     for (const id of ids) {
       const r = recipeState.recipes[id];
       const item = document.createElement('div');
       item.className = 'recipe-picker-item';
       if (id === recipeState.currentId) item.classList.add('active');
-      item.textContent = r.title || 'Untitled';
+
+      if (id === recipeState.currentId) {
+        const dot = document.createElement('span');
+        dot.className = 'recipe-item-dot';
+        item.appendChild(dot);
+      }
+
+      const info = document.createElement('div');
+      info.className = 'recipe-item-info';
+      const name = document.createElement('div');
+      name.className = 'recipe-item-name';
+      name.textContent = r.title || 'Untitled';
+      info.appendChild(name);
+      const sub = document.createElement('div');
+      sub.className = 'recipe-item-sub';
+      sub.textContent = (r.params?.filmSimulation || 'Provia');
+      info.appendChild(sub);
+      item.appendChild(info);
+
+      if (id === recipeState.currentId && recipeState.dirty) {
+        const mod = document.createElement('span');
+        mod.className = 'recipe-item-modified';
+        mod.textContent = 'MODIFIED';
+        item.appendChild(mod);
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'recipe-item-actions';
+
+      const dupBtn = document.createElement('button');
+      dupBtn.className = 'recipe-item-action';
+      dupBtn.textContent = 'DUP';
+      dupBtn.title = 'Duplicate recipe';
+      dupBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        duplicateRecipe(id);
+        recipePickerDropdown.style.display = 'none';
+      });
+      actions.appendChild(dupBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'recipe-item-action danger';
+      delBtn.textContent = 'DEL';
+      delBtn.title = 'Delete recipe';
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        recipePickerDropdown.style.display = 'none';
+        pendingDeleteId = id;
+        recipeDeleteConfirm.classList.add('visible');
+      });
+      actions.appendChild(delBtn);
+
+      actions.addEventListener('click', (e) => e.stopPropagation());
+      item.appendChild(actions);
+
       item.addEventListener('click', (e) => {
+        if (e.target.closest('.recipe-item-actions')) return;
         e.stopPropagation();
         selectRecipe(id);
         recipePickerDropdown.style.display = 'none';
@@ -4176,8 +4388,21 @@ body::before {
   recipePickerBtn.addEventListener('click', (e) => { e.stopPropagation(); openRecipePicker(); });
   recipeSaveBtn.addEventListener('click', () => saveRecipe());
   recipeExportBtn.addEventListener('click', () => exportFP1());
-  recipeDeleteYes.addEventListener('click', () => { recipeDeleteConfirm.classList.remove('visible'); deleteRecipe(); });
-  recipeDeleteNo.addEventListener('click', () => { recipeDeleteConfirm.classList.remove('visible'); });
+  recipeDeleteYes.addEventListener('click', () => {
+    recipeDeleteConfirm.classList.remove('visible');
+    deleteRecipe(pendingDeleteId);
+    pendingDeleteId = null;
+  });
+  recipeDeleteNo.addEventListener('click', () => {
+    recipeDeleteConfirm.classList.remove('visible');
+    pendingDeleteId = null;
+  });
+
+  document.getElementById('recipe-delete-btn').addEventListener('click', () => {
+    if (!recipeState.currentId) return;
+    pendingDeleteId = recipeState.currentId;
+    recipeDeleteConfirm.classList.add('visible');
+  });
   recipeShuffleBtn.addEventListener('click', () => shuffleGrid());
 
   const toolCullBtn = document.getElementById('tool-cull');
