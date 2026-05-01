@@ -677,7 +677,7 @@ body::before {
 /* ── Rating mark (grease pencil) ── */
 #rating-mark {
   position: absolute;
-  bottom: 24px;
+  bottom: 100px;
   right: 28px;
   width: 40px;
   height: 40px;
@@ -688,6 +688,10 @@ body::before {
 
 #rating-mark.visible {
   opacity: 1;
+}
+
+#rating-mark.meta-hidden {
+  bottom: 24px;
 }
 
 /* ── Metadata overlay (burn-in style) ── */
@@ -933,9 +937,9 @@ body::before {
       <span id="sort-btn" title="Sort files into folders by rating">SORT INTO FOLDERS</span>
     </div>
     <div id="topbar-center">
-      <div id="counter">0 / 0</div>
     </div>
     <div id="topbar-right">
+      <div id="counter">0 / 0</div>
       <div id="rating-counts">
         <span class="ditch-count">D:0</span>
         <span class="maybe-count">M:0</span>
@@ -2445,6 +2449,7 @@ body::before {
         e.preventDefault();
         metadataVisible = !metadataVisible;
         metadataEl.classList.toggle('hidden', !metadataVisible);
+        ratingMark.classList.toggle('meta-hidden', !metadataVisible);
         break;
       case 'f':
       case 'F':
