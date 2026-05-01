@@ -26,6 +26,7 @@ if (fs.existsSync(oldShotsifterDir) && !fs.existsSync(stateDir)) {
 
 const sessionsFile = path.join(stateDir, 'sessions.json');
 const previewCacheDir = path.join(stateDir, 'preview-cache');
+const exifBatchCache = {};
 
 // Active directory state (mutable, no restart needed)
 let activeDir = null;
@@ -1087,6 +1088,18 @@ app.post('/api/recipe/:id/fp1', requireRecipeDir, (req, res) => {
 // ── Grid selection helpers ──
 
 function extractExifBatch(dir) {
+  // Check cache — invalidate when RAF file count changes
+  let fileCount;
+  try {
+    fileCount = fs.readdirSync(dir).filter(f => f.toUpperCase().endsWith('.RAF')).length;
+  } catch (e) {
+    return [];
+  }
+
+  if (exifBatchCache[dir] && exifBatchCache[dir].fileCount === fileCount) {
+    return exifBatchCache[dir].entries;
+  }
+
   let rawOutput;
   try {
     rawOutput = execSync(
@@ -1102,7 +1115,9 @@ function extractExifBatch(dir) {
     }
   }
   try {
-    return JSON.parse(rawOutput.toString());
+    const entries = JSON.parse(rawOutput.toString());
+    exifBatchCache[dir] = { fileCount, entries };
+    return entries;
   } catch (e) {
     console.error('Failed to parse exiftool JSON:', e.message);
     return [];
@@ -1311,6 +1326,367 @@ function formatExifSummary(rawExif) {
   };
 }
 
+// ── Recipe EXIF defaults endpoint ──
+
+const FUJI_FILM_SIM_MAP = {
+  // Numeric MakerNote values
+  0x0001: 'Provia', 0x0002: 'Velvia', 0x0003: 'Astia',
+  0x0100: 'Classic', 0x0200: 'ClassicNeg', 0x0300: 'Nostalgic',
+  0x0400: 'RealaACE',
+  0x0501: 'ProNegStd', 0x0502: 'ProNegHi',
+  0x0600: 'Eterna', 0x0700: 'BleachBypass',
+  0x0800: 'Acros', 0x0801: 'AcrosYe', 0x0802: 'AcrosR', 0x0803: 'AcrosG',
+  0x0900: 'Mono', 0x0901: 'MonoYe', 0x0902: 'MonoR', 0x0903: 'MonoG',
+  0x0A00: 'Sepia',
+  // String values exifr might return
+  'PROVIA/STANDARD': 'Provia', 'Provia': 'Provia', 'PROVIA': 'Provia',
+  'Velvia/VIVID': 'Velvia', 'Velvia': 'Velvia', 'VELVIA': 'Velvia',
+  'ASTIA/SOFT': 'Astia', 'Astia': 'Astia', 'ASTIA': 'Astia',
+  'CLASSIC CHROME': 'Classic', 'Classic Chrome': 'Classic', 'Classic': 'Classic',
+  'CLASSIC Neg.': 'ClassicNeg', 'Classic Neg.': 'ClassicNeg', 'ClassicNeg': 'ClassicNeg', 'CLASSIC NEGATIVE': 'ClassicNeg',
+  'NOSTALGIC Neg.': 'Nostalgic', 'Nostalgic Neg.': 'Nostalgic', 'Nostalgic': 'Nostalgic', 'NOSTALGIC NEGATIVE': 'Nostalgic',
+  'REALA ACE': 'RealaACE', 'Reala ACE': 'RealaACE', 'RealaACE': 'RealaACE',
+  'PRO Neg.Std': 'ProNegStd', 'PRO Neg. Std': 'ProNegStd', 'ProNegStd': 'ProNegStd',
+  'PRO Neg.Hi': 'ProNegHi', 'PRO Neg. Hi': 'ProNegHi', 'ProNegHi': 'ProNegHi',
+  'ETERNA/CINEMA': 'Eterna', 'Eterna': 'Eterna', 'ETERNA': 'Eterna',
+  'ETERNA BLEACH BYPASS': 'BleachBypass', 'Bleach Bypass': 'BleachBypass', 'BleachBypass': 'BleachBypass',
+  'ACROS': 'Acros', 'Acros': 'Acros',
+  'ACROS+Ye': 'AcrosYe', 'ACROS+Y': 'AcrosYe', 'AcrosYe': 'AcrosYe',
+  'ACROS+R': 'AcrosR', 'AcrosR': 'AcrosR',
+  'ACROS+G': 'AcrosG', 'AcrosG': 'AcrosG',
+  'MONO': 'Mono', 'Mono': 'Mono', 'Monochrome': 'Mono',
+  'MONO+Ye': 'MonoYe', 'MONO+Y': 'MonoYe', 'MonoYe': 'MonoYe',
+  'MONO+R': 'MonoR', 'MonoR': 'MonoR',
+  'MONO+G': 'MonoG', 'MonoG': 'MonoG',
+  'SEPIA': 'Sepia', 'Sepia': 'Sepia',
+};
+
+function mapFilmSimulation(val) {
+  if (val == null) return null;
+  if (FUJI_FILM_SIM_MAP[val] !== undefined) return FUJI_FILM_SIM_MAP[val];
+  // Try case-insensitive partial match
+  const s = String(val).toLowerCase();
+  for (const [k, v] of Object.entries(FUJI_FILM_SIM_MAP)) {
+    if (String(k).toLowerCase() === s) return v;
+  }
+  return null;
+}
+
+function mapStrengthValue(val) {
+  if (val == null) return null;
+  const s = String(val).toLowerCase();
+  if (s === 'off' || s === '0' || s === 'none') return 'Off';
+  if (s === 'weak' || s === 'low' || s === '1') return 'Weak';
+  if (s === 'strong' || s === 'high' || s === '2') return 'Strong';
+  return null;
+}
+
+function mapGrainSize(val) {
+  if (val == null) return null;
+  const s = String(val).toLowerCase();
+  if (s === 'small' || s === '0' || s === '1') return 'Small';
+  if (s === 'large' || s === '2') return 'Large';
+  return null;
+}
+
+function clampInt(val, min, max) {
+  if (val == null) return null;
+  const n = parseInt(val, 10);
+  if (isNaN(n)) return null;
+  return Math.max(min, Math.min(max, n));
+}
+
+function parseLeadingNumber(val) {
+  if (val == null) return null;
+  if (typeof val === 'number') return val;
+  const m = String(val).match(/^([+-]?\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function extractRecipeFromExiftool(data) {
+  if (!data || typeof data !== 'object') return null;
+  const params = {};
+
+  // Film simulation
+  if (data.FilmMode) {
+    const filmSim = mapFilmSimulation(data.FilmMode);
+    if (filmSim) params.filmSimulation = filmSim;
+  }
+
+  // White balance
+  if (data.WhiteBalance != null) {
+    const wbStr = String(data.WhiteBalance);
+    const wbMap = {
+      'auto': 'Auto', 'auto white': 'AutoWhite', 'auto ambiance': 'AutoAmbiance',
+      'auto (ambiance priority)': 'AutoAmbiance', 'auto (white priority)': 'AutoWhite',
+      'daylight': 'Daylight', 'fine weather': 'Daylight', 'sunny': 'Daylight',
+      'shade': 'Shade', 'cloudy': 'Shade',
+      'fluorescent': 'Fluorescent1', 'fluorescent (daylight)': 'Fluorescent1',
+      'fluorescent (warm white)': 'Fluorescent2', 'fluorescent (cool white)': 'Fluorescent3',
+      'incandescent': 'Incandescent', 'tungsten': 'Incandescent',
+      'underwater': 'Underwater',
+      'color temperature': 'ColorTemp', 'kelvin': 'ColorTemp',
+      'custom': 'Custom1', 'custom1': 'Custom1', 'custom2': 'Custom2', 'custom3': 'Custom3',
+    };
+    const lower = wbStr.toLowerCase();
+    if (wbMap[lower]) params.whiteBalance = wbMap[lower];
+    else if (/auto/i.test(wbStr)) params.whiteBalance = 'Auto';
+  }
+
+  // WB shift — exiftool format: "Red +40, Blue -120"
+  if (data.WhiteBalanceFineTune) {
+    const wbft = String(data.WhiteBalanceFineTune);
+    const redMatch = wbft.match(/Red\s*([+-]?\d+)/i);
+    const blueMatch = wbft.match(/Blue\s*([+-]?\d+)/i);
+    if (redMatch) params.wbShiftR = clampInt(Math.round(parseInt(redMatch[1], 10) / 20), -9, 9);
+    if (blueMatch) params.wbShiftB = clampInt(Math.round(parseInt(blueMatch[1], 10) / 20), -9, 9);
+  }
+
+  // Dynamic range — use DevelopmentDynamicRange (the actual value), not DynamicRange (the mode label)
+  const dr = data.DevelopmentDynamicRange ?? data.DynamicRange ?? null;
+  if (dr != null) {
+    const drVal = parseInt(dr, 10);
+    if (!isNaN(drVal) && [100, 200, 400].includes(drVal)) params.dynamicRange = drVal;
+  }
+
+  // Highlight tone — format: "-2 (soft)" or "0 (normal)"
+  if (data.HighlightTone != null) {
+    const ht = parseLeadingNumber(data.HighlightTone);
+    if (ht != null) params.highlightTone = clampInt(ht, -2, 4);
+  }
+
+  // Shadow tone
+  if (data.ShadowTone != null) {
+    const st = parseLeadingNumber(data.ShadowTone);
+    if (st != null) params.shadowTone = clampInt(st, -2, 4);
+  }
+
+  // Color / Saturation — format: "+3 (very high)"
+  if (data.Saturation != null) {
+    const c = parseLeadingNumber(data.Saturation);
+    if (c != null) params.color = clampInt(c, -4, 4);
+  }
+
+  // Sharpness — text or number format
+  if (data.Sharpness != null) {
+    const sharpStr = String(data.Sharpness);
+    const leading = parseLeadingNumber(sharpStr);
+    if (leading != null) {
+      params.sharpness = clampInt(leading, -4, 4);
+    } else {
+      const sharpTextMap = { 'soft': -2, 'normal': 0, 'hard': 2 };
+      const mapped = sharpTextMap[sharpStr.toLowerCase()];
+      if (mapped != null) params.sharpness = mapped;
+    }
+  }
+
+  // Noise reduction — format: "-4 (weakest)"
+  if (data.NoiseReduction != null) {
+    const nr = parseLeadingNumber(data.NoiseReduction);
+    if (nr != null) params.noiseReduction = clampInt(nr, -4, 4);
+  }
+
+  // Clarity — already numeric
+  if (data.Clarity != null) {
+    params.clarity = clampInt(data.Clarity, -5, 5);
+  }
+
+  // Grain effect roughness
+  if (data.GrainEffectRoughness != null) {
+    const ge = mapStrengthValue(data.GrainEffectRoughness);
+    if (ge) params.grainEffect = ge;
+  }
+
+  // Grain size (only meaningful when grain is not Off)
+  if (data.GrainEffectSize != null && params.grainEffect && params.grainEffect !== 'Off') {
+    const gs = mapGrainSize(data.GrainEffectSize);
+    if (gs) params.grainSize = gs;
+  }
+
+  // Color Chrome Effect
+  if (data.ColorChromeEffect != null) {
+    const cce = mapStrengthValue(data.ColorChromeEffect);
+    if (cce) params.colorChromeEffect = cce;
+  }
+
+  // Color Chrome FX Blue
+  if (data.ColorChromeFXBlue != null) {
+    const ccb = mapStrengthValue(data.ColorChromeFXBlue);
+    if (ccb) params.colorChromeFXBlue = ccb;
+  }
+
+  // Strip null values
+  for (const k of Object.keys(params)) {
+    if (params[k] == null) delete params[k];
+  }
+
+  return Object.keys(params).length > 0 ? params : null;
+}
+
+function extractRecipeParams(exif) {
+  const params = {};
+
+  // Film simulation — try multiple tag names
+  const filmRaw = exif.FilmMode ?? exif.FilmSimulation ?? exif.SaturationAdj ?? null;
+  const filmSim = mapFilmSimulation(filmRaw);
+  if (filmSim) params.filmSimulation = filmSim;
+
+  // White balance
+  const wb = exif.WhiteBalance ?? exif.WhiteBalanceMode ?? null;
+  if (wb != null) {
+    const wbStr = String(wb);
+    // exifr may return human-readable string or numeric
+    const wbMap = {
+      'auto': 'Auto', 'auto white': 'AutoWhite', 'auto ambiance': 'AutoAmbiance',
+      'daylight': 'Daylight', 'fine weather': 'Daylight', 'sunny': 'Daylight',
+      'shade': 'Shade', 'cloudy': 'Shade',
+      'fluorescent': 'Fluorescent1', 'fluorescent (daylight)': 'Fluorescent1',
+      'fluorescent (warm white)': 'Fluorescent2', 'fluorescent (cool white)': 'Fluorescent3',
+      'incandescent': 'Incandescent', 'tungsten': 'Incandescent',
+      'underwater': 'Underwater',
+      'color temperature': 'ColorTemp', 'kelvin': 'ColorTemp',
+      'custom': 'Custom1', 'custom1': 'Custom1', 'custom2': 'Custom2', 'custom3': 'Custom3',
+    };
+    const lower = wbStr.toLowerCase();
+    if (wbMap[lower]) params.whiteBalance = wbMap[lower];
+    else if (/auto/i.test(wbStr)) params.whiteBalance = 'Auto';
+  }
+
+  // WB shift
+  const wbShift = exif.WhiteBalanceFineTune ?? exif.WBShiftAB ?? null;
+  if (Array.isArray(wbShift) && wbShift.length >= 2) {
+    params.wbShiftR = clampInt(wbShift[0], -9, 9);
+    params.wbShiftB = clampInt(wbShift[1], -9, 9);
+  } else if (wbShift != null && typeof wbShift === 'object') {
+    if (wbShift.R != null) params.wbShiftR = clampInt(wbShift.R, -9, 9);
+    if (wbShift.B != null) params.wbShiftB = clampInt(wbShift.B, -9, 9);
+  }
+  // Also try separate tags
+  if (params.wbShiftR == null && exif.WBShiftR != null) params.wbShiftR = clampInt(exif.WBShiftR, -9, 9);
+  if (params.wbShiftB == null && exif.WBShiftB != null) params.wbShiftB = clampInt(exif.WBShiftB, -9, 9);
+
+  // Dynamic range
+  const dr = exif.DynamicRange ?? exif.DevelopmentDynamicRange ?? exif.DRangePriority ?? null;
+  if (dr != null) {
+    const drVal = parseInt(dr, 10);
+    if ([100, 200, 400].includes(drVal)) params.dynamicRange = drVal;
+    else if (drVal === 0 || String(dr).toLowerCase() === 'auto') params.dynamicRange = 100;
+  }
+
+  // Highlight / Shadow tone
+  const ht = exif.HighlightTone ?? exif.ShadowHighlight ?? null;
+  if (ht != null) params.highlightTone = clampInt(ht, -2, 4);
+  const st = exif.ShadowTone ?? null;
+  if (st != null) params.shadowTone = clampInt(st, -2, 4);
+
+  // Color / Saturation
+  const color = exif.Saturation ?? exif.Color ?? exif.ColorSaturation ?? null;
+  if (color != null) params.color = clampInt(color, -4, 4);
+
+  // Sharpness
+  const sharp = exif.Sharpness ?? exif.SharpnessAdj ?? null;
+  if (sharp != null) params.sharpness = clampInt(sharp, -4, 4);
+
+  // Noise reduction
+  const nr = exif.NoiseReduction ?? exif.NoisReduction ?? null;
+  if (nr != null) params.noiseReduction = clampInt(nr, -4, 4);
+
+  // Grain effect
+  const grain = exif.GrainEffect ?? exif.GrainEffectRoughness ?? null;
+  const grainMapped = mapStrengthValue(grain);
+  if (grainMapped) params.grainEffect = grainMapped;
+
+  // Grain size
+  const gs = exif.GrainSize ?? exif.GrainEffectSize ?? null;
+  const gsMapped = mapGrainSize(gs);
+  if (gsMapped) params.grainSize = gsMapped;
+
+  // Color Chrome Effect
+  const cce = exif.ColorChromeEffect ?? exif.ChromeEffect ?? null;
+  const cceMapped = mapStrengthValue(cce);
+  if (cceMapped) params.colorChromeEffect = cceMapped;
+
+  // Color Chrome FX Blue
+  const ccb = exif.ColorChromeFXBlue ?? exif.ChromeFXBlue ?? null;
+  const ccbMapped = mapStrengthValue(ccb);
+  if (ccbMapped) params.colorChromeFXBlue = ccbMapped;
+
+  // Clarity
+  const clarity = exif.Clarity ?? null;
+  if (clarity != null) params.clarity = clampInt(clarity, -5, 5);
+
+  // Strip null values
+  for (const k of Object.keys(params)) {
+    if (params[k] == null) delete params[k];
+  }
+
+  return Object.keys(params).length > 0 ? params : null;
+}
+
+app.get('/api/recipe-exif-defaults', async (req, res) => {
+  const dir = req.query.dir;
+  if (!dir) return res.status(400).json({ error: 'dir param required' });
+
+  const rafDir = path.join(dir, 'Liked', 'RAF');
+  if (!fs.existsSync(rafDir)) {
+    return res.json({ params: null });
+  }
+
+  try {
+    const entries = fs.readdirSync(rafDir);
+    const rafFile = entries.find(f => f.toUpperCase().endsWith('.RAF'));
+    if (!rafFile) {
+      return res.json({ params: null });
+    }
+
+    const filePath = path.join(rafDir, rafFile);
+    const exiftoolArgs = [
+      '-json',
+      '-FilmMode', '-WhiteBalance', '-WhiteBalanceFineTune',
+      '-DynamicRange', '-DevelopmentDynamicRange',
+      '-HighlightTone', '-ShadowTone', '-Saturation', '-Sharpness',
+      '-NoiseReduction', '-Clarity',
+      '-GrainEffectRoughness', '-GrainEffectSize',
+      '-ColorChromeEffect', '-ColorChromeFXBlue',
+      filePath
+    ];
+    const stdout = execSync(`/opt/homebrew/bin/exiftool ${exiftoolArgs.map(a => JSON.stringify(a)).join(' ')}`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    const parsed = JSON.parse(stdout);
+    if (!parsed || !parsed[0]) {
+      return res.json({ params: null, sourceFile: rafFile });
+    }
+
+    const params = extractRecipeFromExiftool(parsed[0]);
+    res.json({ params, sourceFile: rafFile });
+  } catch (e) {
+    console.error('Failed to read recipe EXIF defaults:', e.message);
+    res.json({ params: null, error: e.message });
+  }
+});
+
+// ── Camera detection ──
+
+app.get('/api/camera-status', (req, res) => {
+  try {
+    const output = execSync('system_profiler SPUSBDataType 2>/dev/null', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 5000
+    });
+    const fujiMatch = output.match(/FUJIFILM.*?(?=\n\n|\n\s*\S+:.*?:)/s);
+    if (fujiMatch || /fuji|x100|x-t|x-s|x-h|x-e|x-pro|gfx/i.test(output)) {
+      res.json({ connected: true });
+    } else {
+      res.json({ connected: false });
+    }
+  } catch (e) {
+    res.json({ connected: false });
+  }
+});
+
 // ── Grid selection endpoints ──
 
 app.get('/api/raf-count', (req, res) => {
@@ -1327,58 +1703,89 @@ app.get('/api/raf-count', (req, res) => {
 });
 
 app.get('/api/grid-select', (req, res) => {
-  const dir = req.query.dir;
+  const dir = req.query.dir; // base session directory
   const count = parseInt(req.query.count, 10) || 9;
 
   if (!dir || !path.isAbsolute(dir)) {
     return res.status(400).json({ error: 'dir must be an absolute path' });
   }
-  if (!fs.existsSync(dir)) {
-    return res.status(404).json({ error: 'Directory not found' });
+
+  const rafDir = path.join(dir, 'Liked', 'RAF');
+  const hifDir = path.join(dir, 'Liked', 'HIF');
+
+  if (!fs.existsSync(rafDir)) {
+    return res.status(404).json({ error: 'Liked/RAF/ directory not found' });
+  }
+  if (!fs.existsSync(hifDir)) {
+    return res.status(404).json({ error: 'Liked/HIF/ directory not found' });
   }
 
-  let allFiles;
+  // Build a map of HIF files by stem (case-insensitive)
+  let hifFiles;
   try {
-    allFiles = fs.readdirSync(dir).filter(f => {
-      return f.toUpperCase().endsWith('.RAF') && !f.startsWith('.') && !f.startsWith('._');
+    hifFiles = fs.readdirSync(hifDir).filter(f => {
+      const upper = f.toUpperCase();
+      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF')) && !f.startsWith('.') && !f.startsWith('._');
     });
   } catch (e) {
-    return res.status(500).json({ error: 'Cannot read directory' });
+    return res.status(500).json({ error: 'Cannot read HIF directory' });
   }
 
-  if (allFiles.length === 0) {
-    return res.json({ selected: [], totalAvailable: 0 });
+  const hifByStem = {};
+  hifFiles.forEach(f => {
+    const stem = f.replace(/\.[^.]+$/, '').toUpperCase();
+    hifByStem[stem] = f;
+  });
+
+  if (hifFiles.length === 0) {
+    return res.json({ selected: [], totalAvailable: 0, hifDir });
   }
 
-  const exifEntries = extractExifBatch(dir);
+  // EXIF sampling on RAF files
+  const exifEntries = extractExifBatch(rafDir);
   if (exifEntries.length === 0) {
-    const shuffled = allFiles.sort(() => Math.random() - 0.5).slice(0, count);
+    // Fallback: random HIF selection
+    const shuffled = hifFiles.sort(() => Math.random() - 0.5).slice(0, count);
     return res.json({
       selected: shuffled.map(f => ({ file: f, focalLength: null, iso: null, aperture: null, shutterSpeed: null, time: null, wb: null })),
-      totalAvailable: allFiles.length,
+      totalAvailable: hifFiles.length,
+      hifDir,
     });
   }
 
   const vectors = buildFeatureVectors(exifEntries);
   const selectedIndices = farthestPointSampling(vectors, count, null, null);
 
-  const selected = selectedIndices.map(i => {
+  // Map RAF selections to HIF counterparts
+  const selected = [];
+  selectedIndices.forEach(i => {
     const v = vectors[i];
-    return { file: v.file, ...formatExifSummary(v.rawExif) };
+    const stem = v.file.replace(/\.[^.]+$/, '').toUpperCase();
+    const hifFile = hifByStem[stem];
+    if (hifFile) {
+      selected.push({ file: hifFile, ...formatExifSummary(v.rawExif) });
+    }
   });
 
-  res.json({ selected, totalAvailable: allFiles.length });
+  res.json({ selected, totalAvailable: hifFiles.length, hifDir });
 });
 
 app.post('/api/grid-replace', (req, res) => {
-  const { dir, selected, replaceIndex, count } = req.body;
+  const { dir, selected, replaceIndex, count } = req.body; // dir = base session directory
   const targetCount = count || 9;
 
   if (!dir || !path.isAbsolute(dir)) {
     return res.status(400).json({ error: 'dir must be an absolute path' });
   }
-  if (!fs.existsSync(dir)) {
-    return res.status(404).json({ error: 'Directory not found' });
+
+  const rafDir = path.join(dir, 'Liked', 'RAF');
+  const hifDir = path.join(dir, 'Liked', 'HIF');
+
+  if (!fs.existsSync(rafDir)) {
+    return res.status(404).json({ error: 'Liked/RAF/ directory not found' });
+  }
+  if (!fs.existsSync(hifDir)) {
+    return res.status(404).json({ error: 'Liked/HIF/ directory not found' });
   }
   if (!Array.isArray(selected) || typeof replaceIndex !== 'number') {
     return res.status(400).json({ error: 'selected (array) and replaceIndex (number) required' });
@@ -1387,73 +1794,127 @@ app.post('/api/grid-replace', (req, res) => {
     return res.status(400).json({ error: 'replaceIndex out of bounds' });
   }
 
-  const exifEntries = extractExifBatch(dir);
+  // Build HIF stem map
+  let hifFiles;
+  try {
+    hifFiles = fs.readdirSync(hifDir).filter(f => {
+      const upper = f.toUpperCase();
+      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF')) && !f.startsWith('.') && !f.startsWith('._');
+    });
+  } catch (e) {
+    return res.status(500).json({ error: 'Cannot read HIF directory' });
+  }
+  const hifByStem = {};
+  hifFiles.forEach(f => {
+    const stem = f.replace(/\.[^.]+$/, '').toUpperCase();
+    hifByStem[stem] = f;
+  });
+
+  // EXIF from RAFs
+  const exifEntries = extractExifBatch(rafDir);
   if (exifEntries.length === 0) {
     return res.status(500).json({ error: 'No EXIF data extracted' });
   }
 
   const vectors = buildFeatureVectors(exifEntries);
 
-  const fileToIdx = {};
-  vectors.forEach((v, i) => { fileToIdx[v.file] = i; });
+  // Pick a random replacement not in current selection
+  const currentStems = new Set(selected.map(f => f.replace(/\.[^.]+$/, '').toUpperCase()));
 
-  const fixedIndices = [];
-  const excludeIndices = [];
-  for (let i = 0; i < selected.length; i++) {
-    const idx = fileToIdx[selected[i]];
-    if (idx == null) continue;
-    if (i === replaceIndex) {
-      excludeIndices.push(idx);
-    } else {
-      fixedIndices.push(idx);
-    }
-  }
-
-  const selectedIndices = farthestPointSampling(vectors, targetCount, fixedIndices, excludeIndices);
-
-  const result = selectedIndices.map(i => {
-    const v = vectors[i];
-    return { file: v.file, ...formatExifSummary(v.rawExif) };
+  // All available HIF files not currently selected
+  const candidates = hifFiles.filter(f => {
+    const stem = f.replace(/\.[^.]+$/, '').toUpperCase();
+    return !currentStems.has(stem);
   });
 
-  res.json({ selected: result, totalAvailable: vectors.length });
+  if (candidates.length === 0) {
+    return res.json({ selected: selected.map(f => ({ file: f })), totalAvailable: hifFiles.length, hifDir });
+  }
+
+  // Pick random
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+
+  // Build result — keep existing photos, replace the one at replaceIndex
+  const result = [];
+  for (let i = 0; i < selected.length; i++) {
+    const file = i === replaceIndex ? pick : selected[i];
+    const stem = file.replace(/\.[^.]+$/, '').toUpperCase();
+    let exifSummary = { focalLength: null, iso: null, aperture: null, shutterSpeed: null, time: null, wb: null };
+    if (vectors.length > 0) {
+      const matchVec = vectors.find(v => v.file.replace(/\.[^.]+$/, '').toUpperCase() === stem);
+      if (matchVec) exifSummary = formatExifSummary(matchVec.rawExif);
+    }
+    result.push({ file: file, ...exifSummary });
+  }
+
+  res.json({ selected: result, totalAvailable: hifFiles.length, hifDir });
 });
 
 app.post('/api/grid-shuffle', (req, res) => {
-  const { dir, count } = req.body;
+  const { dir, count } = req.body; // dir = base session directory
   const targetCount = count || 9;
 
   if (!dir || !path.isAbsolute(dir)) {
     return res.status(400).json({ error: 'dir must be an absolute path' });
   }
-  if (!fs.existsSync(dir)) {
-    return res.status(404).json({ error: 'Directory not found' });
+
+  const rafDir = path.join(dir, 'Liked', 'RAF');
+  const hifDir = path.join(dir, 'Liked', 'HIF');
+
+  if (!fs.existsSync(rafDir)) {
+    return res.status(404).json({ error: 'Liked/RAF/ directory not found' });
+  }
+  if (!fs.existsSync(hifDir)) {
+    return res.status(404).json({ error: 'Liked/HIF/ directory not found' });
   }
 
-  const exifEntries = extractExifBatch(dir);
+  // Build HIF stem map
+  let hifFiles;
+  try {
+    hifFiles = fs.readdirSync(hifDir).filter(f => {
+      const upper = f.toUpperCase();
+      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF')) && !f.startsWith('.') && !f.startsWith('._');
+    });
+  } catch (e) {
+    return res.status(500).json({ error: 'Cannot read HIF directory' });
+  }
+  const hifByStem = {};
+  hifFiles.forEach(f => {
+    const stem = f.replace(/\.[^.]+$/, '').toUpperCase();
+    hifByStem[stem] = f;
+  });
+
+  if (hifFiles.length === 0) {
+    return res.json({ selected: [], totalAvailable: 0, hifDir });
+  }
+
+  // EXIF from RAFs
+  const exifEntries = extractExifBatch(rafDir);
   if (exifEntries.length === 0) {
-    let allFiles;
-    try {
-      allFiles = fs.readdirSync(dir).filter(f => f.toUpperCase().endsWith('.RAF') && !f.startsWith('.') && !f.startsWith('._'));
-    } catch (e) {
-      return res.status(500).json({ error: 'Cannot read directory' });
-    }
-    const shuffled = allFiles.sort(() => Math.random() - 0.5).slice(0, targetCount);
+    // Fallback: random HIF selection
+    const shuffled = hifFiles.sort(() => Math.random() - 0.5).slice(0, targetCount);
     return res.json({
       selected: shuffled.map(f => ({ file: f, focalLength: null, iso: null, aperture: null, shutterSpeed: null, time: null, wb: null })),
-      totalAvailable: allFiles.length,
+      totalAvailable: hifFiles.length,
+      hifDir,
     });
   }
 
   const vectors = buildFeatureVectors(exifEntries);
   const selectedIndices = farthestPointSampling(vectors, targetCount, null, null);
 
-  const result = selectedIndices.map(i => {
+  // Map back to HIF
+  const result = [];
+  selectedIndices.forEach(i => {
     const v = vectors[i];
-    return { file: v.file, ...formatExifSummary(v.rawExif) };
+    const stem = v.file.replace(/\.[^.]+$/, '').toUpperCase();
+    const hifFile = hifByStem[stem];
+    if (hifFile) {
+      result.push({ file: hifFile, ...formatExifSummary(v.rawExif) });
+    }
   });
 
-  res.json({ selected: result, totalAvailable: vectors.length });
+  res.json({ selected: result, totalAvailable: hifFiles.length, hifDir });
 });
 
 // ── Startup: migrate old state.json → sessions (no auto-resume) ──

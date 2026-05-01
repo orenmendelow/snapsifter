@@ -21,7 +21,7 @@
   --maybe: #cc9900;
   --like: #44aa44;
   --text: #cccccc;
-  --text-dim: #666666;
+  --text-dim: #999999;
   --text-hover: #cccccc;
   --strip-bg: #111;
   --mono: 'IBM Plex Mono', monospace;
@@ -64,7 +64,7 @@ body::before {
   align-items: center;
   padding: 16px 24px;
   gap: 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
   flex-shrink: 0;
 }
 
@@ -113,7 +113,7 @@ body::before {
   color: var(--text-dim);
   cursor: pointer;
   padding: 4px 10px;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
   transition: color 0.15s, border-color 0.15s;
   display: flex;
   align-items: center;
@@ -141,7 +141,7 @@ body::before {
   left: 0;
   margin-top: 4px;
   background: #111;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
   min-width: 200px;
   z-index: 100;
   max-height: 300px;
@@ -172,13 +172,30 @@ body::before {
   flex-shrink: 0;
 }
 .recipe-picker-item.new-recipe {
-  border-top: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255,255,255,0.12);
   color: var(--amber);
   font-size: 11px;
 }
 
-#recipe-actions {
+#camera-status {
   margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#camera-status .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #444;
+}
+#camera-status.connected .dot { background: #4a4; }
+#camera-status.disconnected .dot { background: #444; }
+
+#recipe-actions {
   display: flex;
   gap: 12px;
   align-items: center;
@@ -190,7 +207,7 @@ body::before {
   letter-spacing: 1px;
   padding: 6px 14px;
   cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
   color: var(--text-dim);
   background: transparent;
   transition: color 0.15s, border-color 0.15s;
@@ -204,7 +221,7 @@ body::before {
 #recipe-main {
   flex: 1;
   display: grid;
-  grid-template-columns: 420px 1fr;
+  grid-template-columns: 520px 1fr;
   min-height: 0;
   overflow: hidden;
 }
@@ -222,7 +239,7 @@ body::before {
 #recipe-params-panel {
   overflow-y: auto;
   padding: 20px 24px;
-  border-right: 1px solid rgba(255,255,255,0.06);
+  border-right: 1px solid rgba(255,255,255,0.12);
   scrollbar-width: thin;
   scrollbar-color: var(--amber-faint) transparent;
 }
@@ -257,7 +274,7 @@ body::before {
   justify-content: space-between;
   padding: 6px 10px;
   cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
   transition: border-color 0.15s;
 }
 .param-dropdown-trigger:hover { border-color: var(--amber-dim); }
@@ -279,7 +296,7 @@ body::before {
   left: 0;
   right: 0;
   background: #111;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
   z-index: 50;
   max-height: 240px;
   overflow-y: auto;
@@ -344,7 +361,7 @@ body::before {
   left: 0;
   right: 0;
   height: 2px;
-  background: #333;
+  background: #555;
 }
 
 .param-slider-fill {
@@ -373,7 +390,7 @@ body::before {
 .param-slider-tick {
   width: 3px;
   height: 3px;
-  background: #444;
+  background: #666;
   border-radius: 50%;
 }
 
@@ -408,11 +425,12 @@ body::before {
 #recipe-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   min-height: 0;
   overflow-y: auto;
   align-content: start;
+  justify-content: center;
 }
 
 .recipe-grid-cell {
@@ -420,7 +438,6 @@ body::before {
   overflow: hidden;
   background: #0a0a0a;
   border-radius: 2px;
-  aspect-ratio: auto;
 }
 
 .recipe-grid-cell img {
@@ -478,7 +495,7 @@ body::before {
 /* ── Recipe browser panels (inside #browser-section) ── */
 #recipe-tree-panel {
   overflow-y: auto;
-  border-right: 1px solid rgba(255,255,255,0.06);
+  border-right: 1px solid rgba(255,255,255,0.12);
   padding: 12px 0;
   scrollbar-width: thin;
   scrollbar-color: var(--amber-faint) transparent;
@@ -557,6 +574,38 @@ body::before {
   max-height: 90vh;
   object-fit: contain;
 }
+#recipe-lightbox-nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  pointer-events: none;
+}
+.lightbox-arrow {
+  font-size: 36px;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  pointer-events: all;
+  padding: 20px;
+  user-select: none;
+  transition: color 0.15s;
+}
+.lightbox-arrow:hover { color: rgba(255,255,255,0.9); }
+#recipe-lightbox-counter {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 1px;
+}
 
 /* Toast */
 #recipe-toast {
@@ -594,7 +643,7 @@ body::before {
 #recipe-delete-confirm-box {
   font-family: var(--mono);
   padding: 24px 32px;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
   background: #111;
   text-align: center;
 }
@@ -647,7 +696,7 @@ body::before {
   font-family: var(--mono);
   cursor: pointer;
   padding: 12px 24px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
   transition: border-color 0.15s;
 }
 .landing-tool + .landing-tool { border-left: none; }
@@ -687,7 +736,7 @@ body::before {
 /* ── Left panel (tree) ── */
 #tree-panel {
   overflow-y: auto;
-  border-right: 1px solid rgba(255,255,255,0.06);
+  border-right: 1px solid rgba(255,255,255,0.12);
   padding: 12px 0;
   scrollbar-width: thin;
   scrollbar-color: var(--amber-faint) transparent;
@@ -710,7 +759,7 @@ body::before {
 
 .tree-divider {
   height: 1px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.12);
   margin: 6px 0;
 }
 
@@ -896,7 +945,7 @@ body::before {
 .preview-group {
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
 }
 
 .preview-group:last-child {
@@ -1093,7 +1142,7 @@ body::before {
   cursor: pointer;
   transition: color 0.1s ease, border-color 0.1s ease;
   letter-spacing: 0.5px;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
   padding: 2px 6px;
   border-radius: 2px;
 }
@@ -1183,7 +1232,7 @@ body::before {
 #sort-cancel-btn {
   background: none;
   color: var(--text-dim);
-  border: 1px solid rgba(255,255,255,0.1) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
 }
 
 #sort-cancel-btn:hover {
@@ -1194,7 +1243,7 @@ body::before {
 #sort-unsort-btn {
   background: none;
   color: var(--text-dim);
-  border: 1px solid rgba(255,255,255,0.1) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
 }
 
 #sort-unsort-btn:hover {
@@ -1676,6 +1725,7 @@ body::before {
       </div>
       <div id="recipe-picker-dropdown"></div>
     </div>
+    <div id="camera-status"></div>
     <div id="recipe-actions">
       <button class="recipe-action-btn primary hidden" id="recipe-save-btn">SAVE</button>
       <button class="recipe-action-btn" id="recipe-export-btn">EXPORT FP1</button>
@@ -1703,7 +1753,14 @@ body::before {
     </div>
   </div>
 </div>
-<div id="recipe-lightbox"><img id="recipe-lightbox-img" src="" alt=""></div>
+<div id="recipe-lightbox">
+  <img id="recipe-lightbox-img" src="" alt="">
+  <div id="recipe-lightbox-nav">
+    <div class="lightbox-arrow" id="lightbox-prev">&#8249;</div>
+    <div class="lightbox-arrow" id="lightbox-next">&#8250;</div>
+  </div>
+  <div id="recipe-lightbox-counter"></div>
+</div>
 
 <!-- SVG templates for grease pencil marks -->
 <svg id="svg-templates" style="display:none" xmlns="http://www.w3.org/2000/svg">
@@ -3299,6 +3356,25 @@ body::before {
     ]},
   ];
 
+  let cameraCheckInterval = null;
+
+  async function checkCameraStatus() {
+    const el = document.getElementById('camera-status');
+    try {
+      const res = await fetch('/api/camera-status').then(r => r.json());
+      if (res.connected) {
+        el.className = 'connected';
+        el.innerHTML = '<span class="dot"></span>X100VI connected';
+      } else {
+        el.className = 'disconnected';
+        el.innerHTML = '<span class="dot"></span>No camera';
+      }
+    } catch(e) {
+      el.className = 'disconnected';
+      el.innerHTML = '<span class="dot"></span>No camera';
+    }
+  }
+
   async function showRecipeEditor() {
     screen = 'recipe';
     landing.classList.add('hidden');
@@ -3306,20 +3382,51 @@ body::before {
     appEl.style.display = 'none';
     recipeEditor.style.display = 'flex';
     recipeTopbar.style.display = 'flex';
-    recipeMain.style.display = 'flex';
+    recipeMain.style.display = 'grid';
+    // Check camera
+    checkCameraStatus();
+    if (cameraCheckInterval) clearInterval(cameraCheckInterval);
+    cameraCheckInterval = setInterval(checkCameraStatus, 10000);
     // Set dir label
     if (recipeLoadedDir) {
       const dirName = recipeLoadedDir.split('/').filter(Boolean).pop();
       recipeDirLabel.textContent = dirName;
       recipeDirLabel.title = recipeLoadedDir;
     }
-    loadRecipes();
-    loadRecipeGrid();
+    // Run recipes + grid in parallel
+    const recipesP = loadRecipes();
+    const gridP = loadRecipeGrid();
+    await recipesP;
+    // If no saved recipe was loaded, try to deduce params from RAF EXIF
+    if (!recipeState.currentId && recipeLoadedDir) {
+      loadExifDefaults();
+    }
+  }
+
+  async function loadExifDefaults() {
+    try {
+      const res = await fetch('/api/recipe-exif-defaults?dir=' + encodeURIComponent(recipeLoadedDir)).then(r => r.json());
+      if (res.params) {
+        recipeState.currentParams = { ...RECIPE_DEFAULTS, ...res.params };
+        renderParams();
+        // Show source indicator in grid count area
+        if (res.sourceFile) {
+          const indicator = document.createElement('span');
+          indicator.id = 'exif-defaults-indicator';
+          indicator.textContent = '(from camera settings)';
+          indicator.style.cssText = 'color: #b08d57; font-size: 11px; margin-left: 8px; opacity: 0.7;';
+          recipeTitleDisplay.parentElement.appendChild(indicator);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load EXIF defaults', e);
+    }
   }
 
   function hideRecipeEditor() {
     recipeEditor.style.display = 'none';
     if (recipeState.autoSaveTimer) clearTimeout(recipeState.autoSaveTimer);
+    if (cameraCheckInterval) { clearInterval(cameraCheckInterval); cameraCheckInterval = null; }
   }
 
   async function loadRecipes() {
@@ -3342,6 +3449,11 @@ body::before {
     }
   }
 
+  function clearExifIndicator() {
+    const el = document.getElementById('exif-defaults-indicator');
+    if (el) el.remove();
+  }
+
   function selectRecipe(id) {
     const r = recipeState.recipes[id];
     if (!r) return;
@@ -3351,6 +3463,7 @@ body::before {
     recipeState.dirty = false;
     recipeTitleDisplay.textContent = recipeState.currentTitle;
     recipeSaveBtn.classList.add('hidden');
+    clearExifIndicator();
     renderParams();
     recipeGridEl.classList.remove('stale');
   }
@@ -3362,6 +3475,7 @@ body::before {
     recipeState.dirty = true;
     recipeTitleDisplay.textContent = recipeState.currentTitle;
     recipeSaveBtn.classList.remove('hidden');
+    clearExifIndicator();
     renderParams();
     recipeGridEl.classList.remove('stale');
   }
@@ -3603,7 +3717,7 @@ body::before {
       } catch(e) {}
     }
     if (!recipeLoadedDir) { recipeGridCount.textContent = 'No directory loaded'; return; }
-    recipeState.gridDir = recipeLoadedDir + '/Liked/RAF/';
+    recipeState.gridDir = recipeLoadedDir + '/Liked/HIF/';
 
     // Show loading state
     recipeGridEl.innerHTML = '';
@@ -3614,28 +3728,66 @@ body::before {
     }
 
     try {
-      const res = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeState.gridDir) + '&count=9').then(r => r.json());
+      const res = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=9').then(r => r.json());
+      if (res.hifDir) recipeState.gridDir = res.hifDir;
       recipeState.gridPhotos = res.selected || [];
       recipeGridCount.textContent = res.totalAvailable + ' available';
       renderGrid();
       recipeGridEl.classList.remove('stale');
     } catch(e) {
       recipeGridEl.innerHTML = '';
-      recipeGridCount.textContent = 'No RAF files found';
+      recipeGridCount.textContent = 'No photos found in Liked/';
     }
   }
 
   const recipeLightbox = document.getElementById('recipe-lightbox');
   const recipeLightboxImg = document.getElementById('recipe-lightbox-img');
+  const lightboxCounter = document.getElementById('recipe-lightbox-counter');
+  let lightboxIndex = 0;
 
   function openRecipeLightbox(file) {
-    const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
-    recipeLightboxImg.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(file);
+    lightboxIndex = recipeState.gridPhotos.findIndex(p => p.file === file);
+    if (lightboxIndex < 0) lightboxIndex = 0;
+    showLightboxPhoto();
     recipeLightbox.classList.add('visible');
   }
-  recipeLightbox.addEventListener('click', () => {
+
+  function showLightboxPhoto() {
+    const photo = recipeState.gridPhotos[lightboxIndex];
+    if (!photo) return;
+    const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
+    recipeLightboxImg.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
+    lightboxCounter.textContent = (lightboxIndex + 1) + ' / ' + recipeState.gridPhotos.length;
+  }
+
+  function lightboxNav(delta) {
+    lightboxIndex = (lightboxIndex + delta + recipeState.gridPhotos.length) % recipeState.gridPhotos.length;
+    showLightboxPhoto();
+  }
+
+  recipeLightbox.addEventListener('click', (e) => {
+    if (e.target === recipeLightboxImg || e.target.closest('.lightbox-arrow') || e.target.closest('#recipe-lightbox-counter')) return;
     recipeLightbox.classList.remove('visible');
     recipeLightboxImg.src = '';
+  });
+
+  document.getElementById('lightbox-prev').addEventListener('click', (e) => {
+    e.stopPropagation();
+    lightboxNav(-1);
+  });
+  document.getElementById('lightbox-next').addEventListener('click', (e) => {
+    e.stopPropagation();
+    lightboxNav(1);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!recipeLightbox.classList.contains('visible')) return;
+    if (e.key === 'ArrowLeft') lightboxNav(-1);
+    else if (e.key === 'ArrowRight') lightboxNav(1);
+    else if (e.key === 'Escape') {
+      recipeLightbox.classList.remove('visible');
+      recipeLightboxImg.src = '';
+    }
   });
 
   function renderGrid() {
@@ -3684,7 +3836,7 @@ body::before {
       const res = await fetch('/api/grid-replace', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ dir: recipeState.gridDir, selected: filenames, replaceIndex: idx, count: 9 })
+        body: JSON.stringify({ dir: recipeLoadedDir, selected: filenames, replaceIndex: idx, count: 9 })
       }).then(r => r.json());
       if (res.selected) {
         recipeState.gridPhotos = res.selected;
@@ -3704,7 +3856,7 @@ body::before {
       const res = await fetch('/api/grid-shuffle', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ dir: recipeState.gridDir, count: 9 })
+        body: JSON.stringify({ dir: recipeLoadedDir, count: 9 })
       }).then(r => r.json());
       recipeState.gridPhotos = res.selected || [];
       renderGrid();
@@ -3787,8 +3939,18 @@ body::before {
           detail.className = 'session-detail';
           detail.textContent = (s.ratedCount || 0) + ' of ' + (s.fileCount || 0) + ' rated';
           row.appendChild(detail);
-          row.addEventListener('click', () => {
-            selectRecipeNode(s.dir);
+          row.addEventListener('click', async () => {
+            try {
+              const res = await fetch('/api/recipe-load', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dir: s.dir })
+              }).then(r => r.json());
+              if (res.ok) {
+                recipeLoadedDir = s.dir;
+                showRecipeEditor();
+              }
+            } catch (e) {}
           });
           recipeSessionsList.appendChild(row);
         }
@@ -4032,44 +4194,30 @@ body::before {
     document.getElementById('recipe-right-panel').style.display = 'none';
   });
 
-  toolRecipeBtn.addEventListener('click', () => {
+  toolRecipeBtn.addEventListener('click', async () => {
     if (activeToolTab === 'recipe') return;
     activeToolTab = 'recipe';
     toolRecipeBtn.classList.add('active');
     toolCullBtn.classList.remove('active');
-    // Hide Photo Cull panels, show Recipe Lab panels
-    document.getElementById('tree-panel').style.display = 'none';
-    document.getElementById('right-panel').style.display = 'none';
-    document.getElementById('recipe-tree-panel').style.display = '';
-    document.getElementById('recipe-right-panel').style.display = '';
-    // Check if recipe dir already loaded — if so, show resume option
-    checkRecipeDirAndMaybeOpen();
-    // Init tree
-    initRecipeTree();
-  });
 
-  async function checkRecipeDirAndMaybeOpen() {
+    // Check if recipe dir already loaded — skip browser entirely
     try {
       const status = await fetch('/api/recipe-status').then(r => r.json());
       if (status.loaded && status.dir) {
         recipeLoadedDir = status.dir;
-        recipeBrowserEmpty.style.display = 'none';
-        recipeFolderInfo.classList.add('visible');
-        const dirName = status.dir.split('/').filter(Boolean).pop();
-        recipeFolderName.textContent = dirName;
         recipeSelectedPath = status.dir;
-        // Get RAF count for detail text
-        try {
-          const rafData = await fetch('/api/raf-count?dir=' + encodeURIComponent(status.dir + '/Liked/RAF')).then(r => r.json());
-          recipeFolderDetail.textContent = rafData.count > 0 ? rafData.count + ' RAF files' : 'Previously loaded';
-        } catch(e2) {
-          recipeFolderDetail.textContent = 'Previously loaded';
-        }
-        recipeLoadBtn.textContent = 'Resume';
-        recipeLoadBtn.style.display = '';
+        showRecipeEditor();
+        return;
       }
     } catch(e) {}
-  }
+
+    // No loaded dir — show browser panels
+    document.getElementById('tree-panel').style.display = 'none';
+    document.getElementById('right-panel').style.display = 'none';
+    document.getElementById('recipe-tree-panel').style.display = '';
+    document.getElementById('recipe-right-panel').style.display = '';
+    initRecipeTree();
+  });
 
 
   fetch('/api/status').then(r => r.json()).then(s => {

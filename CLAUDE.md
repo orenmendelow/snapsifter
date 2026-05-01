@@ -171,6 +171,8 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - `DELETE /api/recipe/:id` — delete recipe
 - `POST /api/recipe/:id/fp1` — generate and save FP1 file for X RAW Studio
 - `GET /api/raf-count?dir=...` — count .RAF files in a directory (no middleware required)
+- `GET /api/recipe-exif-defaults?dir=...` — read EXIF from first RAF in Liked/RAF/ via exiftool, return deduced recipe params (no middleware required)
+- `GET /api/camera-status` — checks if Fujifilm camera is connected via USB (system_profiler SPUSBDataType)
 - `GET /api/grid-select?dir=...&count=9` — select diverse photos, return file list + feature data
 - `POST /api/grid-replace` `{current[], replace: index}` — swap one grid photo for next best diverse pick
 - `POST /api/grid-shuffle` `{count: 9}` — fully re-randomize grid selection
@@ -203,22 +205,24 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - B: Diverse grid selection algorithm + endpoint (EXIF-based farthest-point sampling) — DONE
 - C: FP1 XML generation module — DONE, validated end-to-end with X RAW Studio + X100VI
 
-**Phase 2 — UI (BUILT — needs architectural rethink per Oren feedback)**
-- D: Recipe editor UI (parameter controls, save/load) — BUILT, params panel needs to be wider
-- E: Grid display UI (responsive grid, swap/shuffle) — BUILT with independent dir picker
-- F: Recipe Lab has own folder browser on landing page with Recent sessions + tree
+**Phase 2 — UI (session 7 fixes applied)**
+- D: Recipe editor UI — BUILT, params panel 520px via grid-template-columns
+- E: Grid display — 3x3 fixed layout (`repeat(3, 1fr)`), full uncropped photos, EXIF overlay
+- F: Recipe Lab folder browser + recent sessions direct-load (no intermediate button)
 - G: Grid uses `/api/preview-thumb/` (800px) for cells, `/api/preview-image/` (2000px) for lightbox
 - H: Stale grid indicator (grey out when params dirty) — BUILT
+- I: Lightbox with prev/next arrows (click + keyboard) and counter
+- J: Swap picks randomly from full HIF folder (not diversity-constrained)
+- K: EXIF defaults deduction via exiftool (exifr can't parse RAF)
+- L: EXIF batch caching (in-memory, invalidates on file count change)
+- M: Camera USB detection endpoint + topbar indicator (polls every 10s)
+- N: UI brightness pass — text-dim #999, borders 0.12-0.18 opacity, slider rails #555
 
-**ARCHITECTURAL RETHINK NEEDED (from Oren feedback session 5):**
-- Grid must show **HEIF from Liked/HIF/** — NOT RAF thumbnails. HEIFs are fast (already camera-processed). RAFs are only for X RAW Studio processing.
-- Deduce current recipe settings from RAF EXIF metadata (film sim, WB, tone, etc.)
-- Recent sessions should load directly — no intermediate "Load" button
-- Left params panel still too narrow
-- Grid layout needs centering fix
-- Need split-view zoom comparison (synchronized pan/zoom across two recipe outputs)
-- Need session history to compare recipe iterations (maintain previous HEIF exports)
-- Need recipe library (browse/view saved recipes with example photos) — wishlist item
+**Still needed (from Oren feedback):**
+- Grid photos STILL NOT DISPLAYING IN FULL per Oren — needs investigation in browser
+- Split-view zoom comparison (synchronized pan/zoom across two recipe outputs)
+- Session history to compare recipe iterations (maintain previous HEIF exports)
+- Recipe library (browse saved recipes with example photos) — wishlist
 - Full feedback documented in memory: `feedback_recipe_lab_v1.md`
 
 **Phase 3 — Comparison + Polish**
@@ -252,6 +256,11 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - **Grid should show HEIF not RAF**: Loading RAFs via sips is slow. Grid should display Liked/HIF/ files (already camera-processed, fast). RAFs only used for X RAW Studio processing.
 - **Grid-select is slow**: `exiftool` parsing all RAFs in a directory is inherently slow. Switching to HEIF display eliminates this for the grid. EXIF caching still useful for diverse selection algorithm.
 - **No intermediate Load button for recent sessions**: When user clicks a previously culled session in Recipe Lab, load directly.
+- **display: flex vs display: grid**: `showRecipeEditor()` must set `recipeMain.style.display = 'grid'` not `'flex'`. The grid-template-columns only work with display: grid. This caused the params panel to render at 155px instead of 520px.
+- **exifr cannot parse RAF files**: Returns "Unknown file format" on Fujifilm RAF. Use exiftool CLI instead. The `extractRecipeFromExiftool()` function parses exiftool's human-readable JSON output (values like `"-2 (soft)"`, `"Red +40, Blue -120"`).
+- **WB fine tune units**: exiftool reports WB shift as internal values (e.g. `Red +40`). Divide by 20 to get camera-display range (-9 to +9). So `+40` = `+2`, `-120` = `-6`.
+- **EXIF batch is slow**: exiftool on 714 RAFs takes ~10s. Cache results in memory keyed by directory, invalidate when file count changes. grid-select/replace/shuffle all share the cache.
+- **Swap must be random**: Farthest-point sampling for swap always returns the same deterministic result. Swap should pick randomly from the full HIF folder excluding current grid photos.
 
 ## Session endpoints
 
