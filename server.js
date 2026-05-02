@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const { execSync } = require('child_process');
+const { execSync, exec } = require('child_process');
 
 // ── State directory & sessions ──
 const stateDir = path.join(os.homedir(), '.snapsifter');
@@ -1064,6 +1064,7 @@ function generateFP1XML(recipe) {
 
 app.post('/api/recipe/:id/fp1', requireRecipeDir, (req, res) => {
   const { id } = req.params;
+  const { gridFiles } = req.body || {};
   const data = loadRecipes();
   const recipe = data.recipes[id];
   if (!recipe) {
@@ -1082,7 +1083,153 @@ app.post('/api/recipe/:id/fp1', requireRecipeDir, (req, res) => {
   const fp1Path = path.join(xrsDir, filename);
   fs.writeFileSync(fp1Path, xml, 'utf8');
 
-  res.json({ ok: true, path: fp1Path, label: recipe.title || 'Untitled' });
+  // Create staging folder with symlinks to grid RAFs
+  let stagingDir = null;
+  if (gridFiles && Array.isArray(gridFiles) && gridFiles.length > 0) {
+    stagingDir = path.join(recipeDir, 'SnapSifter Preview');
+    fs.mkdirSync(stagingDir, { recursive: true });
+
+    // Clear existing contents
+    const existing = fs.readdirSync(stagingDir);
+    for (const f of existing) {
+      const fp = path.join(stagingDir, f);
+      const stat = fs.lstatSync(fp);
+      if (stat.isFile() || stat.isSymbolicLink()) {
+        fs.unlinkSync(fp);
+      }
+    }
+
+    const rafDir = path.join(recipeDir, 'Liked', 'RAF');
+    const linked = [];
+    for (const hifName of gridFiles) {
+      const stem = path.parse(hifName).name;
+      // Find matching RAF by stem
+      try {
+        const rafFiles = fs.readdirSync(rafDir);
+        const match = rafFiles.find(f => path.parse(f).name === stem && f.toUpperCase().endsWith('.RAF'));
+        if (match) {
+          const rafPath = path.join(rafDir, match);
+          const linkPath = path.join(stagingDir, match);
+          try {
+            fs.symlinkSync(rafPath, linkPath);
+            linked.push(match);
+          } catch (e) {
+            console.error(`Failed to symlink ${match}:`, e.message);
+          }
+        }
+      } catch (e) {
+        // rafDir doesn't exist or can't be read
+      }
+    }
+    console.log(`Staging: symlinked ${linked.length}/${gridFiles.length} RAFs to ${stagingDir}`);
+  }
+
+  res.json({ ok: true, path: fp1Path, label: recipe.title || 'Untitled', stagingDir });
+});
+
+// ── Scan for reprocessed HIF outputs from X RAW Studio ──
+
+app.post('/api/scan-outputs', requireRecipeDir, (req, res) => {
+  const { stems } = req.body || {};
+  if (!stems || !Array.isArray(stems) || stems.length === 0) {
+    return res.status(400).json({ error: 'stems array required' });
+  }
+
+  const previewDir = path.join(recipeDir, 'SnapSifter Preview');
+  const rafDir = path.join(recipeDir, 'Liked', 'RAF');
+
+  const found = [];
+  const missing = [];
+
+  for (const stem of stems) {
+    let located = false;
+
+    // Search order: SnapSifter Preview/, Liked/RAF/, root
+    const locations = [
+      { dir: previewDir, label: 'preview' },
+      { dir: rafDir, label: 'raf' },
+      { dir: recipeDir, label: 'root' },
+    ];
+
+    for (const loc of locations) {
+      if (located) break;
+      try {
+        const files = fs.readdirSync(loc.dir);
+        const match = files.find(f => {
+          const upper = f.toUpperCase();
+          return path.parse(f).name === stem && (upper.endsWith('.HIF') || upper.endsWith('.HEIF'));
+        });
+        if (match) {
+          found.push({
+            stem,
+            outputPath: path.join(loc.dir, match),
+            location: loc.label,
+          });
+          located = true;
+        }
+      } catch (e) {
+        // directory doesn't exist, skip
+      }
+    }
+
+    if (!located) {
+      missing.push(stem);
+    }
+  }
+
+  res.json({ found, missing });
+});
+
+// ── Serve reprocessed HIF output as JPEG ──
+
+app.get('/api/preview-output-image/:stem', requireRecipeDir, (req, res) => {
+  const { stem } = req.params;
+
+  const previewDir = path.join(recipeDir, 'SnapSifter Preview');
+  const rafDir = path.join(recipeDir, 'Liked', 'RAF');
+
+  // Search for the output HIF/HEIF in order: preview, raf, root
+  const locations = [previewDir, rafDir, recipeDir];
+  let srcPath = null;
+
+  for (const dir of locations) {
+    try {
+      const files = fs.readdirSync(dir);
+      const match = files.find(f => {
+        const upper = f.toUpperCase();
+        return path.parse(f).name === stem && (upper.endsWith('.HIF') || upper.endsWith('.HEIF'));
+      });
+      if (match) {
+        srcPath = path.join(dir, match);
+        break;
+      }
+    } catch (e) {
+      // directory doesn't exist
+    }
+  }
+
+  if (!srcPath) {
+    return res.status(404).send('Output not found for stem: ' + stem);
+  }
+
+  // Cache to SnapSifter Preview/.cache/
+  const outputCacheDir = path.join(recipeDir, 'SnapSifter Preview', '.cache');
+  fs.mkdirSync(outputCacheDir, { recursive: true });
+
+  const pathHash = crypto.createHash('md5').update(srcPath).digest('hex').slice(0, 12);
+  const cacheName = pathHash + '_output.jpg';
+  const cachePath = path.join(outputCacheDir, cacheName);
+
+  try {
+    if (!fs.existsSync(cachePath)) {
+      generateThumb(srcPath, cachePath, 2000);
+    }
+    res.type('image/jpeg');
+    res.send(fs.readFileSync(cachePath));
+  } catch (err) {
+    console.error('Error converting output HIF for ' + stem + ':', err.message);
+    res.status(500).send('Conversion failed');
+  }
 });
 
 // ── Grid selection helpers ──
@@ -1667,6 +1814,99 @@ app.get('/api/recipe-exif-defaults', async (req, res) => {
   }
 });
 
+// ── Batch recipe EXIF extraction ──
+
+app.post('/api/batch-recipe-exif', express.json(), async (req, res) => {
+  const { dir, files } = req.body;
+  if (!dir || !Array.isArray(files) || files.length === 0) {
+    return res.status(400).json({ error: 'dir and files[] required' });
+  }
+
+  const rafDir = path.join(dir, 'Liked', 'RAF');
+  if (!fs.existsSync(rafDir)) {
+    return res.json({ perFile: {}, majority: {} });
+  }
+
+  // Map HIF stems to RAF filenames
+  const rafEntries = fs.readdirSync(rafDir).filter(f => f.toUpperCase().endsWith('.RAF'));
+  const rafByStem = {};
+  for (const f of rafEntries) {
+    const stem = f.replace(/\.[^.]+$/, '');
+    rafByStem[stem] = f;
+  }
+
+  // Find matching RAF files
+  const stems = files.map(f => f.replace(/\.[^.]+$/, ''));
+  const matchedPaths = [];
+  const matchedStems = [];
+  for (const stem of stems) {
+    if (rafByStem[stem]) {
+      matchedPaths.push(path.join(rafDir, rafByStem[stem]));
+      matchedStems.push(stem);
+    }
+  }
+
+  if (matchedPaths.length === 0) {
+    return res.json({ perFile: {}, majority: {} });
+  }
+
+  try {
+    const exiftoolArgs = [
+      '-json',
+      '-FilmMode', '-WhiteBalance', '-WhiteBalanceFineTune',
+      '-DynamicRange', '-DevelopmentDynamicRange',
+      '-HighlightTone', '-ShadowTone', '-Saturation', '-Sharpness',
+      '-NoiseReduction', '-Clarity',
+      '-GrainEffectRoughness', '-GrainEffectSize',
+      '-ColorChromeEffect', '-ColorChromeFXBlue',
+      ...matchedPaths
+    ];
+    const stdout = execSync(`/opt/homebrew/bin/exiftool ${exiftoolArgs.map(a => JSON.stringify(a)).join(' ')}`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 30000
+    });
+    const parsed = JSON.parse(stdout);
+
+    const perFile = {};
+    for (let i = 0; i < parsed.length; i++) {
+      const stem = matchedStems[i];
+      const params = extractRecipeFromExiftool(parsed[i]);
+      if (params) perFile[stem] = params;
+    }
+
+    // Compute majority params
+    const majority = {};
+    const allKeys = new Set();
+    for (const p of Object.values(perFile)) {
+      for (const k of Object.keys(p)) allKeys.add(k);
+    }
+    for (const key of allKeys) {
+      const counts = {};
+      for (const p of Object.values(perFile)) {
+        if (p[key] != null) {
+          const v = String(p[key]);
+          counts[v] = (counts[v] || 0) + 1;
+        }
+      }
+      let maxCount = 0, maxVal = null;
+      for (const [v, c] of Object.entries(counts)) {
+        if (c > maxCount) { maxCount = c; maxVal = v; }
+      }
+      if (maxVal != null) {
+        // Preserve numeric types
+        const numVal = Number(maxVal);
+        majority[key] = isNaN(numVal) ? maxVal : numVal;
+      }
+    }
+
+    res.json({ perFile, majority });
+  } catch (e) {
+    console.error('Batch recipe EXIF extraction failed:', e.message);
+    res.json({ perFile: {}, majority: {}, error: e.message });
+  }
+});
+
 // ── Camera detection ──
 
 app.get('/api/camera-status', (req, res) => {
@@ -1956,6 +2196,41 @@ app.post('/api/grid-shuffle', (req, res) => {
     }
   }
 })();
+
+// ── Batch pre-warm thumbnails in parallel ──
+app.post('/api/prewarm-thumbs', (req, res) => {
+  const { dir, files } = req.body;
+  if (!dir || !files || !Array.isArray(files)) {
+    return res.status(400).json({ error: 'dir and files array required' });
+  }
+
+  const promises = files.map(filename => {
+    const srcPath = path.join(dir, filename);
+    if (!fs.existsSync(srcPath)) return Promise.resolve();
+
+    const pathHash = crypto.createHash('md5').update(srcPath).digest('hex').slice(0, 12);
+    const cacheName = pathHash + '_preview800.jpg';
+    const cachePath = path.join(previewCacheDir, cacheName);
+
+    if (fs.existsSync(cachePath)) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      const upper = srcPath.toUpperCase();
+      const needsConversion = upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.RAF');
+      const cmd = needsConversion
+        ? `sips -s format jpeg -Z 800 ${JSON.stringify(srcPath)} --out ${JSON.stringify(cachePath)}`
+        : `sips -Z 800 ${JSON.stringify(srcPath)} --out ${JSON.stringify(cachePath)}`;
+      exec(cmd, { stdio: 'pipe' }, (err) => {
+        if (err) console.error('Prewarm failed for', filename, err.message);
+        resolve();
+      });
+    });
+  });
+
+  Promise.all(promises).then(() => {
+    res.json({ ok: true, warmed: files.length });
+  });
+});
 
 const PORT = 4000;
 app.listen(PORT, () => {

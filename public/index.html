@@ -264,6 +264,46 @@ body::before {
 .recipe-action-btn.danger-text { color: #cc4444; border-color: rgba(204,68,68,0.3); }
 .recipe-action-btn.danger-text:hover { border-color: #cc4444; }
 
+#staging-bar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #1a1a1a;
+  border-bottom: 1px solid var(--amber-glow);
+  font-size: 12px;
+  color: #999;
+  flex-shrink: 0;
+}
+#staging-bar.visible { display: flex; }
+#staging-bar .staging-path {
+  flex: 1;
+  font-family: monospace;
+  color: var(--amber);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#staging-bar .staging-scan-btn {
+  background: var(--amber);
+  color: #111;
+  border: none;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+#staging-bar .staging-scan-btn:hover { background: #d4693f; }
+#staging-bar .staging-dismiss {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+}
+
 #recipe-main {
   flex: 1;
   display: grid;
@@ -471,27 +511,42 @@ body::before {
 
 #recipe-grid {
   flex: 1;
-  column-count: 3;
-  column-gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   min-height: 0;
   overflow-y: auto;
+  align-content: flex-start;
 }
 
 .recipe-grid-cell {
   position: relative;
   background: #0a0a0a;
   border-radius: 2px;
-  break-inside: avoid;
-  margin-bottom: 8px;
+  overflow: hidden;
 }
 
 .recipe-grid-cell img {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
+  object-fit: cover;
   background: #0a0a0a;
 }
 
+.cell-filmsim-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 9px;
+  font-family: var(--mono);
+  letter-spacing: 0.5px;
+  color: var(--text);
+  background: rgba(0,0,0,0.7);
+  padding: 2px 6px;
+  border-radius: 2px;
+  z-index: 2;
+}
 .recipe-grid-cell .cell-overlay {
   position: absolute;
   bottom: 0;
@@ -523,6 +578,7 @@ body::before {
 .recipe-grid-cell .cell-swap:hover { color: var(--amber); }
 
 .recipe-grid-cell.loading {
+  width: calc(33% - 3px);
   min-height: 180px;
   animation: cell-pulse 1.5s ease-in-out infinite;
 }
@@ -1824,6 +1880,12 @@ body::before {
       <button class="recipe-action-btn" id="recipe-export-btn">EXPORT FP1</button>
       <button class="recipe-action-btn danger-text hidden" id="recipe-delete-btn">DELETE</button>
     </div>
+  </div>
+  <div id="staging-bar">
+    <span>Open in X RAW Studio:</span>
+    <span class="staging-path" id="staging-path"></span>
+    <button class="staging-scan-btn" id="staging-scan-btn">SCAN FOR OUTPUTS</button>
+    <button class="staging-dismiss" id="staging-dismiss">&times;</button>
   </div>
   <div id="recipe-main">
     <div id="recipe-params-panel"></div>
@@ -3404,8 +3466,12 @@ body::before {
     currentTitle: 'Untitled Recipe',
     gridPhotos: [],
     gridDir: '',
+    lastLoadedDir: null,
     dirty: false,
-    autoSaveTimer: null
+    autoSaveTimer: null,
+    stagingDir: null,
+    outputs: [],
+    perFileExif: {}
   };
 
   let recipeTreeState = {};
@@ -3499,29 +3565,46 @@ body::before {
     const recipesP = loadRecipes();
     const gridP = loadRecipeGrid();
     await recipesP;
-    // If no saved recipe was loaded, try to deduce params from RAF EXIF
-    if (!recipeState.currentId && recipeLoadedDir) {
-      loadExifDefaults();
+    // If no saved recipe was loaded, fetch batch EXIF from grid photos
+    await gridP;
+    if (!recipeState.currentId && recipeLoadedDir && recipeState.gridPhotos.length > 0) {
+      loadBatchExif();
     }
   }
 
-  async function loadExifDefaults() {
+  async function loadBatchExif() {
     try {
-      const res = await fetch('/api/recipe-exif-defaults?dir=' + encodeURIComponent(recipeLoadedDir)).then(r => r.json());
-      if (res.params) {
-        recipeState.currentParams = { ...RECIPE_DEFAULTS, ...res.params };
+      const files = recipeState.gridPhotos.map(p => p.file.replace(/\.[^.]+$/, '') + '.RAF');
+      const res = await fetch('/api/batch-recipe-exif', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dir: recipeLoadedDir, files })
+      }).then(r => r.json());
+
+      if (res.perFile) recipeState.perFileExif = res.perFile;
+
+      if (res.majority && Object.keys(res.majority).length > 0) {
+        recipeState.currentParams = { ...RECIPE_DEFAULTS, ...res.majority };
+        recipeState.currentTitle = 'As Shot';
+        recipeState.currentId = null;
+        recipeState.dirty = false;
+        recipeTitleDisplay.textContent = 'As Shot';
+        clearExifIndicator();
+        const indicator = document.createElement('span');
+        indicator.id = 'exif-defaults-indicator';
+        indicator.textContent = '(from camera settings)';
+        indicator.style.cssText = 'color: var(--amber); font-size: 11px; margin-left: 8px; opacity: 0.7;';
+        recipeTitleDisplay.parentElement.appendChild(indicator);
         renderParams();
-        // Show source indicator in grid count area
-        if (res.sourceFile) {
-          const indicator = document.createElement('span');
-          indicator.id = 'exif-defaults-indicator';
-          indicator.textContent = '(from camera settings)';
-          indicator.style.cssText = 'color: #b08d57; font-size: 11px; margin-left: 8px; opacity: 0.7;';
-          recipeTitleDisplay.parentElement.appendChild(indicator);
-        }
+        recipeState.cleanParams = { ...recipeState.currentParams };
+      }
+
+      // Re-render grid to show film sim badges
+      if (Object.keys(recipeState.perFileExif).length > 0) {
+        renderGrid();
       }
     } catch (e) {
-      console.error('Failed to load EXIF defaults', e);
+      console.error('Failed to load batch EXIF', e);
     }
   }
 
@@ -3564,6 +3647,9 @@ body::before {
     recipeState.currentTitle = r.title || 'Untitled';
     recipeState.currentParams = { ...RECIPE_DEFAULTS, ...r.params };
     recipeState.dirty = false;
+    recipeState.stagingDir = null;
+    recipeState.outputs = [];
+    document.getElementById('staging-bar').classList.remove('visible');
     recipeTitleDisplay.textContent = recipeState.currentTitle;
     recipeSaveBtn.classList.add('hidden');
     clearExifIndicator();
@@ -3666,9 +3752,25 @@ body::before {
     }
     if (!recipeState.currentId) return;
     try {
-      const res = await fetch('/api/recipe/' + recipeState.currentId + '/fp1', { method: 'POST' }).then(r => r.json());
-      if (res.ok) showToast('Saved: ' + res.label + '.FP1');
-      else showToast('Export failed');
+      const gridFiles = recipeState.gridPhotos.map(p => p.file);
+      const res = await fetch('/api/recipe/' + recipeState.currentId + '/fp1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gridFiles })
+      }).then(r => r.json());
+      if (res.ok) {
+        showToast('Saved: ' + res.label + '.FP1');
+        if (res.stagingDir) {
+          recipeState.stagingDir = res.stagingDir;
+          recipeState.outputs = [];
+          const stagingBar = document.getElementById('staging-bar');
+          document.getElementById('staging-path').textContent = res.stagingDir;
+          document.getElementById('staging-path').title = res.stagingDir;
+          stagingBar.classList.add('visible');
+        }
+      } else {
+        showToast('Export failed');
+      }
     } catch(e) {
       showToast('Export failed');
     }
@@ -3856,6 +3958,13 @@ body::before {
       } catch(e) {}
     }
     if (!recipeLoadedDir) { recipeGridCount.textContent = 'No directory loaded'; return; }
+
+    // Skip fetch if grid already loaded for this directory
+    if (recipeState.gridPhotos.length > 0 && recipeState.lastLoadedDir === recipeLoadedDir) {
+      renderGrid();
+      return;
+    }
+
     recipeState.gridDir = recipeLoadedDir + '/Liked/HIF/';
 
     // Show loading state
@@ -3870,11 +3979,19 @@ body::before {
       const res = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=12').then(r => r.json());
       if (res.hifDir) recipeState.gridDir = res.hifDir;
       recipeState.gridPhotos = res.selected || [];
+      recipeState.lastLoadedDir = recipeLoadedDir;
       recipeGridCount.textContent = res.totalAvailable + ' available';
       renderGrid();
       recipeGridEl.classList.remove('stale');
       recipeState.cleanParams = { ...recipeState.currentParams };
       document.getElementById('recipe-stale-overlay').classList.remove('visible');
+
+      // Pre-warm thumbnails in parallel (fire-and-forget)
+      fetch('/api/prewarm-thumbs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dir: recipeState.gridDir, files: recipeState.gridPhotos.map(p => p.file) })
+      });
     } catch(e) {
       recipeGridEl.innerHTML = '';
       recipeGridCount.textContent = 'No photos found in Liked/';
@@ -3950,6 +4067,8 @@ body::before {
   function renderGrid() {
     recipeGridEl.innerHTML = '';
     const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
+    const cells = [];
+
     recipeState.gridPhotos.forEach((photo, idx) => {
       const cell = document.createElement('div');
       cell.className = 'recipe-grid-cell';
@@ -3969,6 +4088,16 @@ body::before {
         (photo.aperture ? '<span>' + photo.aperture + '</span>' : '');
       cell.appendChild(overlay);
 
+      // Film simulation badge (when differs from majority/current)
+      const photoExif = recipeState.perFileExif[stem];
+      if (photoExif && photoExif.filmSimulation &&
+          photoExif.filmSimulation !== recipeState.currentParams.filmSimulation) {
+        const badge = document.createElement('span');
+        badge.className = 'cell-filmsim-badge';
+        badge.textContent = photoExif.filmSimulation;
+        cell.appendChild(badge);
+      }
+
       const swapBtn = document.createElement('div');
       swapBtn.className = 'cell-swap';
       swapBtn.textContent = 'SWAP';
@@ -3984,8 +4113,81 @@ body::before {
       });
 
       recipeGridEl.appendChild(cell);
+      cells.push({ cell, img });
+    });
+
+    // Wait for all images to load, then run justified layout
+    let loaded = 0;
+    const total = cells.length;
+    if (total === 0) return;
+    cells.forEach(({ img }) => {
+      const check = () => {
+        loaded++;
+        if (loaded >= total) justifyGrid(cells);
+      };
+      if (img.complete && img.naturalWidth > 0) check();
+      else {
+        img.addEventListener('load', check);
+        img.addEventListener('error', check);
+      }
     });
   }
+
+  function justifyGrid(cells) {
+    const containerWidth = recipeGridEl.clientWidth;
+    if (containerWidth <= 0) return;
+    const gap = 4;
+    const targetRowHeight = 220;
+
+    const items = cells.map(({ cell, img }) => ({
+      cell,
+      aspect: (img.naturalWidth || 300) / (img.naturalHeight || 200)
+    }));
+
+    let row = [];
+    let rowWidth = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const itemWidth = targetRowHeight * item.aspect;
+      row.push(item);
+      rowWidth += itemWidth + (row.length > 1 ? gap : 0);
+
+      if (rowWidth >= containerWidth || i === items.length - 1) {
+        const totalGaps = (row.length - 1) * gap;
+        const availableWidth = containerWidth - totalGaps;
+        const totalAspect = row.reduce((sum, r) => sum + r.aspect, 0);
+        let rowHeight = availableWidth / totalAspect;
+
+        // Don't stretch last row if it's sparse
+        const isLastRow = i === items.length - 1;
+        if (isLastRow && rowWidth < containerWidth * 0.8) {
+          rowHeight = Math.min(rowHeight, targetRowHeight);
+        }
+
+        row.forEach(r => {
+          const w = Math.floor(rowHeight * r.aspect);
+          r.cell.style.width = w + 'px';
+          r.cell.style.height = Math.floor(rowHeight) + 'px';
+        });
+
+        row = [];
+        rowWidth = 0;
+      }
+    }
+  }
+
+  // Re-justify grid on container resize
+  const _gridResizeObserver = new ResizeObserver(() => {
+    if (recipeState.gridPhotos.length > 0) {
+      const cells = Array.from(recipeGridEl.querySelectorAll('.recipe-grid-cell')).map(cell => ({
+        cell,
+        img: cell.querySelector('img')
+      }));
+      if (cells.length > 0 && cells[0].img && cells[0].img.complete) justifyGrid(cells);
+    }
+  });
+  _gridResizeObserver.observe(recipeGridEl);
 
   async function replaceGridCell(idx) {
     const filenames = recipeState.gridPhotos.map(p => p.file);
@@ -3998,6 +4200,15 @@ body::before {
       if (res.selected) {
         recipeState.gridPhotos = res.selected;
         renderGrid();
+        // Pre-warm the new thumbnail
+        const newFile = res.selected[idx];
+        if (newFile) {
+          fetch('/api/prewarm-thumbs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dir: recipeState.gridDir, files: [newFile.file] })
+          });
+        }
       }
     } catch(e) {}
   }
@@ -4017,6 +4228,12 @@ body::before {
       }).then(r => r.json());
       recipeState.gridPhotos = res.selected || [];
       renderGrid();
+      // Pre-warm all new thumbnails in parallel
+      fetch('/api/prewarm-thumbs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dir: recipeState.gridDir, files: recipeState.gridPhotos.map(p => p.file) })
+      });
     } catch(e) {}
   }
 
@@ -4369,6 +4586,9 @@ body::before {
       }).then(r => r.json());
       if (res.ok) {
         recipeLoadedDir = recipeSelectedPath;
+        recipeState.stagingDir = null;
+        recipeState.outputs = [];
+        document.getElementById('staging-bar').classList.remove('visible');
         showRecipeEditor();
       }
     } catch (e) {}
@@ -4388,6 +4608,31 @@ body::before {
   recipePickerBtn.addEventListener('click', (e) => { e.stopPropagation(); openRecipePicker(); });
   recipeSaveBtn.addEventListener('click', () => saveRecipe());
   recipeExportBtn.addEventListener('click', () => exportFP1());
+
+  document.getElementById('staging-dismiss').addEventListener('click', () => {
+    document.getElementById('staging-bar').classList.remove('visible');
+  });
+
+  document.getElementById('staging-scan-btn').addEventListener('click', async () => {
+    const stems = recipeState.gridPhotos.map(p => p.file.replace(/\.[^.]+$/, ''));
+    try {
+      const res = await fetch('/api/scan-outputs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stems })
+      }).then(r => r.json());
+      if (res.found && res.found.length > 0) {
+        showToast('Found ' + res.found.length + '/' + stems.length + ' outputs');
+        recipeState.outputs = res.found;
+      } else {
+        showToast('No outputs yet — process RAFs in X RAW Studio first');
+        recipeState.outputs = [];
+      }
+    } catch (e) {
+      showToast('Scan failed');
+    }
+  });
+
   recipeDeleteYes.addEventListener('click', () => {
     recipeDeleteConfirm.classList.remove('visible');
     deleteRecipe(pendingDeleteId);
@@ -4410,6 +4655,7 @@ body::before {
   toolCullBtn.addEventListener('click', () => {
     if (activeToolTab === 'cull') return;
     activeToolTab = 'cull';
+    localStorage.setItem('snapsifter-active-tool', 'cull');
     toolCullBtn.classList.add('active');
     toolRecipeBtn.classList.remove('active');
     // Show Photo Cull panels, hide Recipe Lab panels
@@ -4422,6 +4668,7 @@ body::before {
   toolRecipeBtn.addEventListener('click', async () => {
     if (activeToolTab === 'recipe') return;
     activeToolTab = 'recipe';
+    localStorage.setItem('snapsifter-active-tool', 'recipe');
     toolRecipeBtn.classList.add('active');
     toolCullBtn.classList.remove('active');
 
@@ -4448,6 +4695,12 @@ body::before {
   fetch('/api/status').then(r => r.json()).then(s => {
     if (s.dir) loadedDir = s.dir;
   }).catch(() => {});
+
+  // Restore last active tool tab
+  const savedTool = localStorage.getItem('snapsifter-active-tool');
+  if (savedTool === 'recipe') {
+    setTimeout(() => toolRecipeBtn.click(), 0);
+  }
 
   initLanding();
 })();
