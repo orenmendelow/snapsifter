@@ -2232,6 +2232,118 @@ app.post('/api/prewarm-thumbs', (req, res) => {
   });
 });
 
+// ── Camera Bridge (PTP via ImageCaptureCore) ──
+const cameraBridge = require('./camera-bridge');
+
+app.get('/api/camera/list', async (req, res) => {
+  try {
+    const result = await cameraBridge.list();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/camera/connect', async (req, res) => {
+  try {
+    const result = await cameraBridge.connect();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/camera/disconnect', async (req, res) => {
+  try {
+    const result = await cameraBridge.disconnect();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/camera/info', async (req, res) => {
+  try {
+    const result = await cameraBridge.deviceInfo();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/camera/upload-raf', async (req, res) => {
+  try {
+    const { path: rafPath } = req.body;
+    if (!rafPath) return res.status(400).json({ error: 'path required' });
+    const result = await cameraBridge.uploadRaf(rafPath);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/camera/profile', async (req, res) => {
+  try {
+    const result = await cameraBridge.getProfile();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/camera/profile', async (req, res) => {
+  try {
+    const { data } = req.body;
+    if (!data) return res.status(400).json({ error: 'data (base64) required' });
+    const result = await cameraBridge.setProfile(data);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/camera/convert', async (req, res) => {
+  try {
+    const result = await cameraBridge.triggerConversion();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/camera/wait-result', async (req, res) => {
+  try {
+    const { outputPath, timeout } = req.body;
+    if (!outputPath) return res.status(400).json({ error: 'outputPath required' });
+    const result = await cameraBridge.waitForResult(outputPath, timeout || 30);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/camera/read-prop', async (req, res) => {
+  try {
+    const { propId } = req.body;
+    if (propId === undefined) return res.status(400).json({ error: 'propId required' });
+    const result = await cameraBridge.readProp(propId);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/camera/write-prop', async (req, res) => {
+  try {
+    const { propId, data } = req.body;
+    if (propId === undefined || !data) return res.status(400).json({ error: 'propId and data required' });
+    const result = await cameraBridge.writeProp(propId, data);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = 4000;
 app.listen(PORT, () => {
   console.log(`SnapSifter running at http://localhost:${PORT}`);

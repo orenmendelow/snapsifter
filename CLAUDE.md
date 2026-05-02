@@ -27,8 +27,16 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 ## Files
 
-- `server.js` — Express backend. All API endpoints, sips conversion, sessions, file sorting with filetype subfolders.
+- `server.js` — Express backend. All API endpoints, sips conversion, sessions, file sorting with filetype subfolders, camera bridge endpoints.
 - `public/index.html` — Single-file frontend. Inline CSS + JS. Landing screen (tree browser + preview) and viewer (image + filmstrip + filters).
+- `camera-bridge.js` — Node module that spawns Swift helper and provides Promise-based camera API. JSON-RPC over stdio.
+- `camera-helper/` — Swift Package (SPM). Builds a CLI binary that uses ImageCaptureCore for PTP camera communication.
+  - `Sources/main.swift` — ICDeviceBrowser, PTP command construction, JSON-RPC protocol, all camera operations.
+  - `Sources/Info.plist` — NSCameraUsageDescription, embedded in binary via linker.
+  - `camera-helper.entitlements` — `com.apple.security.device.camera`.
+  - `Package.swift` — SPM config, links ImageCaptureCore framework.
+  - Build: `cd camera-helper && swift build && codesign --entitlements camera-helper.entitlements --force -s - .build/debug/camera-helper`
+- `test-raf/` — Test RAF files and conversion outputs (gitignored). Contains DSCF6740.RAF and rendered JPEGs from 6 film sims.
 - `launch.command` — Double-click launcher for distribution. Checks for Node.js, runs npm install, starts server, opens browser.
 - `README.txt` — Minimal usage instructions for distribution.
 - `~/.snapsifter/sessions.json` — Persists sessions (id, dir, name, lastOpened, lastPosition, fileCount, ratedCount).
@@ -65,7 +73,19 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 ## Distribution
 
-Distributed as a zip (`SnapSifter.zip` on Desktop). Contains launch.command for double-click start. macOS only (requires sips). Brother (Eytan) testing — needs `xattr -cr ~/Downloads/SnapSifter` after download to bypass Gatekeeper.
+Currently: Distributed as a zip (`SnapSifter.zip` on Desktop). Contains launch.command for double-click start. macOS only (requires sips). Brother (Eytan) testing — needs `xattr -cr ~/Downloads/SnapSifter` after download to bypass Gatekeeper.
+
+**Future: macOS app bundle for commercial distribution.** Two packaging options under consideration:
+- **Electron** — wraps existing web UI + Node server, bundles Swift helper in `Contents/Resources/`. Familiar stack, faster to ship.
+- **Native Swift app with WKWebView** — Swift helper becomes the app itself, embeds web UI. Smaller footprint, proper macOS citizen.
+
+Either way requires:
+- Apple Developer Program ($99/yr) for Developer ID certificate
+- Hardened runtime enabled
+- `com.apple.security.device.camera` entitlement
+- `NSCameraUsageDescription` in Info.plist
+- Notarization via `notarytool` + stapling
+- No App Store or sandbox required
 
 ## Recipe Editor — Film Simulation Workflow
 
@@ -80,20 +100,53 @@ New mode in SnapSifter for dialing in Fujifilm film simulation recipes and batch
 
 **SnapSifter owns**: recipe editing UI, recipe storage, FP1 export, diverse grid selection, grid display with before/after toggle, recipe card view, swap/shuffle grid photos.
 
-**Simulation / rendering**: Camera hardware does the actual RAF→JPEG/HIF conversion. Two possible approaches investigated in session 9:
-- **X RAW Studio automation** (AppleScript/Accessibility): UI is fully accessible via System Events. Can select profiles, thumbnails, trigger conversion. Brittle (timing-dependent, app must be frontmost). Verified: menu items, profile table, parameter table all addressable.
-- **Direct PTP over USB** (rawji/FilmKit): Camera speaks PTP protocol. Open-source tools exist (rawji=Python/pyusb, FilmKit=TypeScript/WebUSB). FilmKit verified on X100VI. **BLOCKED on macOS**: `ptpcamerad` (system daemon) claims the USB interface exclusively. Neither libusb (pyusb), nor WebUSB (Chrome), nor sudo can override IOKit's PTP device protection. Only properly entitled native macOS apps (like X RAW Studio) can claim PTP devices. Would require a signed native helper binary or kext exclusion.
+**Simulation / rendering**: Camera hardware does the actual RAF→JPEG conversion via direct PTP over USB.
 
-**Current viable path**: Automate X RAW Studio via AppleScript/System Events. Not ideal (app must be frontmost, timing-dependent) but functional. FilmKit's TypeScript PTP code is the gold standard reference if the macOS USB permission issue is ever solved (e.g., via a signed helper app).
+**SOLVED in session 10**: The macOS PTP blocker is resolved. `ptpcamerad` is NOT the enemy — it's the gatekeeper. Apple's `ImageCaptureCore` framework works THROUGH `ptpcamerad` via XPC, providing full PTP command access to properly entitled apps. No sudo, no daemon killing, no hacks.
 
-### PTP research artifacts (session 9)
+**Architecture (working)**:
+```
+Node server (port 4000) → camera-bridge.js → Swift helper (stdin/stdout JSON-RPC) → ImageCaptureCore → ptpcamerad (XPC) → USB → X100VI
+```
+
+- **Swift helper binary** (`camera-helper/`): Uses `ICDeviceBrowser` for camera discovery, `ICCameraDevice.requestSendPTPCommand()` for PTP operations. Communicates with Node via JSON-RPC over stdio.
+- **camera-bridge.js**: Node module that spawns the Swift helper and provides Promise-based API to server.js.
+- **Entitlement**: `com.apple.security.device.camera` (standard, no special Apple approval needed). Works with Developer ID signing for non-App Store distribution.
+- **Info.plist**: Embedded in binary via `__TEXT,__info_plist` linker section. Contains `NSCameraUsageDescription`.
+
+**Verified end-to-end in session 10**:
+- Camera discovery: X100VI found via ICDeviceBrowser (VID=0x04CB, PID=0x0305)
+- PTP session open/close
+- GetDeviceInfo: model X100VI, firmware 1.31, serial 5935373131322503252913201629C3, 20 operations, 61 properties
+- Property read/write (D001 FilmSim, D18C PresetSlot, D186 Firmware, etc.)
+- Full RAF conversion pipeline: upload RAF (39MB, ~1s) → read d185 base profile (625 bytes) → patch film simulation → set modified profile → trigger conversion → poll GetObjectHandles → download result JPEG (3.5-4.5MB, full resolution 3888x2592)
+- Tested 6 different film simulations on same RAF (Provia, Velvia, Astia, ClassicChrome, ClassicNeg, NostalgicNeg) — all produced visibly different renders
+
+**Performance**: ~1 second per render. For 9-photo collage = ~9 seconds total.
+
+**Previous approaches (superseded)**:
+- X RAW Studio AppleScript automation — no longer needed
+- Direct libusb/pyusb/WebUSB — blocked by ptpcamerad, replaced by ImageCaptureCore
+- PTP test files (`ptp-test.py`, `ptp-session-test.py`, `ptp-direct-test.py`, `public/webusb-test.html`) — can delete
+
+### PTP research artifacts
 - `/tmp/rawji/` — Python PTP tool (pyusb), tested X-T30, profile format differs from X100VI
-- `/tmp/filmkit/` — TypeScript WebUSB tool, **verified on X100VI**, proper d185 profile patching, command queue with latest-wins render cancellation
-- `ptp-test.py`, `ptp-session-test.py`, `ptp-direct-test.py` — test scripts (can delete)
-- `public/webusb-test.html` — WebUSB test page (can delete)
-- Camera USB PID: 0x0305 (not in rawji's list, found via Fuji vendor ID 0x04CB)
-- FilmKit d185 profile: 625 bytes, field indices confirmed on X100VI (see `/tmp/filmkit/src/profile/d185.ts`)
+- `/tmp/filmkit/` — TypeScript WebUSB tool, **verified on X100VI**, proper d185 profile patching, command queue with latest-wins render cancellation. Protocol code ported to Swift helper via ImageCaptureCore.
+  - `src/ptp/constants.ts` — PTP opcodes, Fuji property IDs (D001-D1A5), response codes, USB identifiers
+  - `src/ptp/session.ts` — FujiCamera class: connect, loadRaf, reconvert, writePreset, command queue with latest-wins
+  - `src/ptp/transport.ts` — WebUSB bulk transfer I/O (replaced by ImageCaptureCore in Swift helper)
+  - `src/ptp/container.ts` — PTP container pack/unpack (12-byte header + payload)
+  - `src/profile/d185.ts` — Native d185 profile patching (625-byte format), NativeIdx field map, encoding conversions
+  - `src/profile/enums.ts` — FilmSim, WBMode, GrainEffect, ColorChrome enum values
+  - `src/profile/preset-translate.ts` — Camera preset (D18E-D1A5) ↔ UI value translation, NR_ENCODE/NR_DECODE tables
+  - `src/util/binary.ts` — LE pack/unpack helpers, PTP string parsing, PTPReader cursor class
+  - `QUICK_REFERENCE.md` — RAW conversion workflow (9 steps), preset read/write protocol, d185 field indices
+- `ptp-test.py`, `ptp-session-test.py`, `ptp-direct-test.py` — old test scripts (can delete)
+- `public/webusb-test.html` — old WebUSB test page (can delete)
+- Camera USB: VID=0x04CB (Fujifilm), PID=0x0305 (X100VI)
+- FilmKit d185 profile: 625 bytes, field indices confirmed on X100VI
 - Noise Reduction uses proprietary encoding (NOT ×10): {-4: 0x8000, -3: 0x7000, -2: 0x4000, -1: 0x3000, 0: 0x2000, 1: 0x1000, 2: 0x0000, 3: 0x6000, 4: 0x5000}
+- Reference implementation: [ptpwebcam](https://github.com/dognotdog/ptpwebcam) — Objective-C, ImageCaptureCore, sends raw PTP commands, confirmed working pattern for requestSendPTPCommand
 
 ### Recipe data model (`recipes.json` in photo directory)
 
@@ -211,6 +264,20 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 
 **Landing page architecture**: Two co-equal tools in header tabs: "Photo Cull" and "Recipe Lab". Both share the same `#browser-section` layout — tabs swap the tree/right panels. Photo Cull tab shows cull tree → viewer. Recipe Lab tab shows recipe tree (with Recent sessions from cull history) → recipe editor. These are independent workflows with independent server state (`activeDir` vs `recipeDir`).
 
+### Camera PTP API endpoints (session 10)
+
+- `GET /api/camera/list` — list connected Fujifilm cameras (waits up to 3s for discovery). Returns `{cameras: [{name, vendorId, productId}]}`
+- `POST /api/camera/connect` — open PTP session with first discovered camera. Returns `{ok: true}`
+- `POST /api/camera/disconnect` — close PTP session
+- `GET /api/camera/info` — PTP GetDeviceInfo. Returns `{model, manufacturer, version, serial, operationCount, propertyCount}`
+- `POST /api/camera/upload-raf` `{path}` — upload RAF file to camera via Fuji vendor commands (0x900C + 0x900D)
+- `GET /api/camera/profile` — read d185 conversion profile (625 bytes, base64). Requires RAF loaded.
+- `POST /api/camera/profile` `{data: base64}` — write modified d185 profile
+- `POST /api/camera/convert` — trigger RAW conversion (SetDevicePropValue 0xD183 = 0)
+- `POST /api/camera/wait-result` `{outputPath, timeout?}` — poll GetObjectHandles, download result JPEG, save to path
+- `POST /api/camera/read-prop` `{propId}` — read any device property. Returns `{code, data: base64, size}`
+- `POST /api/camera/write-prop` `{propId, data: base64}` — write any device property
+
 ### Recipe Lab server state
 
 - `recipeDir` — independent from Photo Cull's `activeDir`, set via `POST /api/recipe-load`
@@ -275,29 +342,30 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 9. RAW files never modified. Original HIFs kept until explicit batch processing.
 
 **Phase 3 — Recipe Lab Rebuild (next)**
-- A: Fix camera detection (false positives) or remove until reliable
+- A: DONE — Camera communication solved via ImageCaptureCore Swift helper (session 10)
 - B: Collage selection UX — random (cycle-all/cycle-individual, never-repeat) + manual picker modal (up to 9)
 - C: Grid layout fix — photos must fill viewport, much larger target row height
 - D: "As Shot" baseline — always start from EXIF-deduced params, never auto-load saved recipe
 - E: Recipe library screen — browse all saved recipes with example photos
 - F: Navigation overhaul — proper nav bar, back buttons, breadcrumbs, session persistence
-- G: X RAW Studio automation via AppleScript — simulate recipe on collage photos
+- G: Direct PTP simulation — upload RAF, patch d185 profile, trigger conversion, download result JPEG (uses camera-bridge.js → Swift helper)
 - H: Before/after comparison — toggle original vs simulated, per-photo zoom, slider divider
 - I: Single-parameter comparison — one photo, multiple values, side-by-side
 - J: Recipe cookbook management — rename (re-exports FP1), share, example photos
 
-### Workflow (user perspective — revised)
+### Workflow (user perspective — revised for direct PTP)
 
 1. Sort photos in SnapSifter (existing feature) → Liked/HIF/ and Liked/RAF/ have the keepers
-2. Open Recipe Lab → grid shows diverse picks from **Liked/HIF/** (fast loading)
-3. Recipe params auto-populated from RAF EXIF metadata (current camera settings)
-4. Tweak recipe params → grid fades (stale indicator) → offer to run simulation
-5. Export FP1 → file appears in X RAW Studio's profile directory
-6. Connect X100VI via USB → open X RAW Studio → select grid RAFs → apply profile → convert → output to preview folder
-7. Back in SnapSifter → compare new output vs previous iterations (split-view zoom)
-8. Repeat 4-7 until satisfied with recipe
-9. Batch-apply final recipe to all Liked/RAF/ files via X RAW Studio
-10. RAFs in Liked/RAF/ are never modified
+2. Open Recipe Lab → collage shows 9 picks from **Liked/HIF/** (fast loading)
+3. Connect X100VI via USB — SnapSifter detects it automatically via ImageCaptureCore
+4. Recipe params auto-populated from RAF EXIF metadata ("As Shot" baseline)
+5. Tweak recipe params → collage greys out (stale) → click "Simulate"
+6. SnapSifter uploads each collage RAF to camera, patches d185 profile, triggers conversion, downloads result JPEG — all automatic, ~1s per photo
+7. Toggle original vs simulated collage → click individual photos for full-size comparison
+8. Single-param comparison mode: pick one photo + one param → camera renders N variations → side-by-side
+9. Repeat 5-8 until satisfied with recipe → save to cookbook
+10. Batch-apply final recipe to all Liked/RAF/ files via camera
+11. RAFs in Liked/RAF/ are never modified
 
 ## Anti-patterns discovered
 
@@ -323,8 +391,13 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - **Skip redundant grid-select**: Don't re-fetch grid-select if gridPhotos is already populated for the current directory. Track via lastLoadedDir in recipeState.
 - **Parallel sips for thumbnails**: Sequential sips calls (12 x 0.5-1s) are too slow. Use prewarm endpoint with Promise.all + exec (not execSync).
 - **Photo Cull keydown handler catches all keys globally**: Must check `screen !== 'recipe'` and `activeElement` is not INPUT/TEXTAREA, otherwise recipe title editing is broken (e.g., 'n' triggers jumpToNextUnrated).
-- **macOS blocks USB PTP access via libusb/WebUSB**: ptpcamerad (system daemon) claims PTP devices exclusively via IOKit. Cannot be killed without sudo, respawns from launchd. Even sudo + WebUSB cannot claim the interface. Only properly entitled/signed native macOS apps can access PTP cameras. This rules out pyusb, node-usb, and browser WebUSB for direct camera communication.
-- **Camera detection shows false positives**: ioreg fallback matches "USB PTP Camera" which appears even when no Fuji camera is connected (generic USB storage devices can match). Must validate by checking vendor ID or product-specific strings.
+- **macOS PTP access requires ImageCaptureCore, not libusb/WebUSB**: ptpcamerad claims PTP devices exclusively at IOKit level. The solution is ImageCaptureCore framework which works THROUGH ptpcamerad via XPC. Requires `com.apple.security.device.camera` entitlement and `NSCameraUsageDescription` in Info.plist. See `camera-helper/` for working implementation.
+- **Camera detection shows false positives with ioreg**: ioreg fallback matches "USB PTP Camera" which appears for generic USB storage devices. Use ImageCaptureCore's ICDeviceBrowser instead — it properly identifies cameras by vendor/product ID. Old `/api/camera-status` endpoint (system_profiler + ioreg) is superseded by `/api/camera/list`.
+- **Swift Data alignment crashes**: PTP response data is not memory-aligned. Using `data.withUnsafeBytes { $0.load(fromByteOffset:, as:) }` causes `Fatal error: load from misaligned raw pointer`. Must use manual byte reading: `UInt16(data[offset]) | (UInt16(data[offset + 1]) << 8)`.
+- **ICDeviceBrowser needs RunLoop + time**: Camera discovery is async via delegate callbacks. The `list` command must wait for discovery if no cameras found yet (up to 3s). The Swift helper must run `RunLoop.main.run()` for ImageCaptureCore callbacks to fire.
+- **Info.plist must be embedded in CLI binary**: For TCC camera permissions, CLI tools need Info.plist embedded via linker: `-sectcreate __TEXT __info_plist Sources/Info.plist`. A standalone Info.plist file next to the binary is not picked up.
+- **requestSendPTPCommand wants full PTP container**: ImageCaptureCore's `requestSendPTPCommand` expects the full 12-byte PTP command container (length + type=0x0001 + opcode + transactionId + params). The `outData` parameter is raw payload (no container wrapping). The response callback's `response` parameter IS a PTP response container; `inData` is raw payload.
+- **D185 profile only readable after RAF upload**: GetDevicePropValue(0xD185) returns GeneralError (0x2002) if no RAF is loaded in camera memory. Must call upload first.
 
 ## Session endpoints
 
