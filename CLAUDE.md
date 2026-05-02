@@ -251,18 +251,17 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 
 ### UI screens
 
-**Recipe Lab** (separate tool from Photo Cull — co-equal entry from landing):
-- Left: recipe parameter controls (420px panel, custom dropdowns + sliders, amber fill-from-center)
-- Right: photo grid (auto-fill layout, responsive to mixed aspect ratios) with per-cell "SWAP" button and shuffle all
-- Top: recipe title (click-to-edit), recipe picker dropdown, save/export FP1 buttons, dir label (clickable to change folder)
-- Click grid photo to enlarge in lightbox overlay (2000px full-size via `/api/preview-image/`)
-- Grid photos shown in justified row layout (slight crop OK) with EXIF overlay (filename, focal length, ISO, aperture)
-- Film sim badge on photos that differ from majority/current recipe
-- Grid greys out (opacity + desaturation) when recipe params change — signals photos are stale
-- "As Shot" virtual recipe auto-populated from majority EXIF of grid RAFs when no recipe selected
-- Staging bar shows after FP1 export with path to `SnapSifter Preview/` folder + scan button
+**Recipe Lab** (persistent shell, entered from landing "Recipe Lab" tab):
+- Top: `#recipe-shell-topbar` — "SnapSifter" title, recipe title (click-to-edit), camera status, SAVE button, LIBRARY button, Photo Cull / Recipe Lab tabs
+- Left: `#recipe-left-panel` (280px) — directory tree browser with folder info + Load button
+- Right: `#recipe-right-panel-params` (380px) — always-visible recipe params (dropdowns + sliders, grouped by Film/Color/White Balance/Tone/Detail)
+- Center: `#recipe-center` — mode-dependent content area with toolbar
+  - **Recipe Preview** (default): responsive CSS Grid collage of 1-9 photos with SHUFFLE/PICK PHOTOS/SIMULATE/before-after toggle. Click photo → Focus Mode.
+  - **Focus Mode**: single photo large, gallery thumbnails of collage below, live/manual simulate toggle. COMPARE button (→ Compare Mode, not yet wired).
+  - **Compare Mode**: (HTML exists, not wired) one photo × N param values side-by-side grid.
+- Bottom: `#recipe-filmstrip-container` (96px) — horizontal scrollable strip of all available photos from directory
 
-**Landing page architecture**: Two co-equal tools in header tabs: "Photo Cull" and "Recipe Lab". Both share the same `#browser-section` layout — tabs swap the tree/right panels. Photo Cull tab shows cull tree → viewer. Recipe Lab tab shows recipe tree (with Recent sessions from cull history) → recipe editor. These are independent workflows with independent server state (`activeDir` vs `recipeDir`).
+**Landing page architecture**: Two co-equal tools in header tabs: "Photo Cull" and "Recipe Lab". Photo Cull tab shows cull tree → cull viewer (unchanged). Recipe Lab tab opens the persistent shell (`showRecipeEditor()`). The shell has its own directory tree in the left panel. Independent server state (`activeDir` vs `recipeDir`).
 
 ### Camera PTP API endpoints (session 10)
 
@@ -324,50 +323,67 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 8. Toggle between original and simulated collage
 9. RAW files never modified. Original HIFs kept until explicit batch processing.
 
-**Phase 3 — Recipe Lab Rebuild (session 11)**
+**Phase 3 — Recipe Lab Rebuild (sessions 11-12)**
 - A: DONE — Camera communication solved via ImageCaptureCore Swift helper (session 10)
 - B: DONE — Collage selection UX: SHUFFLE (re-randomize all 9), per-photo SWAP, PICK PHOTOS modal (select up to 9 from all available), never-repeat tracking via `usedPhotos` Set
-- C: DONE — Grid layout: CSS Grid 3x3, `grid-template-columns/rows: repeat(3, 1fr)`, object-fit: cover, photos fill entire viewport
+- C: DONE — Grid layout: CSS Grid responsive (1-9 photos), `object-fit: cover`, photos fill center area
 - D: DONE — "As Shot" baseline: always start from EXIF-deduced params, `recipeState.currentId = null` on entry, never auto-load saved recipe
-- E: DONE — Recipe Library screen: `#recipe-library` overlay (z-index 15), card grid with title/film sim/key params/date/LOAD/DUPLICATE/RENAME/DELETE actions, "+ NEW RECIPE" card. Accessed via Recipes button in topbar (replaced old dropdown)
-- F: PARTIAL — Back buttons on library + collage screens, toolbar z-index fix for drawer overlap. Breadcrumbs not yet added.
-- G: DONE — Simulate button + PTP wiring: appears when params differ from cleanParams, sequential per-photo simulation (connect → upload RAF → read/patch d185 → convert → wait-result → download JPEG), per-cell spinner overlay, progress text. Before/after toggle (ORIGINAL/SIMULATED switch) shows after simulation.
+- E: DONE — Recipe Library screen: `#recipe-library` overlay, card grid with title/film sim/key params/date/LOAD/DUPLICATE/RENAME/DELETE actions. Accessed via LIBRARY button in shell topbar.
+- F: DONE — Navigation: shell tabs (Photo Cull / Recipe Lab), back buttons on focus mode, breadcrumb-like linear depth (preview → focus → compare)
+- G: DONE — Simulate button + PTP wiring: appears when params differ from cleanParams, sequential per-photo simulation, per-cell spinner, progress text. Before/after toggle.
 - H: DONE — Before/after toggle swaps grid img src between original HIF thumbnails and simulated JPEG paths
-- I: NOT STARTED — Single-parameter comparison (one photo, N values, side-by-side)
+- I: NOT STARTED — Compare Mode: one photo × N values of a single parameter, side-by-side grid. HTML structure exists but not wired.
 - J: PARTIAL — Rename/duplicate/delete via library screen. Example photos per recipe not yet implemented.
+- K: DONE — d185 profile patching: `POST /api/camera/profile` now accepts `{data, params}` and patches the 625-byte profile with recipe params (film sim, WB, tone, grain, NR, clarity, etc.) before writing to camera. Previously `params` was ignored.
+- L: DONE — Focus Mode: click collage photo → single photo large view with gallery thumbnails below, live/manual simulate toggle, back to collage. HTML/CSS/JS complete.
+- M: NOT STARTED — Before/after comparison modes (side-by-side with synced zoom, drag divider). Currently only toggle mode works.
 
-**Removed in session 11:**
+**Removed in sessions 11-12:**
 - FP1 export flow (replaced by direct PTP simulation)
 - Staging bar / "SnapSifter Preview" folder
-- Stale overlay with "EXPORT FP1 TO X RAW STUDIO" / "REVERT CHANGES"
-- Old camera detection (`/api/camera-status` with system_profiler/ioreg) — replaced by `/api/camera/list` (ImageCaptureCore)
-- Justified row layout algorithm (`justifyGrid` is now a no-op — CSS Grid handles layout)
-- 12-photo grid (now 9 photos, 3x3)
+- Old camera detection (`/api/camera-status` with system_profiler/ioreg)
+- Justified row layout algorithm (`justifyGrid` is now a no-op)
+- Params drawer (replaced by always-visible right panel)
+- Recipe picker dropdown (replaced by LIBRARY button)
+- Old `#recipe-topbar`, `#recipe-main`, `#recipe-grid-panel` structure
 
-**Session 11 architectural changes:**
-- Params panel changed from inline grid column (520px) to slide-out drawer overlay (380px, absolute positioned, left side, translateX toggle with `.open` class, z-index 20)
-- `#recipe-main` changed from CSS Grid (`grid-template-columns: 520px 1fr`) to flex column with relative positioning
-- `#recipe-grid` changed from `display: flex; flex-wrap: wrap` to `display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr)`
-- Grid toolbar z-index 25 (above drawer z-index 20) to prevent drawer from blocking toolbar clicks
-- `recipeState` new fields: `usedPhotos` (Set), `simulatedPhotos` (object), `showSimulated` (bool)
-- `#recipe-simulate-bar`: conditionally visible bar between toolbar and grid, shows SIMULATE button + before/after toggle
-- `#photo-picker-modal`: full-screen modal for manual photo selection (auto-fill grid, max 9, amber selection state)
-- `#recipe-library`: full-screen overlay for recipe browsing/management
+**Session 12 architectural changes (persistent shell):**
+- Recipe Lab is now a persistent shell layout modeled after X RAW Studio:
+  ```
+  #recipe-editor (fixed, flex column, full viewport)
+    #recipe-shell-topbar (SnapSifter title + recipe meta + Photo Cull / Recipe Lab tabs)
+    #recipe-shell-body (flex row)
+      #recipe-left-panel (280px, directory tree + folder info + Load button)
+      #recipe-center (flex: 1, mode-dependent: collage / focus / compare)
+      #recipe-right-panel-params (380px, always-visible recipe params)
+    #recipe-filmstrip-container (96px, horizontal scrollable photo strip)
+  ```
+- Params panel is ALWAYS VISIBLE (not a drawer) — 380px right panel with all controls, scrollable
+- Left panel contains the directory tree (moved from landing page) — persistent across recipe modes
+- Bottom filmstrip shows all available photos from Liked/HIF (or root if not culled)
+- Center area switches between three modes: Recipe Preview (collage), Focus Mode, Compare Mode
+- `recipeState.mode`: `'preview' | 'focus' | 'compare'` tracks current mode
+- `recipeState.focusIndex`: index of focused photo in gridPhotos
+- `recipeState.liveSimulate`: auto-simulate on param change in Focus Mode (debounced)
+- Collage grid is responsive: `updateCollageLayout(count)` sets grid-template based on 1-9 photos
+- Landing page no longer has recipe tree/right panels — those moved into the shell
+- Reload with recipe tab active shows landing page (not editor) — fixed
 
-### Workflow (user perspective — revised for direct PTP)
+### Workflow (user perspective — session 12 shell)
 
-1. Sort photos in SnapSifter (existing feature) → Liked/HIF/ and Liked/RAF/ have the keepers
-2. Open Recipe Lab → 3x3 collage shows 9 picks from **Liked/HIF/** (fast loading, fills viewport)
-3. SHUFFLE to re-randomize collage, SWAP individual photos, or PICK PHOTOS for manual selection (up to 9)
-4. Recipe params auto-populated from RAF EXIF metadata ("As Shot" baseline)
-5. Connect X100VI via USB — detected automatically via `/api/camera/list` (ImageCaptureCore)
-6. Tweak recipe params in drawer → SIMULATE button appears → click to render all 9 via camera PTP
-7. Camera renders each photo sequentially (~1s each): upload RAF → patch d185 → convert → download JPEG
-8. Toggle ORIGINAL/SIMULATED to compare → click individual photos for full-size lightbox
-9. Browse Recipe Library → save/load/duplicate/rename recipes
-10. (Future) Single-param comparison: one photo × N values side-by-side
-11. (Future) Batch-apply final recipe to all Liked/RAF/ files via camera
-12. RAFs in Liked/RAF/ are never modified
+1. Sort photos in SnapSifter Photo Cull → Liked/HIF/ and Liked/RAF/ have the keepers
+2. Click "Recipe Lab" tab → persistent shell opens (left tree, center collage, right params, bottom filmstrip)
+3. Browse directories in left panel → Load a folder with Liked/ subfolders
+4. Recipe Preview: collage of 1-9 diverse photos from Liked/HIF/ fills center
+5. SHUFFLE / SWAP / PICK PHOTOS to customize collage. Filmstrip shows all available photos.
+6. Recipe params always visible in right panel, auto-populated from RAF EXIF ("As Shot" baseline)
+7. Tweak params → SIMULATE button appears → renders all collage photos via camera PTP (~1s each)
+8. Toggle ORIGINAL/SIMULATED, or click a photo for Focus Mode (single photo large, gallery below)
+9. Focus Mode: live-simulate on param change (debounced), cycle through collage photos
+10. (Future) Compare Mode: pick one param, select values, see same photo rendered N ways side-by-side
+11. Recipe Library: LIBRARY button → save/load/duplicate/rename recipes
+12. Click "Photo Cull" tab → returns to landing page
+13. RAFs in Liked/RAF/ are never modified
 
 ## Anti-patterns discovered
 
@@ -401,9 +417,12 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - **requestSendPTPCommand wants full PTP container**: ImageCaptureCore's `requestSendPTPCommand` expects the full 12-byte PTP command container (length + type=0x0001 + opcode + transactionId + params). The `outData` parameter is raw payload (no container wrapping). The response callback's `response` parameter IS a PTP response container; `inData` is raw payload.
 - **D185 profile only readable after RAF upload**: GetDevicePropValue(0xD185) returns GeneralError (0x2002) if no RAF is loaded in camera memory. Must call upload first.
 - **Justified row layout fails with uniform aspect ratios**: When all photos are landscape, the algorithm packs too many per row (9 in 1 row at 220px height). CSS Grid with `repeat(3, 1fr)` and `object-fit: cover` is the correct approach for a fixed 3x3 collage — simpler and guaranteed to fill viewport.
-- **Drawer overlay blocks toolbar clicks**: Absolute-positioned drawer (z-index 20) covers the toolbar toggle button. Toolbar needs higher z-index (25) to remain clickable when drawer is open.
 - **Duplicate event listeners cause toggle double-fire**: Two agents adding click handlers to the same element = two toggles per click = no visible change. Always grep for existing handlers before adding new ones.
-- **recipeMain.style.display must be 'flex' not 'grid'**: After Phase 3 rebuild, `#recipe-main` uses flexbox (not CSS Grid). Setting it to 'grid' breaks the layout.
+- **Params must be always-visible, not a drawer**: Session 12 moved params from slide-out drawer to persistent 380px right panel. Never hide params behind a toggle.
+- **Recipe editor is a persistent shell**: `#recipe-editor` contains topbar + 3-column body + filmstrip. `recipeEditor.style.display = 'flex'` to show. No `#recipe-main` exists anymore.
+- **Don't auto-enter recipe editor on reload**: Reload should show landing page. `localStorage('snapsifter-active-tool')` only switches the landing tab, never calls `showRecipeEditor()`.
+- **d185 patching happens server-side**: `POST /api/camera/profile` accepts `{data, params}`. The server patches the base64 profile using NativeIdx field map before writing to camera. Frontend does NOT do binary patching.
+- **Recipe tree is inside the shell**: No `#recipe-tree-panel` in landing page anymore. The tree lives in `#recipe-left-panel` inside `#recipe-editor`. `initRecipeLeftTree()` initializes it.
 
 ## Session endpoints
 
