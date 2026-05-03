@@ -195,7 +195,12 @@ class CameraManager: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate {
 
     func device(_ device: ICDevice, didCloseSessionWithError error: (any Error)?) {
         sessionOpen = false
-        log("Session closed")
+        if let error = error {
+            log("Session closed with error: \(error.localizedDescription)")
+        } else {
+            log("Session closed (no error)")
+        }
+        Thread.callStackSymbols.prefix(5).forEach { log("  \($0)") }
     }
 
     func didRemove(_ device: ICDevice) {
@@ -227,7 +232,11 @@ class CameraManager: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate {
     }
 
     @objc func didSendPTPCommand(_ command: Data, inData data: Data?, response: Data, error: Error?, contextInfo: UnsafeMutableRawPointer?) {
+        if let error = error {
+            log("PTP command error: \(error.localizedDescription)")
+        }
         let code = extractResponseCode(from: response)
+        log("PTP response: 0x\(String(code, radix: 16)), inData=\(data?.count ?? 0) bytes")
         let completion = pendingCompletion
         pendingCompletion = nil
         completion?(code, data)
@@ -250,15 +259,26 @@ class CameraManager: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate {
             completion(false, "No Fujifilm camera found")
             return
         }
+        log("connect: camera=\(camera.name ?? "?"), hasOpenSession=\(camera.hasOpenSession)")
         activeCamera = camera
         camera.delegate = self
+
+        if camera.hasOpenSession {
+            log("connect: session already open, reusing")
+            sessionOpen = true
+            completion(true, nil)
+            return
+        }
+
         camera.requestOpenSession()
 
         // Wait for session to open
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
             if self?.sessionOpen == true {
+                log("connect: session opened successfully")
                 completion(true, nil)
             } else {
+                log("connect: session FAILED to open")
                 completion(false, "Session failed to open within 2s")
             }
         }
@@ -356,6 +376,35 @@ class CameraManager: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate {
         }
     }
 
+
+    func clearStaleObjects(completion: @escaping () -> Void) {
+        sendPTPCommand(opcode: PTP_OP_GET_OBJECT_HANDLES, params: [0xFFFFFFFF, 0, 0]) { [weak self] code, data in
+            guard code == PTP_RSP_OK, let data = data, data.count >= 4 else {
+                completion()
+                return
+            }
+            let count = UInt32(data[0]) | (UInt32(data[1]) << 8) | (UInt32(data[2]) << 16) | (UInt32(data[3]) << 24)
+            guard count > 0 else { completion(); return }
+
+            var handles: [UInt32] = []
+            for i in 0..<Int(count) {
+                let offset = 4 + i * 4
+                guard offset + 3 < data.count else { continue }
+                let handle = UInt32(data[offset]) | (UInt32(data[offset+1]) << 8) | (UInt32(data[offset+2]) << 16) | (UInt32(data[offset+3]) << 24)
+                handles.append(handle)
+            }
+
+            func deleteNext(_ index: Int) {
+                guard index < handles.count else { completion(); return }
+                log("Deleting stale object: 0x\(String(handles[index], radix: 16))")
+                self?.sendPTPCommand(opcode: PTP_OP_DELETE_OBJECT, params: [handles[index]]) { _, _ in
+                    deleteNext(index + 1)
+                }
+            }
+            deleteNext(0)
+        }
+    }
+
     func uploadRAF(path: String, completion: @escaping (Bool, String?) -> Void) {
         guard let fileData = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
             completion(false, "Cannot read file: \(path)")
@@ -396,14 +445,24 @@ class CameraManager: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate {
         objectInfo.append(0)                // ModificationDate
         objectInfo.append(0)                // Keywords
 
-        // Step 1: SendObjectInfo (Fuji vendor 0x900C)
+        log("uploadRAF: session=\(sessionOpen), camera=\(activeCamera?.name ?? "nil"), fileData=\(fileData.count) bytes")
+
+        clearStaleObjects { [weak self] in
+            self?.doUpload(objectInfo: objectInfo, fileData: fileData, completion: completion)
+        }
+    }
+
+    private func doUpload(objectInfo: Data, fileData: Data, completion: @escaping (Bool, String?) -> Void) {
+        log("uploadRAF: sending SendObjectInfo with params [0,0,0]")
         sendPTPCommand(opcode: FUJI_OP_SEND_OBJECT_INFO, params: [0, 0, 0], data: objectInfo) { [weak self] code, _ in
+            log("uploadRAF: SendObjectInfo response code=0x\(String(code, radix: 16))")
             guard code == PTP_RSP_OK else {
                 completion(false, "SendObjectInfo failed: 0x\(String(code, radix: 16))")
                 return
             }
 
             // Step 2: SendObject2 (Fuji vendor 0x900D)
+            log("uploadRAF: sending SendObject2 (\(fileData.count) bytes)")
             self?.sendPTPCommand(opcode: FUJI_OP_SEND_OBJECT2, params: [], data: fileData) { code, _ in
                 if code == PTP_RSP_OK {
                     completion(true, nil)
@@ -471,7 +530,9 @@ class CameraManager: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate {
                     }
 
                     do {
-                        try jpegData.write(to: URL(fileURLWithPath: outputPath))
+                        let outputURL = URL(fileURLWithPath: outputPath)
+                        try FileManager.default.createDirectory(at: outputURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                        try jpegData.write(to: outputURL)
                         // Cleanup temp object
                         self?.sendPTPCommand(opcode: PTP_OP_DELETE_OBJECT, params: [handle]) { _, _ in
                             completion(true, nil)

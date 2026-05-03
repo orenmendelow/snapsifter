@@ -3857,7 +3857,8 @@ body::before {
     showSimulated: false,
     mode: 'preview',
     focusIndex: 0,
-    liveSimulate: true
+    liveSimulate: true,
+    cameraConnected: false
   };
 
   let recipeTreeState = {};
@@ -3920,14 +3921,18 @@ body::before {
       if (res.cameras && res.cameras.length > 0) {
         el.className = 'connected';
         el.innerHTML = '<span class="dot"></span>' + res.cameras[0].name;
+        recipeState.cameraConnected = true;
       } else {
         el.className = 'disconnected';
         el.innerHTML = '<span class="dot"></span>No camera';
+        recipeState.cameraConnected = false;
       }
     } catch(e) {
       el.className = 'disconnected';
       el.innerHTML = '<span class="dot"></span>No camera';
+      recipeState.cameraConnected = false;
     }
+    checkParamsChanged();
   }
 
   let recipeEditorInitialized = false;
@@ -4199,12 +4204,14 @@ body::before {
 
   function checkParamsChanged() {
     const section = document.getElementById('recipe-simulate-section');
+    const btn = document.getElementById('simulate-btn');
     if (!recipeState.cleanParams) { section.classList.remove('visible'); return; }
     const changed = Object.keys(recipeState.currentParams).some(
       k => recipeState.currentParams[k] !== recipeState.cleanParams[k]
     );
-    if (changed) {
+    if (changed && recipeState.cameraConnected) {
       section.classList.add('visible');
+      btn.textContent = recipeState.mode === 'focus' ? 'SIMULATE PHOTO' : 'SIMULATE COLLAGE';
     } else {
       section.classList.remove('visible');
     }
@@ -4561,7 +4568,7 @@ body::before {
 
   // ── Simulate ──
 
-  async function simulateRecipe() {
+  async function simulateOnePhoto(photoIndex) {
     const btn = document.getElementById('simulate-btn');
     const progress = document.getElementById('simulate-progress');
     btn.disabled = true;
@@ -4579,6 +4586,10 @@ body::before {
       return;
     }
 
+    const photos = recipeState.gridPhotos;
+    const targets = (photoIndex != null) ? [{ photo: photos[photoIndex], idx: photoIndex }]
+      : photos.map((p, i) => ({ photo: p, idx: i }));
+
     progress.textContent = 'Connecting...';
     try {
       await fetch('/api/camera/connect', { method: 'POST' }).then(r => r.json());
@@ -4589,19 +4600,17 @@ body::before {
       return;
     }
 
-    const photos = recipeState.gridPhotos;
-    const totalPhotos = photos.length;
-    recipeState.simulatedPhotos = {};
-
-    for (let i = 0; i < totalPhotos; i++) {
-      const photo = photos[i];
+    for (let t = 0; t < targets.length; t++) {
+      const { photo, idx } = targets[t];
       const stem = photo.file.replace(/\.[^.]+$/, '');
       const rafPath = recipeLoadedDir + '/Liked/RAF/' + stem + '.RAF';
       const outputPath = recipeLoadedDir + '/Liked/RAF/.sim-cache/' + stem + '_sim.jpg';
 
-      progress.textContent = 'Rendering ' + (i + 1) + ' / ' + totalPhotos + '...';
+      progress.textContent = targets.length === 1
+        ? 'Rendering...'
+        : 'Rendering ' + (t + 1) + ' / ' + targets.length + '...';
 
-      const cell = recipeGridEl.children[i];
+      const cell = recipeGridEl.children[idx];
       let spinner = null;
       if (cell) {
         spinner = document.createElement('div');
@@ -4610,11 +4619,17 @@ body::before {
       }
 
       try {
-        await fetch('/api/camera/upload-raf', {
+        const uploadRes = await fetch('/api/camera/upload-raf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ path: rafPath })
         }).then(r => r.json());
+
+        if (uploadRes.error) {
+          console.error('Upload failed for ' + stem + ': ' + uploadRes.error);
+          showToast('Upload failed: ' + uploadRes.error);
+          continue;
+        }
 
         const profileRes = await fetch('/api/camera/profile').then(r => r.json());
         const baseProfile = profileRes.data;
@@ -4647,7 +4662,7 @@ body::before {
       await fetch('/api/camera/disconnect', { method: 'POST' });
     } catch(e) {}
 
-    progress.textContent = totalPhotos + ' rendered';
+    progress.textContent = targets.length === 1 ? 'Rendered' : targets.length + ' rendered';
     btn.disabled = false;
 
     if (Object.keys(recipeState.simulatedPhotos).length > 0) {
@@ -4682,9 +4697,31 @@ body::before {
         img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(photo.file);
       }
     });
+
+    // Update focus mode photo if active
+    if (recipeState.mode === 'focus') {
+      const focusPhoto = document.getElementById('focus-photo');
+      const photo = recipeState.gridPhotos[recipeState.focusIndex];
+      if (focusPhoto && photo) {
+        if (showSim && recipeState.simulatedPhotos[photo.file]) {
+          const simPath = recipeState.simulatedPhotos[photo.file];
+          const simDirB64 = btoa(unescape(encodeURIComponent(simPath.substring(0, simPath.lastIndexOf('/')))));
+          const simFile = simPath.substring(simPath.lastIndexOf('/') + 1);
+          focusPhoto.src = '/api/preview-image/' + simDirB64 + '/' + encodeURIComponent(simFile);
+        } else {
+          focusPhoto.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
+        }
+      }
+    }
   }
 
-  document.getElementById('simulate-btn').addEventListener('click', simulateRecipe);
+  document.getElementById('simulate-btn').addEventListener('click', () => {
+    if (recipeState.mode === 'focus') {
+      simulateOnePhoto(recipeState.focusIndex);
+    } else {
+      simulateOnePhoto();
+    }
+  });
   document.getElementById('ba-switch').addEventListener('click', () => {
     toggleBeforeAfter(!recipeState.showSimulated);
   });
