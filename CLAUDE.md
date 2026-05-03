@@ -78,7 +78,7 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Empty filmstrip band hidden when no directory loaded — DONE
 
 **LEFT PANEL / FILE EXPLORER:**
-- Once a directory is loaded, the left panel tree MUST collapse into a drawer. It wastes space showing the tree when the user is working with photos. Drawer handle = folder icon tab on left edge (not hamburger). Close control = left-arrow at top of panel when expanded. Collage needs left padding when drawer closed.
+- Left panel collapses into drawer — DONE (folder icon toggle in toolbar, left-arrow inside panel to collapse, CSS transition)
 - Photos not rendering in collage after loading directory — needs investigation.
 - SSD plug-in is not detected without page reload. Needs a refresh button in the left nav.
 - Recipe Lab file browser should show image previews when browsing, matching Photo Cull.
@@ -88,11 +88,12 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Loading state is horizontal bars — should be a collage-shaped grid placeholder.
 
 **SIMULATE BUTTON:**
-- Shows when no camera is plugged in — shouldn't.
-- Scope is unclear: am I simulating one photo, the collage, or the entire library? NEEDS TO BE CLEAR.
-- Causes layout shift. Pushes "714 available" count.
-- "714 available" — why is that stat even there?
-- UI elements should not push or rearrange other elements. EVER.
+- Shows when no camera is plugged in — shouldn't. CODE DONE (hides when !cameraConnected), needs testing.
+- Scope labeling — DONE ("SIMULATE PHOTO" in focus mode, "SIMULATE COLLAGE" in preview mode).
+- PTP pipeline — WORKING (stale object clearing, auto-create output dir, focus mode image swap all fixed).
+- Causes layout shift. Pushes "714 available" count. — NOT FIXED.
+- "714 available" — why is that stat even there? — NOT FIXED.
+- UI elements should not push or rearrange other elements. EVER. — NOT FIXED.
 
 **SAVE BUTTON:**
 - After changing params and changing them back, save lingers for a bit then disappears. Weird. Should clear immediately when params match clean state.
@@ -508,6 +509,9 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - **Info.plist must be embedded in CLI binary**: For TCC camera permissions, CLI tools need Info.plist embedded via linker: `-sectcreate __TEXT __info_plist Sources/Info.plist`. A standalone Info.plist file next to the binary is not picked up.
 - **requestSendPTPCommand wants full PTP container**: ImageCaptureCore's `requestSendPTPCommand` expects the full 12-byte PTP command container (length + type=0x0001 + opcode + transactionId + params). The `outData` parameter is raw payload (no container wrapping). The response callback's `response` parameter IS a PTP response container; `inData` is raw payload.
 - **D185 profile only readable after RAF upload**: GetDevicePropValue(0xD185) returns GeneralError (0x2002) if no RAF is loaded in camera memory. Must call upload first.
+- **Camera retains stale objects — must clear before upload**: SendObjectInfo (0x900C) returns AccessDenied (0x2019) if the camera already has an object loaded from a previous (possibly failed) upload. Fix: call GetObjectHandles (0x1007) + DeleteObject (0x100B) for each existing handle before every upload. The Swift helper does this automatically in `clearStaleObjects()`.
+- **Output directory must exist before writing JPEG**: The Swift helper's `pollForResult` writes the converted JPEG to `outputPath`. If the parent directory (`.sim-cache/`) doesn't exist, the write fails silently (500 error). Fixed: `createDirectory(withIntermediateDirectories: true)` before write.
+- **Focus mode needs separate image swap**: `toggleBeforeAfter()` only updates grid cell images. When in focus mode, must also update `#focus-photo` src to show the simulated JPEG.
 - **Justified row layout fails with uniform aspect ratios**: When all photos are landscape, the algorithm packs too many per row (9 in 1 row at 220px height). CSS Grid with `repeat(3, 1fr)` and `object-fit: cover` is the correct approach for a fixed 3x3 collage — simpler and guaranteed to fill viewport.
 - **Duplicate event listeners cause toggle double-fire**: Two agents adding click handlers to the same element = two toggles per click = no visible change. Always grep for existing handlers before adding new ones.
 - **Params must be always-visible, not a drawer**: Session 12 moved params from slide-out drawer to persistent 380px right panel. Never hide params behind a toggle.
