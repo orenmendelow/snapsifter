@@ -67,9 +67,101 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 ## Open bugs / unresolved feedback (verbatim from Oren)
 
-- **General UI/UX**: "much of the UI/UX needs to be more intuitive" — ongoing.
 - **Progress bar**: Increased to 5px with hover text. May still be too subtle.
 - **No logo**: Favicon is aperture SVG. No app logo yet.
+
+### Session 14 feedback (2026-05-02, verbatim from Oren)
+
+**TOPBAR / NAVIGATION:**
+- Recipe title removed from topbar — DONE
+- Tabs now match position between Photo Cull and Recipe Lab — DONE
+- Empty filmstrip band hidden when no directory loaded — DONE
+
+**LEFT PANEL / FILE EXPLORER:**
+- Once a directory is loaded, the left panel tree MUST collapse into a drawer. It wastes space showing the tree when the user is working with photos. Drawer handle = folder icon tab on left edge (not hamburger). Close control = left-arrow at top of panel when expanded. Collage needs left padding when drawer closed.
+- Photos not rendering in collage after loading directory — needs investigation.
+- SSD plug-in is not detected without page reload. Needs a refresh button in the left nav.
+- Recipe Lab file browser should show image previews when browsing, matching Photo Cull.
+
+**LOADING / PERFORMANCE:**
+- Directories take WAY too long to load. 15+ seconds. Need to investigate bottleneck.
+- Loading state is horizontal bars — should be a collage-shaped grid placeholder.
+
+**SIMULATE BUTTON:**
+- Shows when no camera is plugged in — shouldn't.
+- Scope is unclear: am I simulating one photo, the collage, or the entire library? NEEDS TO BE CLEAR.
+- Causes layout shift. Pushes "714 available" count.
+- "714 available" — why is that stat even there?
+- UI elements should not push or rearrange other elements. EVER.
+
+**SAVE BUTTON:**
+- After changing params and changing them back, save lingers for a bit then disappears. Weird. Should clear immediately when params match clean state.
+
+**RECIPE LIBRARY:**
+- Empty on first use. Should ship with 3-5 sample recipes.
+- No dropdown to load existing recipe.
+- Loading recipes is confusing overall.
+
+### Session 13 feedback (2026-05-02, verbatim from Oren)
+
+**RECIPE TITLE BAR — REMOVE "No recipe" / "As Shot" FROM TOPBAR ENTIRELY:**
+- "WHY IS IT THERE. I KEEP ASKING WHY THE RECIPE IS LISTED THERE IT DOESNT MAKE SENSE TO BE THERE."
+- The recipe title/name does NOT belong in the shell topbar. It's confusing, purposeless, and Oren has asked 3+ times to remove it. The recipe name (if any) belongs in the params panel or nowhere visible until a recipe is saved. REMOVE from topbar completely. Not "fix" — REMOVE.
+
+**LEFT PANEL / FILE EXPLORER:**
+- Once a directory is loaded, the left panel tree MUST collapse into a drawer (hamburger or toggle). It wastes space showing the tree when the user is working with photos.
+- Directories take WAY too long to load. Loading state is horizontal bars — should be a collage-shaped grid placeholder.
+- SSD plug-in is not detected without page reload. Volumes must poll/refresh.
+
+**CAMERA DETECTION:**
+- Takes ~15 seconds to notice camera after plug-in. Too slow. Need faster polling on initial connect (every 3-5s), then slow down once connected.
+
+**COLLAGE:**
+- Photos crop (`object-fit: cover`). Show full photos.
+- Loading/swapping is janky and slow.
+- Loading state should match the collage grid shape, not horizontal bars.
+
+**FOCUS MODE (single photo view):**
+- Photo is too small. Should fill available space, especially after left panel collapses.
+- Two carousels stacked (gallery + filmstrip at bottom) is weird. Collage thumbnails should maybe move to the side, not stack below.
+- Metadata shown but too faded and confusing — unclear if film settings on right panel are for this photo, all photos, or leftover settings. Needs clear labeling.
+- "(from camera settings)" label is there but why? No context. Too faded. Persists even after editing settings — stale indicator.
+
+**LIVE / MANUAL TOGGLE:**
+- Not explained anywhere in UI. "Live" should auto-simulate on param change. Currently does nothing — SIMULATE button still shows even when set to Live. The toggle is broken/unwired.
+- In Focus Mode with Live enabled, changing a param should auto-simulate just that photo with debounce. No SIMULATE button needed when Live is on.
+
+**SIMULATE BUTTON:**
+- Shows next to "714 available" count — confusing. Am I simulating 1 photo? 9? 714?
+- Shifts the UI layout when it appears. Should not cause layout shift.
+- Needs progress indicator (how many done / total) instead of just "Simulating..."
+- No cancel button.
+- Simulates all 9 collage photos even from within Focus Mode — should only simulate the focused photo when in Focus Mode.
+- Language inconsistent: says "Simulating" then "Rendered" — pick one.
+- After simulate completes, nothing visually changes. No before/after comparison offered.
+- Button should be disabled/show progress when already clicked, not re-clickable.
+
+**SIMULATE PLACEMENT:**
+- Should NOT be in the center toolbar next to SHUFFLE/PICK PHOTOS.
+- Should be in the params panel (right side) — that's where the user changes settings, that's where "apply these settings" belongs.
+- Or auto-triggered (Live mode) with no button at all.
+- Separate concept: "simulate this photo" (Focus Mode) vs "simulate entire collage" (Preview Mode) vs "batch process directory" (future). These are different actions.
+
+**BEFORE/AFTER:**
+- After simulation, there's no way to A/B compare. Toggle exists but nothing visually changes after simulate.
+- Need actual comparison modes: toggle, side-by-side, drag divider.
+
+**PARAMS PANEL DROPDOWNS:**
+- Bullet character appears next to selected dropdown items. This indents them from other options. Use a different selection indicator that doesn't shift layout (background highlight, checkmark, bold, etc.).
+
+**RECIPE LIBRARY:**
+- Shows no recipes. Should ship with 3-5 sample recipes so the library isn't empty on first use.
+
+**WINDOW RESIZE:**
+- Layout breaks on window resize.
+
+**APP vs WEBSITE:**
+- Oren is confused about whether this is being packaged as a macOS app or a web app like Photopea. This needs to be clear in documentation and UX. (Answer: macOS app via Electron or native Swift, per CLAUDE.md Distribution section. Currently runs as local web server for development.)
 
 ## Distribution
 

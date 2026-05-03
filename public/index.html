@@ -62,73 +62,65 @@ body::before {
 
 /* Top bar */
 #recipe-shell-topbar {
-  display: flex;
-  align-items: center;
-  padding: 12px 24px;
-  gap: 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.12);
   flex-shrink: 0;
+}
+
+#recipe-shell-topbar-main {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
 }
 
 #recipe-shell-title {
   font-family: var(--mono);
-  font-size: 20px;
+  font-size: 36px;
   font-weight: 500;
   color: var(--amber);
-  letter-spacing: 2px;
+  letter-spacing: 4px;
 }
 
 #recipe-shell-meta {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1;
-}
-
-#recipe-title-display {
-  font-family: var(--mono);
-  font-size: 18px;
-  color: var(--amber);
-  cursor: pointer;
-  letter-spacing: 1px;
-  padding: 4px 8px;
-  border: 1px solid transparent;
-  transition: border-color 0.15s;
-}
-#recipe-title-display:hover { border-color: var(--amber-dim); }
-
-#recipe-title-input {
-  font-family: var(--mono);
-  font-size: 18px;
-  color: var(--amber);
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--amber);
-  outline: none;
-  letter-spacing: 1px;
-  padding: 4px 8px;
-  display: none;
-  width: 200px;
+  margin-left: auto;
 }
 
 #recipe-shell-tabs {
   display: flex;
   gap: 1px;
-  margin-left: auto;
+  margin-left: 32px;
 }
 
 .shell-tab {
   font-family: var(--mono);
-  font-size: 12px;
-  padding: 8px 20px;
-  color: var(--text-dim);
   cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.08);
-  transition: all 0.15s ease;
-  letter-spacing: 0.5px;
+  padding: 12px 24px;
+  border: 1px solid rgba(255,255,255,0.15);
+  transition: border-color 0.15s;
 }
-.shell-tab:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
-.shell-tab.active { color: var(--amber); border-color: var(--amber-dim); border-bottom-color: transparent; }
+.shell-tab + .shell-tab { border-left: none; }
+.shell-tab:hover { border-color: var(--amber-dim); }
+.shell-tab.active { border-color: var(--amber); border-bottom-color: transparent; }
+
+.shell-tab-name {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  transition: color 0.15s;
+}
+.shell-tab:hover .shell-tab-name { color: var(--text); }
+.shell-tab.active .shell-tab-name { color: var(--amber); }
+
+.shell-tab-desc {
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: 0.5;
+  margin-top: 2px;
+}
 
 /* Body: three-column layout */
 #recipe-shell-body {
@@ -136,6 +128,7 @@ body::before {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 
 /* Left panel */
@@ -147,7 +140,46 @@ body::before {
   padding: 12px 0;
   display: flex;
   flex-direction: column;
+  position: relative;
+  transition: width 0.25s ease, padding 0.25s ease, border-color 0.25s ease;
 }
+#recipe-left-panel.collapsed {
+  width: 0;
+  padding: 0;
+  overflow: hidden;
+  border-right-color: transparent;
+}
+#recipe-left-toggle {
+  display: none;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  color: var(--amber);
+  font-size: 16px;
+  padding: 6px 7px;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.15s;
+}
+#recipe-left-toggle:hover { background: rgba(255,255,255,0.08); }
+
+#recipe-left-collapse-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 16px;
+  padding: 6px 8px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s;
+}
+#recipe-left-collapse-btn:hover { color: var(--amber); }
+
 #recipe-left-panel::-webkit-scrollbar { width: 4px; }
 #recipe-left-panel::-webkit-scrollbar-track { background: transparent; }
 #recipe-left-panel::-webkit-scrollbar-thumb { background: var(--amber-faint); }
@@ -197,6 +229,7 @@ body::before {
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+  position: relative;
 }
 
 /* Center toolbar */
@@ -288,6 +321,16 @@ body::before {
   font-size: 12px;
   color: var(--text-dim);
 }
+
+#focus-photo-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0.7;
+  margin-left: 12px;
+}
+#focus-photo-meta span { margin-right: 10px; }
+#focus-photo-meta .focus-meta-filmsim { color: var(--amber); opacity: 1; }
 
 #focus-main {
   flex: 1;
@@ -986,10 +1029,12 @@ body::before {
 #landing.hidden { display: none; }
 
 #landing-header {
-  padding: 24px 40px 0;
+  padding: 16px 24px;
   flex-shrink: 0;
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
 }
 
 #landing-title {
@@ -1003,7 +1048,7 @@ body::before {
 #landing-tools {
   display: flex;
   gap: 1px;
-  margin-left: auto;
+  margin-left: 32px;
 }
 
 .landing-tool {
@@ -2110,17 +2155,23 @@ body::before {
 <div id="recipe-editor">
   <!-- Persistent top bar -->
   <div id="recipe-shell-topbar">
-    <div id="recipe-shell-title">SnapSifter</div>
-    <div id="recipe-shell-meta">
-      <span id="recipe-title-display">As Shot</span>
-      <input id="recipe-title-input" type="text" spellcheck="false">
-      <div id="camera-status"></div>
-      <button class="recipe-action-btn primary hidden" id="recipe-save-btn">SAVE</button>
-      <button class="recipe-action-btn" id="recipe-library-btn">LIBRARY</button>
-    </div>
-    <div id="recipe-shell-tabs">
-      <div class="shell-tab" id="shell-tab-cull">Photo Cull</div>
-      <div class="shell-tab active" id="shell-tab-recipe">Recipe Lab</div>
+    <div id="recipe-shell-topbar-main">
+      <div id="recipe-shell-title">SnapSifter</div>
+      <div id="recipe-shell-tabs">
+        <div class="shell-tab" id="shell-tab-cull">
+          <div class="shell-tab-name">Photo Cull</div>
+          <div class="shell-tab-desc">Rate, filter, sort</div>
+        </div>
+        <div class="shell-tab active" id="shell-tab-recipe">
+          <div class="shell-tab-name">Recipe Lab</div>
+          <div class="shell-tab-desc">Fuji film simulation recipes</div>
+        </div>
+      </div>
+      <div id="recipe-shell-meta">
+        <div id="camera-status"></div>
+        <button class="recipe-action-btn primary hidden" id="recipe-save-btn">SAVE</button>
+        <button class="recipe-action-btn" id="recipe-library-btn">LIBRARY</button>
+      </div>
     </div>
   </div>
 
@@ -2140,6 +2191,7 @@ body::before {
     <div id="recipe-center">
       <!-- Toolbar -->
       <div id="recipe-center-toolbar">
+        <button id="recipe-left-toggle" title="Open file browser"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 3V12C1 12.5523 1.44772 13 2 13H14C14.5523 13 15 12.5523 15 12V5C15 4.44772 14.5523 4 14 4H8L6 1H2C1.44772 1 1 1.44772 1 2V3Z"/></svg></button>
         <button class="recipe-action-btn" id="recipe-shuffle-btn">SHUFFLE</button>
         <button class="recipe-action-btn" id="recipe-pick-btn">PICK PHOTOS</button>
         <span id="recipe-grid-count"></span>
@@ -2162,7 +2214,8 @@ body::before {
         <div id="focus-toolbar">
           <span id="focus-back-btn">&#8592;</span>
           <span id="focus-photo-name"></span>
-          <button class="recipe-action-btn" id="focus-compare-btn">COMPARE</button>
+          <span id="focus-photo-meta"></span>
+          <button class="recipe-action-btn" id="focus-compare-btn" style="display:none">COMPARE</button>
           <div id="focus-live-toggle">
             <span class="focus-toggle-label active" id="focus-live-label">LIVE</span>
             <div id="focus-live-switch"></div>
@@ -3209,7 +3262,7 @@ body::before {
     fetch('/api/save-position', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ index: filtIdx })
+      body: JSON.stringify({ position: filtIdx })
     }).catch(() => {});
   }
 
@@ -3738,11 +3791,40 @@ body::before {
     }
   });
 
+  // ── Recipe left panel drawer ──
+
+  const recipeLeftPanel = document.getElementById('recipe-left-panel');
+  const recipeLeftToggle = document.getElementById('recipe-left-toggle');
+
+  const recipeCenter = document.getElementById('recipe-center');
+
+  const recipeCollapseBtn = document.createElement('button');
+  recipeCollapseBtn.id = 'recipe-left-collapse-btn';
+  recipeCollapseBtn.innerHTML = '&#9666;';
+  recipeCollapseBtn.title = 'Collapse file browser';
+  recipeLeftPanel.appendChild(recipeCollapseBtn);
+
+  function collapseRecipeLeftPanel() {
+    recipeLeftPanel.classList.add('collapsed');
+    recipeLeftToggle.style.display = 'block';
+  }
+
+  function expandRecipeLeftPanel() {
+    recipeLeftPanel.classList.remove('collapsed');
+    recipeLeftToggle.style.display = 'none';
+  }
+
+  recipeLeftToggle.addEventListener('click', () => {
+    expandRecipeLeftPanel();
+  });
+
+  recipeCollapseBtn.addEventListener('click', () => {
+    collapseRecipeLeftPanel();
+  });
+
   // ── Recipe Editor ──
 
   const recipeEditor = document.getElementById('recipe-editor');
-  const recipeTitleDisplay = document.getElementById('recipe-title-display');
-  const recipeTitleInput = document.getElementById('recipe-title-input');
   const recipeSaveBtn = document.getElementById('recipe-save-btn');
   const recipeLibraryBtn = document.getElementById('recipe-library-btn');
   const recipeParamsPanel = document.getElementById('recipe-right-panel-params');
@@ -3848,34 +3930,46 @@ body::before {
     }
   }
 
+  let recipeEditorInitialized = false;
+
   async function showRecipeEditor() {
     screen = 'recipe';
     landing.classList.add('hidden');
     landing.style.display = 'none';
     appEl.style.display = 'none';
     recipeEditor.style.display = 'flex';
-    // Check camera
+    if (!recipeLoadedDir) {
+      document.getElementById('recipe-filmstrip-container').style.display = 'none';
+    } else {
+      collapseRecipeLeftPanel();
+    }
+
     checkCameraStatus();
     if (cameraCheckInterval) clearInterval(cameraCheckInterval);
-    cameraCheckInterval = setInterval(checkCameraStatus, 10000);
-    // Initialize left panel tree
+    cameraCheckInterval = setInterval(checkCameraStatus, 30000);
+
     initRecipeLeftTree();
-    // Load filmstrip
-    loadRecipeFilmstrip();
-    // Show recipe preview mode (collage) in center
-    recipeState.mode = 'preview';
-    showRecipePreview();
-    // Run recipes + grid in parallel
-    const recipesP = loadRecipes();
-    const gridP = loadRecipeGrid();
-    await recipesP;
-    await gridP;
-    // Always start from "As Shot" EXIF baseline
-    recipeState.currentId = null;
-    recipeState.currentTitle = 'As Shot';
-    if (recipeLoadedDir && recipeState.gridPhotos.length > 0) {
-      loadBatchExif();
+
+    if (!recipeEditorInitialized) {
+      recipeEditorInitialized = true;
+      recipeState.mode = 'preview';
+      showRecipePreview();
+      const recipesP = loadRecipes();
+      const gridP = loadRecipeGrid();
+      await recipesP;
+      await gridP;
+      if (recipeLoadedDir && recipeState.gridPhotos.length > 0 && !recipeState.currentId) {
+        recipeState.currentTitle = 'As Shot';
+        loadBatchExif();
+      }
+    } else {
+      showRecipePreview();
+      if (recipeState.gridPhotos.length > 0) {
+        renderGrid();
+      }
     }
+
+    loadRecipeFilmstrip();
   }
 
   async function loadBatchExif() {
@@ -3890,19 +3984,14 @@ body::before {
       if (res.perFile) recipeState.perFileExif = res.perFile;
 
       if (res.majority && Object.keys(res.majority).length > 0) {
-        recipeState.currentParams = { ...RECIPE_DEFAULTS, ...res.majority };
-        recipeState.cleanParams = { ...recipeState.currentParams };
-        recipeState.currentTitle = 'As Shot';
-        recipeState.currentId = null;
-        recipeState.dirty = false;
-        recipeTitleDisplay.textContent = 'As Shot';
-        clearExifIndicator();
-        const indicator = document.createElement('span');
-        indicator.id = 'exif-defaults-indicator';
-        indicator.textContent = '(from camera settings)';
-        indicator.style.cssText = 'color: var(--amber); font-size: 11px; margin-left: 8px; opacity: 0.7;';
-        recipeTitleDisplay.parentElement.appendChild(indicator);
-        renderParams();
+        recipeState.exifBaseline = { ...RECIPE_DEFAULTS, ...res.majority };
+        if (!recipeState.currentId && !recipeState.dirty) {
+          recipeState.currentParams = { ...recipeState.exifBaseline };
+          recipeState.cleanParams = { ...recipeState.exifBaseline };
+          recipeState.currentTitle = 'No recipe';
+          recipeState.dirty = false;
+          renderParams();
+        }
       }
 
       // Re-render grid to show film sim badges
@@ -3959,6 +4048,27 @@ body::before {
     }
     document.getElementById('focus-photo-name').textContent = stem;
 
+    const metaEl = document.getElementById('focus-photo-meta');
+    metaEl.innerHTML = '';
+    const photoExif = recipeState.perFileExif[stem];
+    if (photoExif) {
+      if (photoExif.filmSimulation) {
+        const sim = document.createElement('span');
+        sim.className = 'focus-meta-filmsim';
+        sim.textContent = photoExif.filmSimulation;
+        metaEl.appendChild(sim);
+      }
+      if (photo.focalLength) { const s = document.createElement('span'); s.textContent = photo.focalLength + 'mm'; metaEl.appendChild(s); }
+      if (photo.aperture) { const s = document.createElement('span'); s.textContent = 'f/' + photo.aperture; metaEl.appendChild(s); }
+      if (photo.iso) { const s = document.createElement('span'); s.textContent = 'ISO ' + photo.iso; metaEl.appendChild(s); }
+      if (photo.shutterSpeed) {
+        const s = document.createElement('span');
+        s.textContent = photo.shutterSpeed < 1 ? '1/' + Math.round(1 / photo.shutterSpeed) + 's' : photo.shutterSpeed + 's';
+        metaEl.appendChild(s);
+      }
+      if (photoExif.whiteBalance) { const s = document.createElement('span'); s.textContent = 'WB: ' + photoExif.whiteBalance; metaEl.appendChild(s); }
+    }
+
     const gallery = document.getElementById('focus-gallery');
     gallery.innerHTML = '';
     recipeState.gridPhotos.forEach((p, i) => {
@@ -3977,8 +4087,10 @@ body::before {
 
   async function loadRecipeFilmstrip() {
     const strip = document.getElementById('recipe-filmstrip');
+    const stripContainer = document.getElementById('recipe-filmstrip-container');
     strip.innerHTML = '';
-    if (!recipeLoadedDir) return;
+    if (!recipeLoadedDir) { stripContainer.style.display = 'none'; return; }
+    stripContainer.style.display = '';
 
     try {
       const gridRes = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=999').then(r => r.json());
@@ -4045,11 +4157,6 @@ body::before {
     }
   }
 
-  function clearExifIndicator() {
-    const el = document.getElementById('exif-defaults-indicator');
-    if (el) el.remove();
-  }
-
   function selectRecipe(id) {
     const r = recipeState.recipes[id];
     if (!r) return;
@@ -4058,9 +4165,7 @@ body::before {
     recipeState.currentParams = { ...RECIPE_DEFAULTS, ...r.params };
     recipeState.cleanParams = { ...recipeState.currentParams };
     recipeState.dirty = false;
-    recipeTitleDisplay.textContent = recipeState.currentTitle;
     recipeSaveBtn.classList.add('hidden');
-    clearExifIndicator();
     renderParams();
   }
 
@@ -4070,9 +4175,7 @@ body::before {
     recipeState.currentParams = { ...RECIPE_DEFAULTS };
     recipeState.cleanParams = { ...recipeState.currentParams };
     recipeState.dirty = true;
-    recipeTitleDisplay.textContent = recipeState.currentTitle;
     recipeSaveBtn.classList.remove('hidden');
-    clearExifIndicator();
     renderParams();
   }
 
@@ -4589,12 +4692,6 @@ body::before {
   // ── Grid ──
 
   async function loadRecipeGrid() {
-    if (!recipeLoadedDir) {
-      try {
-        const st = await fetch('/api/recipe-status').then(r => r.json());
-        if (st.loaded && st.dir) recipeLoadedDir = st.dir;
-      } catch(e) {}
-    }
     if (!recipeLoadedDir) { recipeGridCount.textContent = 'No directory loaded'; return; }
 
     // Skip fetch if grid already loaded for this directory
@@ -4699,24 +4796,7 @@ body::before {
       img.loading = 'lazy';
       cell.appendChild(img);
 
-      const overlay = document.createElement('div');
-      overlay.className = 'cell-overlay';
       const stem = photo.file.replace(/\.[^.]+$/, '');
-      overlay.innerHTML = '<span>' + stem + '</span>' +
-        (photo.focalLength ? '<span>' + photo.focalLength + '</span>' : '') +
-        (photo.iso ? '<span>ISO ' + photo.iso + '</span>' : '') +
-        (photo.aperture ? '<span>' + photo.aperture + '</span>' : '');
-      cell.appendChild(overlay);
-
-      // Film simulation badge (when differs from majority/current)
-      const photoExif = recipeState.perFileExif[stem];
-      if (photoExif && photoExif.filmSimulation &&
-          photoExif.filmSimulation !== recipeState.currentParams.filmSimulation) {
-        const badge = document.createElement('span');
-        badge.className = 'cell-filmsim-badge';
-        badge.textContent = photoExif.filmSimulation;
-        cell.appendChild(badge);
-      }
 
       const swapBtn = document.createElement('div');
       swapBtn.className = 'cell-swap';
@@ -4784,7 +4864,14 @@ body::before {
   });
   _gridResizeObserver.observe(recipeGridEl);
 
+  function resetSimulatedState() {
+    recipeState.simulatedPhotos = {};
+    recipeState.showSimulated = false;
+    document.getElementById('before-after-toggle').classList.remove('visible');
+  }
+
   async function replaceGridCell(idx) {
+    resetSimulatedState();
     const filenames = recipeState.gridPhotos.map(p => p.file);
     try {
       const res = await fetch('/api/grid-replace', {
@@ -4810,6 +4897,7 @@ body::before {
   }
 
   async function shuffleGrid() {
+    resetSimulatedState();
     recipeGridEl.innerHTML = '';
     for (let i = 0; i < 9; i++) {
       const cell = document.createElement('div');
@@ -4834,38 +4922,29 @@ body::before {
     } catch(e) {}
   }
 
-  // ── Recipe picker dropdown ──
-
-  // openRecipePicker() removed — replaced by recipe library
-
-  // ── Title editing ──
-
-  recipeTitleDisplay.addEventListener('click', () => {
-    recipeTitleDisplay.style.display = 'none';
-    recipeTitleInput.style.display = 'inline-block';
-    recipeTitleInput.value = recipeState.currentTitle;
-    recipeTitleInput.focus();
-    recipeTitleInput.select();
-  });
-
-  function commitTitle() {
-    const v = recipeTitleInput.value.trim() || 'Untitled';
-    recipeState.currentTitle = v;
-    recipeTitleDisplay.textContent = v;
-    recipeTitleDisplay.style.display = '';
-    recipeTitleInput.style.display = 'none';
-    markDirtyNoAutoSave();
-  }
-  recipeTitleInput.addEventListener('blur', commitTitle);
-  recipeTitleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') recipeTitleInput.blur(); });
-
   // ── Recipe tree (folder picker) ──
 
   let recipeLeftTreeInitialized = false;
 
+  let recipeVolContainer = null;
+
+  async function refreshRecipeVolumes() {
+    if (!recipeVolContainer) return;
+    recipeVolContainer.innerHTML = '';
+    try {
+      const volumes = await fetch('/api/volumes').then(r => r.json());
+      for (const v of volumes) {
+        renderRecipeTreeRoot(recipeVolContainer, v.name, v.path, 1);
+      }
+    } catch (e) {}
+  }
+
   async function initRecipeLeftTree() {
     const container = document.getElementById('recipe-left-tree');
-    if (recipeLeftTreeInitialized && container.children.length > 0) return;
+    if (recipeLeftTreeInitialized && container.children.length > 0) {
+      refreshRecipeVolumes();
+      return;
+    }
     container.innerHTML = '';
 
     // Recent sessions section
@@ -4901,6 +4980,7 @@ body::before {
               }).then(r => r.json());
               if (res.ok) {
                 recipeLoadedDir = s.dir;
+                collapseRecipeLeftPanel();
                 recipeState.lastLoadedDir = null;
                 recipeState.gridPhotos = [];
                 const gridP = loadRecipeGrid();
@@ -4926,13 +5006,13 @@ body::before {
     volLabel.textContent = 'Volumes';
     container.appendChild(volLabel);
 
-    const volContainer = document.createElement('div');
-    container.appendChild(volContainer);
+    recipeVolContainer = document.createElement('div');
+    container.appendChild(recipeVolContainer);
 
     try {
       const volumes = await fetch('/api/volumes').then(r => r.json());
       for (const v of volumes) {
-        renderRecipeTreeRoot(volContainer, v.name, v.path, 1);
+        renderRecipeTreeRoot(recipeVolContainer, v.name, v.path, 1);
       }
     } catch (e) {}
 
@@ -5141,6 +5221,7 @@ body::before {
       }).then(r => r.json());
       if (res.ok) {
         recipeLoadedDir = recipeSelectedPath;
+        collapseRecipeLeftPanel();
         showRecipeEditor();
       }
     } catch (e) {}
@@ -5208,6 +5289,7 @@ body::before {
     const selectedCells = pickerGrid.querySelectorAll('.picker-cell.selected');
     const photos = Array.from(selectedCells).map(cell => ({ file: cell.dataset.file }));
     if (photos.length === 0) { closePhotoPicker(); return; }
+    resetSimulatedState();
     recipeState.gridPhotos = photos;
     recipeState.gridPhotos.forEach(p => recipeState.usedPhotos.add(p.file));
     renderGrid();
@@ -5300,15 +5382,6 @@ body::before {
     toolRecipeBtn.classList.add('active');
     toolCullBtn.classList.remove('active');
 
-    // Always open the recipe editor shell (it has its own tree in the left panel)
-    try {
-      const status = await fetch('/api/recipe-status').then(r => r.json());
-      if (status.loaded && status.dir) {
-        recipeLoadedDir = status.dir;
-        recipeSelectedPath = status.dir;
-      }
-    } catch(e) {}
-
     showRecipeEditor();
   });
 
@@ -5317,15 +5390,15 @@ body::before {
     if (s.dir) loadedDir = s.dir;
   }).catch(() => {});
 
-  // Restore last active tool tab (landing page only — never auto-enter editor)
   const savedTool = localStorage.getItem('snapsifter-active-tool');
   if (savedTool === 'recipe') {
     activeToolTab = 'recipe';
     toolCullBtn.classList.remove('active');
     toolRecipeBtn.classList.add('active');
+    showRecipeEditor();
+  } else {
+    initLanding();
   }
-
-  initLanding();
 })();
 </script>
 </body>
