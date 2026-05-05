@@ -746,6 +746,45 @@ body::before {
   border-radius: 50%;
 }
 
+.param-as-shot {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: 0.5;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.param-as-shot::before {
+  content: '(was ';
+}
+.param-as-shot::after {
+  content: ')';
+}
+
+.param-slider-as-shot-marker {
+  position: absolute;
+  top: 50%;
+  width: 2px;
+  height: 12px;
+  background: var(--amber);
+  opacity: 0.35;
+  transform: translate(-50%, -50%);
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.param-baseline-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  opacity: 0.6;
+  padding: 0 0 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 12px;
+}
+
 /* (old #recipe-grid-panel, #recipe-grid-toolbar, #recipe-grid-count, #recipe-grid removed — replaced by center panel + collage) */
 
 .recipe-grid-cell {
@@ -4445,6 +4484,12 @@ body::before {
 
   function renderParams() {
     recipeParamsPanel.innerHTML = '';
+    if (recipeState.exifBaseline) {
+      const baseline = document.createElement('div');
+      baseline.className = 'param-baseline-label';
+      baseline.textContent = 'As-Shot: ' + (recipeState.exifBaseline.filmSimulation || 'Unknown');
+      recipeParamsPanel.appendChild(baseline);
+    }
     for (const group of PARAM_DEFS) {
       const lbl = document.createElement('div');
       lbl.className = 'param-group-label';
@@ -4471,10 +4516,20 @@ body::before {
     const val = document.createElement('span');
     val.className = 'param-dropdown-value';
     val.textContent = recipeState.currentParams[p.key] || p.options[0];
+    const asShot = document.createElement('span');
+    asShot.className = 'param-as-shot';
+    const baseline = recipeState.exifBaseline ? recipeState.exifBaseline[p.key] : null;
+    if (baseline != null && String(baseline) !== String(recipeState.currentParams[p.key])) {
+      asShot.textContent = baseline;
+      asShot.style.display = '';
+    } else {
+      asShot.style.display = 'none';
+    }
     const chev = document.createElement('span');
     chev.className = 'param-dropdown-chevron';
     chev.innerHTML = '&#9662;';
     trigger.appendChild(val);
+    trigger.appendChild(asShot);
     trigger.appendChild(chev);
     wrap.appendChild(trigger);
 
@@ -4493,6 +4548,12 @@ body::before {
         list.style.display = 'none';
         list.querySelectorAll('.param-dropdown-option').forEach(el => el.classList.remove('selected'));
         item.classList.add('selected');
+        if (baseline != null && String(baseline) !== String(v)) {
+          asShot.textContent = baseline;
+          asShot.style.display = '';
+        } else {
+          asShot.style.display = 'none';
+        }
         markDirty();
       });
       list.appendChild(item);
@@ -4524,6 +4585,15 @@ body::before {
     if (curVal !== 0) valSpan.classList.add('non-zero');
     header.appendChild(label);
     header.appendChild(valSpan);
+    const asShotVal = document.createElement('span');
+    asShotVal.className = 'param-as-shot';
+    const baselineVal = recipeState.exifBaseline ? recipeState.exifBaseline[p.key] : null;
+    if (baselineVal != null && baselineVal !== curVal) {
+      asShotVal.textContent = (baselineVal > 0 ? '+' : '') + baselineVal;
+    } else {
+      asShotVal.style.display = 'none';
+    }
+    header.appendChild(asShotVal);
     wrap.appendChild(header);
 
     const track = document.createElement('div');
@@ -4540,6 +4610,10 @@ body::before {
     const thumb = document.createElement('div');
     thumb.className = 'param-slider-thumb';
     track.appendChild(thumb);
+
+    const asShotMarker = document.createElement('div');
+    asShotMarker.className = 'param-slider-as-shot-marker';
+    track.appendChild(asShotMarker);
 
     wrap.appendChild(track);
 
@@ -4564,8 +4638,27 @@ body::before {
       fill.style.width = width + '%';
       valSpan.textContent = (value > 0 ? '+' : '') + value;
       valSpan.classList.toggle('non-zero', value !== 0);
+      if (recipeState.exifBaseline && recipeState.exifBaseline[p.key] != null && recipeState.exifBaseline[p.key] !== value) {
+        asShotVal.textContent = (recipeState.exifBaseline[p.key] > 0 ? '+' : '') + recipeState.exifBaseline[p.key];
+        asShotVal.style.display = '';
+      } else {
+        asShotVal.style.display = 'none';
+      }
     }
     updateSliderVisual(curVal);
+
+    function updateAsShotMarker() {
+      const baseline = recipeState.exifBaseline ? recipeState.exifBaseline[p.key] : null;
+      if (baseline != null && baseline !== recipeState.currentParams[p.key]) {
+        const range = p.max - p.min;
+        const pct = (baseline - p.min) / range;
+        asShotMarker.style.left = (pct * 100) + '%';
+        asShotMarker.style.display = '';
+      } else {
+        asShotMarker.style.display = 'none';
+      }
+    }
+    updateAsShotMarker();
 
     function setFromEvent(e) {
       const rect = track.getBoundingClientRect();
@@ -4577,6 +4670,7 @@ body::before {
       recipeState.currentParams[p.key] = clamped;
       updateSliderVisual(clamped);
       markDirty();
+      updateAsShotMarker();
     }
 
     let dragging = false;
