@@ -151,17 +151,23 @@ body::before {
 }
 #recipe-left-toggle {
   display: none;
-  background: none;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 4px;
+  align-self: center;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-left: none;
+  border-radius: 0 6px 6px 0;
   color: var(--amber);
   font-size: 16px;
-  padding: 6px 7px;
+  padding: 14px 5px;
   cursor: pointer;
   line-height: 1;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
-#recipe-left-toggle:hover { background: rgba(255,255,255,0.08); }
+#recipe-left-toggle:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
 
 #recipe-left-collapse-btn {
   position: absolute;
@@ -257,12 +263,19 @@ body::before {
   overflow: hidden;
 }
 
-/* Right panel: recipe params (always visible) */
-#recipe-right-panel-params {
+/* Right panel wrapper */
+#recipe-right-panel {
   width: 380px;
   flex-shrink: 0;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   border-left: 1px solid rgba(255,255,255,0.12);
+}
+
+/* Right panel: recipe params (always visible) */
+#recipe-right-panel-params {
+  flex: 1;
+  overflow-y: auto;
   padding: 20px 24px;
   scrollbar-width: thin;
   scrollbar-color: var(--amber-faint) transparent;
@@ -270,6 +283,16 @@ body::before {
 #recipe-right-panel-params::-webkit-scrollbar { width: 4px; }
 #recipe-right-panel-params::-webkit-scrollbar-track { background: transparent; }
 #recipe-right-panel-params::-webkit-scrollbar-thumb { background: var(--amber-faint); }
+
+/* Drawer actions (simulate + revert) pinned to bottom */
+#recipe-drawer-actions {
+  flex-shrink: 0;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
 /* Bottom filmstrip */
 #recipe-filmstrip-container {
@@ -794,9 +817,8 @@ body::before {
 
 #recipe-simulate-section {
   display: none;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
+  flex-direction: column;
+  gap: 6px;
 }
 #recipe-simulate-section.visible {
   display: flex;
@@ -805,13 +827,14 @@ body::before {
   font-family: var(--mono);
   font-size: 12px;
   letter-spacing: 1px;
-  padding: 8px 24px;
+  padding: 10px 24px;
   background: var(--amber);
   color: #000;
   border: none;
   cursor: pointer;
   font-weight: 500;
   transition: opacity 0.15s;
+  width: 100%;
 }
 #simulate-btn:hover { opacity: 0.85; }
 #simulate-btn:disabled {
@@ -822,6 +845,26 @@ body::before {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--text-dim);
+}
+#revert-as-shot-btn {
+  display: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 8px 16px;
+  background: none;
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  width: 100%;
+}
+#revert-as-shot-btn.visible {
+  display: block;
+}
+#revert-as-shot-btn:hover {
+  color: var(--amber);
+  border-color: var(--amber);
 }
 .compare-indicator {
   position: absolute;
@@ -2139,18 +2182,15 @@ body::before {
       </div>
     </div>
 
+    <button id="recipe-left-toggle" title="Open file browser"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 3V12C1 12.5523 1.44772 13 2 13H14C14.5523 13 15 12.5523 15 12V5C15 4.44772 14.5523 4 14 4H8L6 1H2C1.44772 1 1 1.44772 1 2V3Z"/></svg></button>
+
     <!-- Center: mode-dependent content -->
     <div id="recipe-center">
       <!-- Toolbar -->
       <div id="recipe-center-toolbar">
-        <button id="recipe-left-toggle" title="Open file browser"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 3V12C1 12.5523 1.44772 13 2 13H14C14.5523 13 15 12.5523 15 12V5C15 4.44772 14.5523 4 14 4H8L6 1H2C1.44772 1 1 1.44772 1 2V3Z"/></svg></button>
         <button id="focus-back-btn" title="Back to collage" style="display:none"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="4.5" height="4.5"/><rect x="5.75" y="0" width="4.5" height="4.5"/><rect x="11.5" y="0" width="4.5" height="4.5"/><rect x="0" y="5.75" width="4.5" height="4.5"/><rect x="5.75" y="5.75" width="4.5" height="4.5"/><rect x="11.5" y="5.75" width="4.5" height="4.5"/><rect x="0" y="11.5" width="4.5" height="4.5"/><rect x="5.75" y="11.5" width="4.5" height="4.5"/><rect x="11.5" y="11.5" width="4.5" height="4.5"/></svg></button>
         <button class="recipe-action-btn" id="recipe-shuffle-btn">SHUFFLE</button>
         <button class="recipe-action-btn" id="recipe-pick-btn">PICK PHOTOS</button>
-        <div id="recipe-simulate-section">
-          <button id="simulate-btn">SIMULATE</button>
-          <span id="simulate-progress"></span>
-        </div>
       </div>
 
       <!-- Collage (Recipe Preview mode) -->
@@ -2187,7 +2227,16 @@ body::before {
     </div>
 
     <!-- Right: recipe params (always visible) -->
-    <div id="recipe-right-panel-params"></div>
+    <div id="recipe-right-panel">
+      <div id="recipe-right-panel-params"></div>
+      <div id="recipe-drawer-actions">
+        <div id="recipe-simulate-section">
+          <button id="simulate-btn">SIMULATE</button>
+          <span id="simulate-progress"></span>
+        </div>
+        <button id="revert-as-shot-btn">REVERT TO AS-SHOT</button>
+      </div>
+    </div>
   </div>
 
   <!-- Bottom filmstrip -->
@@ -3751,7 +3800,7 @@ body::before {
 
   function collapseRecipeLeftPanel() {
     recipeLeftPanel.classList.add('collapsed');
-    recipeLeftToggle.style.display = 'block';
+    recipeLeftToggle.style.display = 'flex';
   }
 
   function expandRecipeLeftPanel() {
@@ -4176,15 +4225,26 @@ body::before {
   function checkParamsChanged() {
     const section = document.getElementById('recipe-simulate-section');
     const btn = document.getElementById('simulate-btn');
-    if (!recipeState.cleanParams) { section.classList.remove('visible'); return; }
+    const revertBtn = document.getElementById('revert-as-shot-btn');
+    if (!recipeState.cleanParams) {
+      section.classList.remove('visible');
+      revertBtn.classList.remove('visible');
+      return;
+    }
     const changed = Object.keys(recipeState.currentParams).some(
       k => recipeState.currentParams[k] !== recipeState.cleanParams[k]
     );
-    if (changed && recipeState.cameraConnected) {
-      section.classList.add('visible');
-      btn.textContent = recipeState.mode === 'focus' ? 'SIMULATE PHOTO' : 'SIMULATE COLLAGE';
+    if (changed) {
+      if (recipeState.cameraConnected) {
+        section.classList.add('visible');
+        btn.textContent = recipeState.mode === 'focus' ? 'SIMULATE PHOTO' : 'SIMULATE COLLAGE';
+      } else {
+        section.classList.remove('visible');
+      }
+      revertBtn.classList.add('visible');
     } else {
       section.classList.remove('visible');
+      revertBtn.classList.remove('visible');
     }
   }
 
@@ -4697,6 +4757,18 @@ body::before {
     } else {
       simulateOnePhoto();
     }
+  });
+
+  document.getElementById('revert-as-shot-btn').addEventListener('click', () => {
+    if (!recipeState.exifBaseline) return;
+    recipeState.currentParams = { ...recipeState.exifBaseline };
+    recipeState.cleanParams = { ...recipeState.exifBaseline };
+    recipeState.dirty = false;
+    recipeState.currentId = null;
+    recipeState.currentTitle = 'As Shot';
+    recipeSaveBtn.classList.add('hidden');
+    renderParams();
+    checkParamsChanged();
   });
 
   // ── Focus photo hold-to-compare (persistent handler) ──
