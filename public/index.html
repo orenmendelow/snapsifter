@@ -710,6 +710,29 @@ body::before {
   color: var(--text-dim);
 }
 
+.param-tip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  opacity: 0.5;
+  cursor: help;
+  margin-left: 5px;
+  vertical-align: middle;
+  transition: opacity 0.15s;
+}
+.param-tip-icon:hover {
+  opacity: 1;
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
 .param-slider-value {
   font-size: 12px;
   color: var(--text-dim);
@@ -3937,29 +3960,29 @@ body::before {
 
   const PARAM_DEFS = [
     { group: 'Film', params: [
-      { key: 'filmSimulation', label: 'Film Simulation', type: 'dropdown', options: ['Provia','Velvia','Astia','Classic','ClassicNeg','Nostalgic','RealaACE','ProNegStd','ProNegHi','Eterna','BleachBypass','Acros','AcrosYe','AcrosR','AcrosG','Mono','MonoYe','MonoR','MonoG','Sepia'] },
-      { key: 'grainEffect', label: 'Grain Effect', type: 'dropdown', options: ['Off','Weak','Strong'] },
-      { key: 'grainSize', label: 'Grain Size', type: 'dropdown', options: ['Small','Large'] },
+      { key: 'filmSimulation', label: 'Film Simulation', type: 'dropdown', tip: 'Base color and tone profile. Provia: standard. Velvia: vivid saturated. Astia: soft portrait. ClassicNeg: high-contrast matte. Nostalgic: faded warm. Eterna: flat cinema.', options: ['Provia','Velvia','Astia','Classic','ClassicNeg','Nostalgic','RealaACE','ProNegStd','ProNegHi','Eterna','BleachBypass','Acros','AcrosYe','AcrosR','AcrosG','Mono','MonoYe','MonoR','MonoG','Sepia'] },
+      { key: 'grainEffect', label: 'Grain Effect', type: 'dropdown', tip: 'Adds analog film grain texture. Weak: subtle. Strong: pronounced.', options: ['Off','Weak','Strong'] },
+      { key: 'grainSize', label: 'Grain Size', type: 'dropdown', tip: 'Size of film grain particles. Small: fine grain (like ISO 100 film). Large: coarse grain (like ISO 800+ film).', options: ['Small','Large'] },
     ]},
     { group: 'Color', params: [
-      { key: 'colorChromeEffect', label: 'Color Chrome', type: 'dropdown', options: ['Off','Weak','Strong'] },
-      { key: 'colorChromeFXBlue', label: 'Chrome FX Blue', type: 'dropdown', options: ['Off','Weak','Strong'] },
-      { key: 'color', label: 'Color', type: 'slider', min: -4, max: 4 },
+      { key: 'colorChromeEffect', label: 'Color Chrome', type: 'dropdown', tip: 'Deepens saturated colors without affecting others. Reduces blown-out reds and oranges.', options: ['Off','Weak','Strong'] },
+      { key: 'colorChromeFXBlue', label: 'Chrome FX Blue', type: 'dropdown', tip: 'Deepens blue tones specifically. Makes skies and water richer.', options: ['Off','Weak','Strong'] },
+      { key: 'color', label: 'Color', type: 'slider', min: -4, max: 4, tip: 'Overall color saturation. Negative: muted/desaturated. Positive: vivid/saturated.' },
     ]},
     { group: 'White Balance', params: [
-      { key: 'whiteBalance', label: 'White Balance', type: 'dropdown', options: ['Auto','AutoWhite','AutoAmbiance','Daylight','Shade','Fluorescent1','Fluorescent2','Fluorescent3','Incandescent','Underwater','ColorTemp','Custom1','Custom2','Custom3'] },
-      { key: 'wbShiftR', label: 'WB Shift R', type: 'slider', min: -9, max: 9 },
-      { key: 'wbShiftB', label: 'WB Shift B', type: 'slider', min: -9, max: 9 },
+      { key: 'whiteBalance', label: 'White Balance', type: 'dropdown', tip: 'Color temperature baseline. Auto: camera decides. Daylight: ~5500K. Shade: ~7500K warmer. Incandescent: ~3000K cooler.', options: ['Auto','AutoWhite','AutoAmbiance','Daylight','Shade','Fluorescent1','Fluorescent2','Fluorescent3','Incandescent','Underwater','ColorTemp','Custom1','Custom2','Custom3'] },
+      { key: 'wbShiftR', label: 'WB Shift R', type: 'slider', min: -9, max: 9, tip: 'Red-cyan axis. Positive: warmer/more red. Negative: cooler/more cyan.' },
+      { key: 'wbShiftB', label: 'WB Shift B', type: 'slider', min: -9, max: 9, tip: 'Blue-yellow axis. Positive: cooler/more blue. Negative: warmer/more yellow.' },
     ]},
     { group: 'Tone', params: [
-      { key: 'dynamicRange', label: 'Dynamic Range', type: 'dropdown', options: ['100','200','400'] },
-      { key: 'highlightTone', label: 'Highlight', type: 'slider', min: -2, max: 4 },
-      { key: 'shadowTone', label: 'Shadow', type: 'slider', min: -2, max: 4 },
+      { key: 'dynamicRange', label: 'Dynamic Range', type: 'dropdown', tip: 'Highlight headroom. 100: standard. 200: 1-stop extra highlight recovery. 400: 2-stop extra (raises base ISO).', options: ['100','200','400'] },
+      { key: 'highlightTone', label: 'Highlight', type: 'slider', min: -2, max: 4, tip: 'Bright area contrast. Negative: softer highlights, more detail. Positive: harder highlights, more contrast.' },
+      { key: 'shadowTone', label: 'Shadow', type: 'slider', min: -2, max: 4, tip: 'Dark area contrast. Negative: softer shadows, more open. Positive: harder shadows, deeper blacks.' },
     ]},
     { group: 'Detail', params: [
-      { key: 'sharpness', label: 'Sharpness', type: 'slider', min: -4, max: 4 },
-      { key: 'noiseReduction', label: 'Noise Reduction', type: 'slider', min: -4, max: 4 },
-      { key: 'clarity', label: 'Clarity', type: 'slider', min: -5, max: 5 },
+      { key: 'sharpness', label: 'Sharpness', type: 'slider', min: -4, max: 4, tip: 'Edge enhancement. Negative: softer, smoother. Positive: crisper edges, more detail.' },
+      { key: 'noiseReduction', label: 'Noise Reduction', type: 'slider', min: -4, max: 4, tip: 'High-ISO noise smoothing. Negative: less smoothing, grittier. Positive: more smoothing, cleaner but less detail.' },
+      { key: 'clarity', label: 'Clarity', type: 'slider', min: -5, max: 5, tip: 'Midtone contrast / local contrast. Negative: dreamier, softer. Positive: punchier, more defined.' },
     ]},
   ];
 
@@ -4528,6 +4551,13 @@ body::before {
     const label = document.createElement('div');
     label.className = 'param-dropdown-label';
     label.textContent = p.label;
+    if (p.tip) {
+      const info = document.createElement('span');
+      info.className = 'param-tip-icon';
+      info.textContent = '?';
+      info.title = p.tip;
+      label.appendChild(info);
+    }
     wrap.appendChild(label);
 
     const trigger = document.createElement('div');
@@ -4597,6 +4627,13 @@ body::before {
     const label = document.createElement('span');
     label.className = 'param-slider-label';
     label.textContent = p.label;
+    if (p.tip) {
+      const info = document.createElement('span');
+      info.className = 'param-tip-icon';
+      info.textContent = '?';
+      info.title = p.tip;
+      label.appendChild(info);
+    }
     const valSpan = document.createElement('span');
     valSpan.className = 'param-slider-value';
     const curVal = recipeState.currentParams[p.key] || 0;
