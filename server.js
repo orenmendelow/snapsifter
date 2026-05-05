@@ -514,6 +514,7 @@ app.get('/api/preview-thumb/:dir/{*filepath}', (req, res) => {
     if (!fs.existsSync(cachePath)) {
       generateThumb(srcPath, cachePath, 800);
     }
+    res.set('Cache-Control', 'public, max-age=3600');
     res.type('image/jpeg');
     res.send(fs.readFileSync(cachePath));
   } catch (err) {
@@ -533,10 +534,11 @@ app.get('/api/preview-image/:dir/{*filepath}', (req, res) => {
     return res.status(404).send('File not found');
   }
 
-  // JPG/JPEG — serve directly
+  // JPG/JPEG — serve directly with cache headers
   const upper = srcPath.toUpperCase();
   if (upper.endsWith('.JPG') || upper.endsWith('.JPEG')) {
     try {
+      res.set('Cache-Control', 'public, max-age=3600');
       res.type('image/jpeg');
       res.send(fs.readFileSync(srcPath));
     } catch (err) {
@@ -555,6 +557,7 @@ app.get('/api/preview-image/:dir/{*filepath}', (req, res) => {
     if (!fs.existsSync(cachePath)) {
       generateThumb(srcPath, cachePath, 2000);
     }
+    res.set('Cache-Control', 'public, max-age=3600');
     res.type('image/jpeg');
     res.send(fs.readFileSync(cachePath));
   } catch (err) {

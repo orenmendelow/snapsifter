@@ -70,32 +70,52 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - **Progress bar**: Increased to 5px with hover text. May still be too subtle.
 - **No logo**: Favicon is aperture SVG. No app logo yet.
 
+### Session 16 changes (2026-05-05)
+
+**IMPLEMENTED:**
+- Stale simulation cache fix — `simTimestamps` tracks per-photo timestamps, appended as `?t=` to sim image URLs in `toggleBeforeAfter()` and `renderFocusMode()`. Re-simulating with different params now shows updated output.
+- Live/manual toggle removed entirely (HTML, CSS, JS event listener). `liveSimulate` state property removed.
+- Focus mode redesign:
+  - Collage click → focus with left vertical gallery strip of collage thumbs
+  - Filmstrip click → browse focus, no gallery strip, photo fills full center
+  - `findOrAddToCollage()` now swaps focused photo when grid full (was returning 0)
+  - Toolbar removed from focus mode — collage grid icon button lives in center toolbar beside folder/shuffle/pick
+  - Filename + capture metadata (shutter, ISO, aperture, focal length) in centered bottom info bar
+  - Film simulation and white balance removed from metadata display (belong in recipe drawer)
+- Image serving: `Cache-Control: public, max-age=3600` added to `preview-thumb` and `preview-image` endpoints (browser caches after first load)
+
 ### Session 15 feedback (2026-05-05, verbatim from Oren)
+
+**SHUFFLE / PICK PHOTOS BUTTONS:**
+- Visible before any directory is loaded. Should be hidden until a directory is loaded and photos are in the grid.
+
+**RECIPE LAB DIRECTORY BROWSER:**
+- Clicking a directory in Recipe Lab doesn't show image preview thumbnails like Photo Cull does. Should match Photo Cull's preview behavior.
 
 **LEFT PANEL / FOLDER ICON:**
 - Folder icon should be attached to the left side of the screen to visually indicate it opens a drawer. Currently floating in toolbar.
 
 **LIVE/MANUAL TOGGLE:**
-- Doesn't do anything. Non-functional. Either wire it up or remove it.
+- ~~Doesn't do anything. Non-functional. Either wire it up or remove it.~~ DONE — removed entirely in session 16.
 
 **ORIGINAL/SIMULATED TOGGLE (toolbar):**
 - Don't want it in the toolbar above the collage.
 - Want something clickable ON the image itself to toggle between original and simulated (like Snapseed hold-to-compare).
 
 **SIMULATION STATE:**
-- After simulating a recipe, have to reload the page for the new simulation to show over a previously simulated photo. Stale cache not invalidated.
+- ~~After simulating a recipe, have to reload the page for the new simulation to show over a previously simulated photo. Stale cache not invalidated.~~ DONE — cache-buster timestamps in session 16.
 
 **FOCUS MODE (click collage photo to expand):**
-- Current behavior: rest of collage photos drop below as a row + carousel below that. Bad UI.
-- Can't click photos from the carousel when in expanded view — broken interaction.
-- Desired: selected photo fills center/right. Other collage photos displayed on the LEFT SIDE as vertical strip. Carousel below always accessible and clickable to switch active photo.
+- ~~Current behavior: rest of collage photos drop below as a row + carousel below that. Bad UI.~~ DONE — redesigned in session 16.
+- ~~Can't click photos from the carousel when in expanded view — broken interaction.~~ DONE — filmstrip clicks now open browse focus mode (no collage modification).
+- ~~Desired: selected photo fills center/right. Other collage photos displayed on the LEFT SIDE as vertical strip. Carousel below always accessible and clickable to switch active photo.~~ DONE — collage click shows left gallery strip, filmstrip click shows photo only.
 
 **METADATA IN FOCUS MODE:**
-- Current metadata is in the upper breadcrumb/back-button area — wrong placement.
-- Should be displayed LOWER on the photo view, not in that top bar.
-- Should include ONLY photo capture info: date taken, shutter speed, ISO, aperture, focal length — things that CANNOT be changed by a recipe.
-- Should NOT include recipe/film simulation settings (those belong in the right panel).
-- Question: do these photos have geo/GPS data? Check EXIF.
+- ~~Current metadata is in the upper breadcrumb/back-button area — wrong placement.~~ DONE — moved to centered bottom info bar.
+- ~~Should be displayed LOWER on the photo view, not in that top bar.~~ DONE.
+- ~~Should include ONLY photo capture info: date taken, shutter speed, ISO, aperture, focal length — things that CANNOT be changed by a recipe.~~ DONE (date not yet available from grid-select data, shutter/ISO/aperture/focal length shown).
+- ~~Should NOT include recipe/film simulation settings (those belong in the right panel).~~ DONE.
+- Question: do these photos have geo/GPS data? Check EXIF. — ANSWERED: No, X100VI lacks built-in GPS.
 
 **RIGHT PANEL / RECIPE DRAWER:**
 - For each photo: show the EXACT recipe as-shot. As soon as any param changes, make it VERY clear that params have been modified vs as-shot.
