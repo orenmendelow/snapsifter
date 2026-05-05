@@ -1922,6 +1922,7 @@ app.post('/api/batch-recipe-exif', express.json(), async (req, res) => {
       '-NoiseReduction', '-Clarity',
       '-GrainEffectRoughness', '-GrainEffectSize',
       '-ColorChromeEffect', '-ColorChromeFXBlue',
+      '-ShutterSpeed', '-ISO', '-Aperture', '-FocalLength',
       ...matchedPaths
     ];
     const stdout = execSync(`/opt/homebrew/bin/exiftool ${exiftoolArgs.map(a => JSON.stringify(a)).join(' ')}`, {
@@ -1935,7 +1936,17 @@ app.post('/api/batch-recipe-exif', express.json(), async (req, res) => {
     for (let i = 0; i < parsed.length; i++) {
       const stem = matchedStems[i];
       const params = extractRecipeFromExiftool(parsed[i]);
-      if (params) perFile[stem] = params;
+      if (params) {
+        const raw = parsed[i];
+        if (raw.ShutterSpeed) params._shutterSpeed = parseFloat(raw.ShutterSpeed) || null;
+        if (raw.ISO) params._iso = parseInt(raw.ISO, 10) || null;
+        if (raw.Aperture) params._aperture = parseFloat(raw.Aperture) || null;
+        if (raw.FocalLength) {
+          const flMatch = String(raw.FocalLength).match(/([\d.]+)/);
+          params._focalLength = flMatch ? parseFloat(flMatch[1]) : null;
+        }
+        perFile[stem] = params;
+      }
     }
 
     // Compute majority params

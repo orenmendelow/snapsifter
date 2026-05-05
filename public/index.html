@@ -823,47 +823,24 @@ body::before {
   font-size: 11px;
   color: var(--text-dim);
 }
-#before-after-toggle {
-  display: none;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-#before-after-toggle.visible {
-  display: flex;
-}
-#before-after-toggle label {
+.compare-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
   font-family: var(--mono);
   font-size: 10px;
-  color: var(--text-dim);
   letter-spacing: 0.5px;
-  cursor: pointer;
+  color: #fff;
+  background: rgba(0,0,0,0.6);
+  padding: 3px 8px;
+  border-radius: 3px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s;
+  z-index: 5;
 }
-#ba-switch {
-  position: relative;
-  width: 36px;
-  height: 18px;
-  background: #333;
-  border-radius: 9px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-#ba-switch.on {
-  background: var(--amber);
-}
-#ba-switch::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  background: #fff;
-  border-radius: 50%;
-  transition: left 0.2s;
-}
-#ba-switch.on::after {
-  left: 20px;
+.compare-indicator.visible {
+  opacity: 1;
 }
 
 .recipe-grid-cell .cell-sim-spinner {
@@ -2174,11 +2151,6 @@ body::before {
           <button id="simulate-btn">SIMULATE</button>
           <span id="simulate-progress"></span>
         </div>
-        <div id="before-after-toggle">
-          <label>ORIGINAL</label>
-          <div id="ba-switch"></div>
-          <label>SIMULATED</label>
-        </div>
       </div>
 
       <!-- Collage (Recipe Preview mode) -->
@@ -2192,6 +2164,7 @@ body::before {
             <div id="focus-photo-container">
               <img id="focus-photo" src="" alt="">
               <div id="focus-spinner" style="display:none"></div>
+              <div class="compare-indicator" id="focus-compare-indicator">ORIGINAL</div>
             </div>
             <div id="focus-photo-info">
               <span id="focus-photo-name"></span>
@@ -3938,16 +3911,16 @@ body::before {
       await gridP;
       if (recipeLoadedDir && recipeState.gridPhotos.length > 0 && !recipeState.currentId) {
         recipeState.currentTitle = 'As Shot';
-        loadBatchExif();
+        await loadBatchExif();
       }
+      loadRecipeFilmstrip();
     } else {
       showRecipePreview();
       if (recipeState.gridPhotos.length > 0) {
         renderGrid();
       }
+      loadRecipeFilmstrip();
     }
-
-    loadRecipeFilmstrip();
   }
 
   async function loadBatchExif() {
@@ -3959,7 +3932,20 @@ body::before {
         body: JSON.stringify({ dir: recipeLoadedDir, files })
       }).then(r => r.json());
 
-      if (res.perFile) recipeState.perFileExif = res.perFile;
+      if (res.perFile) {
+        recipeState.perFileExif = res.perFile;
+        // Enrich gridPhotos with capture metadata from EXIF
+        recipeState.gridPhotos.forEach(p => {
+          const stem = p.file.replace(/\.[^.]+$/, '');
+          const exif = res.perFile[stem];
+          if (exif) {
+            if (exif._shutterSpeed != null) p.shutterSpeed = exif._shutterSpeed;
+            if (exif._iso != null) p.iso = exif._iso;
+            if (exif._aperture != null) p.aperture = exif._aperture;
+            if (exif._focalLength != null) p.focalLength = exif._focalLength;
+          }
+        });
+      }
 
       if (res.majority && Object.keys(res.majority).length > 0) {
         recipeState.exifBaseline = { ...RECIPE_DEFAULTS, ...res.majority };
@@ -4049,7 +4035,19 @@ body::before {
     } else {
       focusPhoto.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
     }
+    focusPhoto.fetchPriority = 'high';
     document.getElementById('focus-photo-name').textContent = stem;
+
+    // Fallback: get capture metadata from perFileExif if not on photo object
+    if (!photo.shutterSpeed && !photo.iso) {
+      const exif = recipeState.perFileExif[stem];
+      if (exif) {
+        if (exif._shutterSpeed != null && !photo.shutterSpeed) photo.shutterSpeed = exif._shutterSpeed;
+        if (exif._iso != null && !photo.iso) photo.iso = exif._iso;
+        if (exif._aperture != null && !photo.aperture) photo.aperture = exif._aperture;
+        if (exif._focalLength != null && !photo.focalLength) photo.focalLength = exif._focalLength;
+      }
+    }
 
     const metaEl = document.getElementById('focus-photo-meta');
     metaEl.innerHTML = '';
@@ -4649,7 +4647,6 @@ body::before {
     btn.disabled = false;
 
     if (Object.keys(recipeState.simulatedPhotos).length > 0) {
-      document.getElementById('before-after-toggle').classList.add('visible');
       recipeState.showSimulated = true;
       toggleBeforeAfter(true);
     }
@@ -4657,12 +4654,6 @@ body::before {
 
   function toggleBeforeAfter(showSim) {
     recipeState.showSimulated = showSim;
-    const baSwitch = document.getElementById('ba-switch');
-    if (showSim) {
-      baSwitch.classList.add('on');
-    } else {
-      baSwitch.classList.remove('on');
-    }
 
     const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
     recipeState.gridPhotos.forEach((photo, idx) => {
@@ -4707,9 +4698,49 @@ body::before {
       simulateOnePhoto();
     }
   });
-  document.getElementById('ba-switch').addEventListener('click', () => {
-    toggleBeforeAfter(!recipeState.showSimulated);
-  });
+
+  // ── Focus photo hold-to-compare (persistent handler) ──
+  (function() {
+    const focusPhoto = document.getElementById('focus-photo');
+    const focusIndicator = document.getElementById('focus-compare-indicator');
+    let focusComparing = false;
+
+    function getFocusPhoto() {
+      if (recipeState.focusBrowse) return recipeState.focusBrowsePhoto;
+      return recipeState.gridPhotos[recipeState.focusIndex];
+    }
+
+    function focusCompareStart(e) {
+      if (e.type === 'touchstart') e.preventDefault();
+      const photo = getFocusPhoto();
+      if (!photo) return;
+      if (recipeState.showSimulated && recipeState.simulatedPhotos[photo.file]) {
+        focusComparing = true;
+        const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
+        focusPhoto.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
+        focusIndicator.classList.add('visible');
+      }
+    }
+    function focusCompareEnd() {
+      if (!focusComparing) return;
+      focusComparing = false;
+      const photo = getFocusPhoto();
+      if (!photo) return;
+      const simPath = recipeState.simulatedPhotos[photo.file];
+      if (!simPath) return;
+      const simDirB64 = btoa(unescape(encodeURIComponent(simPath.substring(0, simPath.lastIndexOf('/')))));
+      const simFile = simPath.substring(simPath.lastIndexOf('/') + 1);
+      const ts = recipeState.simTimestamps[photo.file] || '';
+      focusPhoto.src = '/api/preview-image/' + simDirB64 + '/' + encodeURIComponent(simFile) + (ts ? '?t=' + ts : '');
+      focusIndicator.classList.remove('visible');
+    }
+
+    focusPhoto.addEventListener('mousedown', focusCompareStart);
+    focusPhoto.addEventListener('mouseup', focusCompareEnd);
+    focusPhoto.addEventListener('mouseleave', focusCompareEnd);
+    focusPhoto.addEventListener('touchstart', focusCompareStart, { passive: false });
+    focusPhoto.addEventListener('touchend', focusCompareEnd);
+  })();
 
   // ── Grid ──
 
@@ -4828,10 +4859,56 @@ body::before {
       });
       cell.appendChild(swapBtn);
 
-      cell.addEventListener('click', (e) => {
+      // Hold-to-compare (Snapseed-style) + tap-to-focus
+      let cellComparing = false;
+      let cellDownTime = 0;
+      let cellHoldTimer = null;
+      const indicator = document.createElement('div');
+      indicator.className = 'compare-indicator';
+      indicator.textContent = 'ORIGINAL';
+      cell.appendChild(indicator);
+
+      function showOriginal() {
+        cellComparing = true;
+        img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(photo.file);
+        indicator.classList.add('visible');
+      }
+      function revertToSim() {
+        cellComparing = false;
+        const simPath = recipeState.simulatedPhotos[photo.file];
+        if (!simPath) return;
+        const simDirB64 = btoa(unescape(encodeURIComponent(simPath.substring(0, simPath.lastIndexOf('/')))));
+        const simFile = simPath.substring(simPath.lastIndexOf('/') + 1);
+        const ts = recipeState.simTimestamps[photo.file] || '';
+        img.src = '/api/preview-image/' + simDirB64 + '/' + encodeURIComponent(simFile) + (ts ? '?t=' + ts : '');
+        indicator.classList.remove('visible');
+      }
+      function cellCompareStart(e) {
         if (e.target.closest('.cell-swap')) return;
-        enterFocusMode(idx);
-      });
+        if (e.type === 'touchstart') e.preventDefault();
+        cellDownTime = Date.now();
+        if (recipeState.showSimulated && recipeState.simulatedPhotos[photo.file]) {
+          cellHoldTimer = setTimeout(showOriginal, 200);
+        }
+      }
+      function cellCompareEnd(e) {
+        if (e.target.closest('.cell-swap')) return;
+        clearTimeout(cellHoldTimer);
+        const wasComparing = cellComparing;
+        if (cellComparing) revertToSim();
+        if (e.type === 'mouseup' || e.type === 'touchend') {
+          if (!wasComparing) enterFocusMode(idx);
+        }
+      }
+      function cellCompareLeave() {
+        clearTimeout(cellHoldTimer);
+        if (cellComparing) revertToSim();
+      }
+      cell.addEventListener('mousedown', cellCompareStart);
+      cell.addEventListener('mouseup', cellCompareEnd);
+      cell.addEventListener('mouseleave', cellCompareLeave);
+      cell.addEventListener('touchstart', cellCompareStart, { passive: false });
+      cell.addEventListener('touchend', cellCompareEnd);
 
       recipeGridEl.appendChild(cell);
       cells.push({ cell, img });
@@ -4889,7 +4966,6 @@ body::before {
     recipeState.simulatedPhotos = {};
     recipeState.simTimestamps = {};
     recipeState.showSimulated = false;
-    document.getElementById('before-after-toggle').classList.remove('visible');
   }
 
   async function replaceGridCell(idx) {
