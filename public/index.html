@@ -213,6 +213,23 @@ body::before {
   margin-bottom: 10px;
 }
 
+#recipe-left-folder-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+#recipe-left-folder-thumbs img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 2px;
+  opacity: 0.85;
+}
+#recipe-left-folder-thumbs:empty {
+  display: none;
+}
+
 #recipe-left-load-btn {
   font-family: var(--mono);
   font-size: 11px;
@@ -2217,6 +2234,7 @@ body::before {
       <div id="recipe-left-folder-info">
         <div id="recipe-left-folder-name"></div>
         <div id="recipe-left-folder-detail"></div>
+        <div id="recipe-left-folder-thumbs"></div>
         <button id="recipe-left-load-btn">Load</button>
       </div>
     </div>
@@ -5447,6 +5465,9 @@ body::before {
     const target = document.getElementById('recipe-left-tree').querySelector('.tree-node-row[data-path="' + CSS.escape(nodePath) + '"]');
     if (target) target.classList.add('selected');
 
+    const thumbsContainer = document.getElementById('recipe-left-folder-thumbs');
+    thumbsContainer.innerHTML = '';
+
     // Determine base dir and RAF dir from the selected path
     const normalized = nodePath.replace(/\/+$/, '');
     const parts = normalized.split('/');
@@ -5474,6 +5495,23 @@ body::before {
         recipeFolderDetail.textContent = rafData.count + ' RAF files in Liked/RAF/';
         recipeLoadBtn.textContent = 'Load';
         recipeLoadBtn.style.display = '';
+
+        // Fetch HIF preview thumbnails
+        const hifDir = baseDir + '/Liked/HIF';
+        try {
+          const browseData = await fetch('/api/browse?dir=' + encodeURIComponent(hifDir)).then(r => r.json());
+          if (browseData.previewFiles && browseData.previewFiles.length > 0) {
+            const dirB64 = btoa(unescape(encodeURIComponent(hifDir)));
+            const previews = browseData.previewFiles.slice(0, 8);
+            for (const f of previews) {
+              const img = document.createElement('img');
+              img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(f);
+              img.alt = '';
+              img.onerror = function() { this.remove(); };
+              thumbsContainer.appendChild(img);
+            }
+          }
+        } catch (e) {}
       } else {
         recipeSelectedPath = nodePath;
         recipeFolderInfo.classList.add('visible');
