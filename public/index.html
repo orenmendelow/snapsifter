@@ -2228,8 +2228,8 @@ body::before {
       <!-- Toolbar -->
       <div id="recipe-center-toolbar">
         <button id="focus-back-btn" title="Back to collage" style="display:none"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="4.5" height="4.5"/><rect x="5.75" y="0" width="4.5" height="4.5"/><rect x="11.5" y="0" width="4.5" height="4.5"/><rect x="0" y="5.75" width="4.5" height="4.5"/><rect x="5.75" y="5.75" width="4.5" height="4.5"/><rect x="11.5" y="5.75" width="4.5" height="4.5"/><rect x="0" y="11.5" width="4.5" height="4.5"/><rect x="5.75" y="11.5" width="4.5" height="4.5"/><rect x="11.5" y="11.5" width="4.5" height="4.5"/></svg></button>
-        <button class="recipe-action-btn" id="recipe-shuffle-btn">SHUFFLE</button>
-        <button class="recipe-action-btn" id="recipe-pick-btn">PICK PHOTOS</button>
+        <button class="recipe-action-btn" id="recipe-shuffle-btn" style="display:none">SHUFFLE</button>
+        <button class="recipe-action-btn" id="recipe-pick-btn" style="display:none">PICK PHOTOS</button>
       </div>
 
       <!-- Collage (Recipe Preview mode) -->
@@ -4068,8 +4068,9 @@ body::before {
     document.getElementById('recipe-collage').style.display = '';
     document.getElementById('focus-view').style.display = 'none';
     document.getElementById('compare-view').style.display = 'none';
-    document.getElementById('recipe-shuffle-btn').style.display = '';
-    document.getElementById('recipe-pick-btn').style.display = '';
+    const hasPhotos = recipeState.gridPhotos.length > 0;
+    document.getElementById('recipe-shuffle-btn').style.display = hasPhotos ? '' : 'none';
+    document.getElementById('recipe-pick-btn').style.display = hasPhotos ? '' : 'none';
     document.getElementById('focus-back-btn').style.display = 'none';
   }
 
