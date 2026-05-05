@@ -84,23 +84,45 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
   - Film simulation and white balance removed from metadata display (belong in recipe drawer)
 - Image serving: `Cache-Control: public, max-age=3600` added to `preview-thumb` and `preview-image` endpoints (browser caches after first load)
 
+### Session 17 changes (2026-05-05)
+
+**IMPLEMENTED (all session 15 feedback items):**
+- On-image hold-to-compare (Snapseed-style): press+hold collage photo (200ms threshold) or focus photo to flash to original. "ORIGINAL" pill indicator. Toolbar toggle removed entirely.
+- Folder icon moved to left screen edge as drawer affordance tab (rounded right corners, attached to panel edge)
+- SIMULATE button moved into recipe drawer (right panel bottom), full-width, appears when params differ from as-shot
+- REVERT TO AS-SHOT button in recipe drawer, resets to EXIF baseline
+- As-shot baseline visual diff: "(was X)" on changed dropdowns, amber marker on slider tracks, "As-Shot: {film sim}" label at top of params panel
+- Shuffle/pick buttons hidden before directory is loaded
+- Recipe Lab directory browser shows up to 8 HIF preview thumbnails when selecting a folder
+- Collage padding/gap increased (4px→12px/8px) to match recipe drawer spacing
+- Tooltip `?` icons on all 16 recipe parameters with Fujifilm-specific descriptions
+- Date taken (DateTimeOriginal) added to focus mode metadata bar
+- Load priority: collage renders before filmstrip, batch EXIF awaited before filmstrip loads
+- Focus photo gets `fetchpriority="high"`
+
+**ARCHITECTURAL:**
+- `#recipe-right-panel` wrapper added around `#recipe-right-panel-params` — params scroll in flex:1, `#recipe-drawer-actions` pinned to bottom
+- `#recipe-left-toggle` moved from `#recipe-center-toolbar` to `#recipe-shell-body` (between left panel and center)
+- `batch-recipe-exif` endpoint now extracts `-ShutterSpeed -ISO -Aperture -FocalLength -DateTimeOriginal`, returns as `_shutterSpeed`, `_iso`, `_aperture`, `_focalLength`, `_dateTaken` on perFile objects
+- `loadBatchExif()` enriches `recipeState.gridPhotos` with capture metadata after fetch
+
 ### Session 15 feedback (2026-05-05, verbatim from Oren)
 
 **SHUFFLE / PICK PHOTOS BUTTONS:**
-- Visible before any directory is loaded. Should be hidden until a directory is loaded and photos are in the grid.
+- ~~Visible before any directory is loaded. Should be hidden until a directory is loaded and photos are in the grid.~~ DONE — session 17.
 
 **RECIPE LAB DIRECTORY BROWSER:**
-- Clicking a directory in Recipe Lab doesn't show image preview thumbnails like Photo Cull does. Should match Photo Cull's preview behavior.
+- ~~Clicking a directory in Recipe Lab doesn't show image preview thumbnails like Photo Cull does. Should match Photo Cull's preview behavior.~~ DONE — session 17.
 
 **LEFT PANEL / FOLDER ICON:**
-- Folder icon should be attached to the left side of the screen to visually indicate it opens a drawer. Currently floating in toolbar.
+- ~~Folder icon should be attached to the left side of the screen to visually indicate it opens a drawer. Currently floating in toolbar.~~ DONE — session 17.
 
 **LIVE/MANUAL TOGGLE:**
 - ~~Doesn't do anything. Non-functional. Either wire it up or remove it.~~ DONE — removed entirely in session 16.
 
 **ORIGINAL/SIMULATED TOGGLE (toolbar):**
-- Don't want it in the toolbar above the collage.
-- Want something clickable ON the image itself to toggle between original and simulated (like Snapseed hold-to-compare).
+- ~~Don't want it in the toolbar above the collage.~~ DONE — session 17. Replaced with on-image hold-to-compare.
+- ~~Want something clickable ON the image itself to toggle between original and simulated (like Snapseed hold-to-compare).~~ DONE — session 17.
 
 **SIMULATION STATE:**
 - ~~After simulating a recipe, have to reload the page for the new simulation to show over a previously simulated photo. Stale cache not invalidated.~~ DONE — cache-buster timestamps in session 16.
@@ -113,36 +135,33 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 **METADATA IN FOCUS MODE:**
 - ~~Current metadata is in the upper breadcrumb/back-button area — wrong placement.~~ DONE — moved to centered bottom info bar.
 - ~~Should be displayed LOWER on the photo view, not in that top bar.~~ DONE.
-- ~~Should include ONLY photo capture info: date taken, shutter speed, ISO, aperture, focal length — things that CANNOT be changed by a recipe.~~ DONE (date not yet available from grid-select data, shutter/ISO/aperture/focal length shown).
+- ~~Should include ONLY photo capture info: date taken, shutter speed, ISO, aperture, focal length — things that CANNOT be changed by a recipe.~~ DONE — all fields including date taken (session 17).
 - ~~Should NOT include recipe/film simulation settings (those belong in the right panel).~~ DONE.
 - Question: do these photos have geo/GPS data? Check EXIF. — ANSWERED: No, X100VI lacks built-in GPS.
 
 **RIGHT PANEL / RECIPE DRAWER:**
-- For each photo: show the EXACT recipe as-shot. As soon as any param changes, make it VERY clear that params have been modified vs as-shot.
-- SIMULATE button belongs IN the recipe drawer (not toolbar), appears when params differ from as-shot.
-- REVERT TO AS-SHOT button should also appear when params are modified.
+- ~~For each photo: show the EXACT recipe as-shot. As soon as any param changes, make it VERY clear that params have been modified vs as-shot.~~ DONE — session 17 (as-shot baseline + visual diff).
+- ~~SIMULATE button belongs IN the recipe drawer (not toolbar), appears when params differ from as-shot.~~ DONE — session 17.
+- ~~REVERT TO AS-SHOT button should also appear when params are modified.~~ DONE — session 17.
 - If a photo's as-shot params match a saved recipe, indicate this with a tag/badge in the recipe drawer.
 - Loading existing recipes is not intuitive. Need ability to LOAD a recipe and SAVE AS NEW RECIPE directly from this drawer while editing.
 - A button to manage full recipe catalogue/collection is fine, but editing workflow needs inline load/save.
 
 **SPACING / PADDING:**
-- Recipe drawer has generous padding — good.
-- Collage padding is much tighter — mismatch.
-- Match padding throughout. Find a middle ground.
+- ~~Recipe drawer has generous padding — good. Collage padding is much tighter — mismatch. Match padding throughout.~~ DONE — session 17.
 - Carousel photo spacing is good — leave as-is.
 
 **TOOLTIPS / PARAM EDUCATION:**
-- Each adjustment in recipe drawer needs a tooltip explaining what it does.
-- Examples: Highlight +2 — brighter or darker? Shadow -2 — less prominent or more? WB Shift Red negative — more red or less?
-- Film simulation names need descriptions of the look they produce.
-- Currently user must render-wait-look-change for every tweak. Tooltips would reduce this.
+- ~~Each adjustment in recipe drawer needs a tooltip explaining what it does.~~ DONE — session 17.
+- ~~Film simulation names need descriptions of the look they produce.~~ DONE — included in film sim tooltip.
 
 **MISSING FEATURES (documented, not yet built):**
 - Simulate buttons needed for: single photo, entire collage, entire library (batch).
 - Compare variants: same photo rendered with different param values side-by-side (Phase I Compare Mode from session 9).
 - Click-to-zoom on photos in Recipe Lab (matching Photo Cull zoom behavior).
 - Side-by-side comparison view (original vs simulated, synced zoom). WANT this but lower priority.
-- On-image toggle (tap/click to flash between original and simulated). HIGHER priority than side-by-side.
+- ~~On-image toggle (tap/click to flash between original and simulated). HIGHER priority than side-by-side.~~ DONE — session 17.
+- Slider comparison (drag divider) — NOT needed. Skip this.
 - Slider comparison (drag divider) — NOT needed. Skip this.
 
 ### Session 15 audit findings (2026-05-05, technical investigation)
