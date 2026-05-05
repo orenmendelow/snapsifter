@@ -924,6 +924,29 @@ function recipesFilePath() {
   return path.join(recipeDir, 'recipes.json');
 }
 
+const sampleRecipes = {
+  'sample-classic-neg-street': {
+    id: 'sample-classic-neg-street', title: 'Street Classic', created: '2026-01-01T00:00:00Z', modified: '2026-01-01T00:00:00Z',
+    params: { filmSimulation: 'ClassicNeg', grainEffect: 'Weak', grainSize: 'Small', colorChromeEffect: 'Strong', colorChromeFXBlue: 'Weak', whiteBalance: 'Auto', wbShiftR: 3, wbShiftB: -3, dynamicRange: 200, highlightTone: -1, shadowTone: 2, color: 1, sharpness: -2, noiseReduction: -4, clarity: 0 }
+  },
+  'sample-nostalgic-warm': {
+    id: 'sample-nostalgic-warm', title: 'Nostalgic Warm', created: '2026-01-01T00:00:00Z', modified: '2026-01-01T00:00:00Z',
+    params: { filmSimulation: 'Nostalgic', grainEffect: 'Strong', grainSize: 'Large', colorChromeEffect: 'Weak', colorChromeFXBlue: 'Off', whiteBalance: 'Shade', wbShiftR: 4, wbShiftB: -2, dynamicRange: 200, highlightTone: 0, shadowTone: 1, color: 0, sharpness: -1, noiseReduction: -3, clarity: 0 }
+  },
+  'sample-velvia-landscape': {
+    id: 'sample-velvia-landscape', title: 'Vivid Landscape', created: '2026-01-01T00:00:00Z', modified: '2026-01-01T00:00:00Z',
+    params: { filmSimulation: 'Velvia', grainEffect: 'Off', grainSize: 'Small', colorChromeEffect: 'Strong', colorChromeFXBlue: 'Strong', whiteBalance: 'Daylight', wbShiftR: 0, wbShiftB: 0, dynamicRange: 400, highlightTone: 0, shadowTone: -1, color: 2, sharpness: 0, noiseReduction: -2, clarity: 3 }
+  },
+  'sample-acros-mono': {
+    id: 'sample-acros-mono', title: 'ACROS Moody', created: '2026-01-01T00:00:00Z', modified: '2026-01-01T00:00:00Z',
+    params: { filmSimulation: 'Acros', grainEffect: 'Strong', grainSize: 'Large', colorChromeEffect: 'Off', colorChromeFXBlue: 'Off', whiteBalance: 'Auto', wbShiftR: 0, wbShiftB: 0, dynamicRange: 200, highlightTone: 1, shadowTone: 2, color: 0, sharpness: 0, noiseReduction: -4, clarity: 2 }
+  },
+  'sample-portra-soft': {
+    id: 'sample-portra-soft', title: 'Soft Portra', created: '2026-01-01T00:00:00Z', modified: '2026-01-01T00:00:00Z',
+    params: { filmSimulation: 'ProNegStd', grainEffect: 'Weak', grainSize: 'Small', colorChromeEffect: 'Off', colorChromeFXBlue: 'Off', whiteBalance: 'Auto', wbShiftR: 2, wbShiftB: -1, dynamicRange: 200, highlightTone: -1, shadowTone: 0, color: -1, sharpness: -2, noiseReduction: -2, clarity: 0 }
+  }
+};
+
 function loadRecipes() {
   const fp = recipesFilePath();
   try {
@@ -933,7 +956,7 @@ function loadRecipes() {
   } catch (e) {
     console.error('Failed to parse recipes.json:', e.message);
   }
-  return { recipes: {}, activeRecipe: null };
+  return { recipes: { ...sampleRecipes }, activeRecipe: null };
 }
 
 function saveRecipes(data) {
@@ -1284,6 +1307,28 @@ function extractExifBatch(dir) {
     console.error('Failed to parse exiftool JSON:', e.message);
     return [];
   }
+}
+
+function extractExifBatchAsync(dir) {
+  let fileCount;
+  try {
+    fileCount = fs.readdirSync(dir).filter(f => f.toUpperCase().endsWith('.RAF')).length;
+  } catch (e) {
+    return;
+  }
+  if (exifBatchCache[dir] && exifBatchCache[dir].fileCount === fileCount) return;
+  exec(
+    `exiftool -json -FocalLength -ISO -ExposureTime -FNumber -DateTimeOriginal -WhiteBalance "${dir}"/*.RAF`,
+    { maxBuffer: 50 * 1024 * 1024 },
+    (err, stdout) => {
+      const raw = stdout || (err && err.stdout ? err.stdout.toString() : '');
+      if (!raw) return;
+      try {
+        const entries = JSON.parse(raw);
+        exifBatchCache[dir] = { fileCount, entries };
+      } catch (e) { /* ignore parse errors */ }
+    }
+  );
 }
 
 function parseExifEntry(entry) {
@@ -2006,8 +2051,9 @@ app.get('/api/grid-select', (req, res) => {
     return res.json({ selected: [], totalAvailable: 0, hifDir });
   }
 
-  const exifEntries = extractExifBatch(rafDir);
+  const exifEntries = exifBatchCache[rafDir] ? extractExifBatch(rafDir) : [];
   const selected = gridSelection.selectGridPhotos(hifFiles, exifEntries, count, hifByStem);
+  if (!exifBatchCache[rafDir]) extractExifBatchAsync(rafDir);
   res.json({ selected, totalAvailable: hifFiles.length, hifDir });
 });
 

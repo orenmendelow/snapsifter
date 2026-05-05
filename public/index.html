@@ -745,12 +745,6 @@ body::before {
 
 /* (old #recipe-grid-panel, #recipe-grid-toolbar, #recipe-grid-count, #recipe-grid removed — replaced by center panel + collage) */
 
-#recipe-grid-count {
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-left: auto;
-}
-
 .recipe-grid-cell {
   position: relative;
   background: #0a0a0a;
@@ -822,6 +816,7 @@ body::before {
   display: none;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
 }
 #recipe-simulate-section.visible {
   display: flex;
@@ -2194,7 +2189,6 @@ body::before {
         <button id="recipe-left-toggle" title="Open file browser"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 3V12C1 12.5523 1.44772 13 2 13H14C14.5523 13 15 12.5523 15 12V5C15 4.44772 14.5523 4 14 4H8L6 1H2C1.44772 1 1 1.44772 1 2V3Z"/></svg></button>
         <button class="recipe-action-btn" id="recipe-shuffle-btn">SHUFFLE</button>
         <button class="recipe-action-btn" id="recipe-pick-btn">PICK PHOTOS</button>
-        <span id="recipe-grid-count"></span>
         <div id="recipe-simulate-section">
           <button id="simulate-btn">SIMULATE</button>
           <span id="simulate-progress"></span>
@@ -3829,7 +3823,6 @@ body::before {
   const recipeLibraryBtn = document.getElementById('recipe-library-btn');
   const recipeParamsPanel = document.getElementById('recipe-right-panel-params');
   const recipeGridEl = document.getElementById('recipe-collage');
-  const recipeGridCount = document.getElementById('recipe-grid-count');
   const recipeToast = document.getElementById('recipe-toast');
   const recipeDeleteConfirm = document.getElementById('recipe-delete-confirm');
   const recipeDeleteYes = document.getElementById('recipe-delete-yes');
@@ -4218,6 +4211,15 @@ body::before {
   }
 
   function markDirty() {
+    if (recipeState.cleanParams && !Object.keys(recipeState.currentParams).some(
+      k => recipeState.currentParams[k] !== recipeState.cleanParams[k]
+    )) {
+      recipeState.dirty = false;
+      recipeSaveBtn.classList.add('hidden');
+      if (recipeState.autoSaveTimer) clearTimeout(recipeState.autoSaveTimer);
+      checkParamsChanged();
+      return;
+    }
     recipeState.dirty = true;
     recipeSaveBtn.classList.remove('hidden');
     if (recipeState.autoSaveTimer) clearTimeout(recipeState.autoSaveTimer);
@@ -4729,7 +4731,7 @@ body::before {
   // ── Grid ──
 
   async function loadRecipeGrid() {
-    if (!recipeLoadedDir) { recipeGridCount.textContent = 'No directory loaded'; return; }
+    if (!recipeLoadedDir) return;
 
     // Skip fetch if grid already loaded for this directory
     if (recipeState.gridPhotos.length > 0 && recipeState.lastLoadedDir === recipeLoadedDir) {
@@ -4739,13 +4741,14 @@ body::before {
 
     recipeState.gridDir = recipeLoadedDir + '/Liked/HIF/';
 
-    // Show loading state
+    // Show loading state as 3x3 grid skeleton
     recipeGridEl.innerHTML = '';
     for (let i = 0; i < 9; i++) {
       const cell = document.createElement('div');
       cell.className = 'recipe-grid-cell loading';
       recipeGridEl.appendChild(cell);
     }
+    updateCollageLayout(9);
 
     try {
       const res = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=9').then(r => r.json());
@@ -4753,7 +4756,6 @@ body::before {
       recipeState.gridPhotos = res.selected || [];
       recipeState.gridPhotos.forEach(p => recipeState.usedPhotos.add(p.file));
       recipeState.lastLoadedDir = recipeLoadedDir;
-      recipeGridCount.textContent = res.totalAvailable + ' available';
       renderGrid();
 
       // Pre-warm thumbnails in parallel (fire-and-forget)
@@ -4764,7 +4766,6 @@ body::before {
       });
     } catch(e) {
       recipeGridEl.innerHTML = '';
-      recipeGridCount.textContent = 'No photos found in Liked/';
     }
   }
 
@@ -4941,6 +4942,7 @@ body::before {
       cell.className = 'recipe-grid-cell loading';
       recipeGridEl.appendChild(cell);
     }
+    updateCollageLayout(9);
     try {
       const res = await fetch('/api/grid-shuffle', {
         method: 'POST',
@@ -5040,7 +5042,18 @@ body::before {
     // Volumes section
     const volLabel = document.createElement('div');
     volLabel.className = 'tree-section-label';
+    volLabel.style.display = 'flex';
+    volLabel.style.alignItems = 'center';
+    volLabel.style.gap = '6px';
     volLabel.textContent = 'Volumes';
+    const refreshBtn = document.createElement('span');
+    refreshBtn.innerHTML = '&#x21bb;';
+    refreshBtn.title = 'Refresh volumes';
+    refreshBtn.style.cssText = 'cursor:pointer;font-size:12px;opacity:0.5;transition:opacity 0.15s';
+    refreshBtn.addEventListener('mouseenter', () => refreshBtn.style.opacity = '1');
+    refreshBtn.addEventListener('mouseleave', () => refreshBtn.style.opacity = '0.5');
+    refreshBtn.addEventListener('click', () => refreshRecipeVolumes());
+    volLabel.appendChild(refreshBtn);
     container.appendChild(volLabel);
 
     recipeVolContainer = document.createElement('div');

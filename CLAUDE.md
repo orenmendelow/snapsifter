@@ -70,6 +70,97 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - **Progress bar**: Increased to 5px with hover text. May still be too subtle.
 - **No logo**: Favicon is aperture SVG. No app logo yet.
 
+### Session 15 feedback (2026-05-05, verbatim from Oren)
+
+**LEFT PANEL / FOLDER ICON:**
+- Folder icon should be attached to the left side of the screen to visually indicate it opens a drawer. Currently floating in toolbar.
+
+**LIVE/MANUAL TOGGLE:**
+- Doesn't do anything. Non-functional. Either wire it up or remove it.
+
+**ORIGINAL/SIMULATED TOGGLE (toolbar):**
+- Don't want it in the toolbar above the collage.
+- Want something clickable ON the image itself to toggle between original and simulated (like Snapseed hold-to-compare).
+
+**SIMULATION STATE:**
+- After simulating a recipe, have to reload the page for the new simulation to show over a previously simulated photo. Stale cache not invalidated.
+
+**FOCUS MODE (click collage photo to expand):**
+- Current behavior: rest of collage photos drop below as a row + carousel below that. Bad UI.
+- Can't click photos from the carousel when in expanded view — broken interaction.
+- Desired: selected photo fills center/right. Other collage photos displayed on the LEFT SIDE as vertical strip. Carousel below always accessible and clickable to switch active photo.
+
+**METADATA IN FOCUS MODE:**
+- Current metadata is in the upper breadcrumb/back-button area — wrong placement.
+- Should be displayed LOWER on the photo view, not in that top bar.
+- Should include ONLY photo capture info: date taken, shutter speed, ISO, aperture, focal length — things that CANNOT be changed by a recipe.
+- Should NOT include recipe/film simulation settings (those belong in the right panel).
+- Question: do these photos have geo/GPS data? Check EXIF.
+
+**RIGHT PANEL / RECIPE DRAWER:**
+- For each photo: show the EXACT recipe as-shot. As soon as any param changes, make it VERY clear that params have been modified vs as-shot.
+- SIMULATE button belongs IN the recipe drawer (not toolbar), appears when params differ from as-shot.
+- REVERT TO AS-SHOT button should also appear when params are modified.
+- If a photo's as-shot params match a saved recipe, indicate this with a tag/badge in the recipe drawer.
+- Loading existing recipes is not intuitive. Need ability to LOAD a recipe and SAVE AS NEW RECIPE directly from this drawer while editing.
+- A button to manage full recipe catalogue/collection is fine, but editing workflow needs inline load/save.
+
+**SPACING / PADDING:**
+- Recipe drawer has generous padding — good.
+- Collage padding is much tighter — mismatch.
+- Match padding throughout. Find a middle ground.
+- Carousel photo spacing is good — leave as-is.
+
+**TOOLTIPS / PARAM EDUCATION:**
+- Each adjustment in recipe drawer needs a tooltip explaining what it does.
+- Examples: Highlight +2 — brighter or darker? Shadow -2 — less prominent or more? WB Shift Red negative — more red or less?
+- Film simulation names need descriptions of the look they produce.
+- Currently user must render-wait-look-change for every tweak. Tooltips would reduce this.
+
+**MISSING FEATURES (documented, not yet built):**
+- Simulate buttons needed for: single photo, entire collage, entire library (batch).
+- Compare variants: same photo rendered with different param values side-by-side (Phase I Compare Mode from session 9).
+- Click-to-zoom on photos in Recipe Lab (matching Photo Cull zoom behavior).
+- Side-by-side comparison view (original vs simulated, synced zoom). WANT this but lower priority.
+- On-image toggle (tap/click to flash between original and simulated). HIGHER priority than side-by-side.
+- Slider comparison (drag divider) — NOT needed. Skip this.
+
+### Session 15 audit findings (2026-05-05, technical investigation)
+
+**GPS DATA:**
+- X100VI RAFs do NOT contain GPS/geo data. Camera lacks built-in GPS (requires Fujifilm app phone pairing). Metadata display should omit any GPS fields.
+
+**STALE SIMULATION CACHE (root cause identified):**
+- Simulated output path is always `.sim-cache/{stem}_sim.jpg` — same filename regardless of recipe params.
+- When re-simulating with different params, file on disk is overwritten but browser serves cached image from same URL.
+- Fix: append `?t={timestamp}` to simulated image src URLs after each simulation. One-line fix in `simulateOnePhoto()` where it sets `recipeState.simulatedPhotos[photo.file]`.
+
+**FILMSTRIP CLICK IN FOCUS MODE (broken):**
+- `findOrAddToCollage()` returns 0 when grid is already full (9 photos) and target isn't in grid. Click does nothing useful — navigates to first photo instead of swapping.
+- Fix: either swap out the focused photo for the filmstrip pick, or show a toast explaining grid is full.
+
+**FOCUS GALLERY CLICKS (working):**
+- `#focus-gallery` thumbs (the collage photos shown as horizontal strip inside focus mode) DO have working click handlers calling `enterFocusMode(i)`. These work. The "can't click carousel" report likely refers to the bottom filmstrip (broken per above).
+
+**PERFORMANCE OPPORTUNITIES:**
+- `preview-image` endpoint for JPGs does `fs.readFileSync` on every request (no cache headers). Adding `Cache-Control: max-age=3600` for original images (not sim outputs) would speed up repeated views.
+- Grid-select now uses random on first load (session 14 fix), but the filmstrip still calls `grid-select?count=999` which hits exiftool if cache is warm. For 714 files this is fine (cached), but if cache misses it blocks. Consider making filmstrip also skip exiftool.
+- Sips conversion for HIF thumbnails is ~0.5s each. Already parallelized via prewarm. No further optimization without switching to a faster decoder (vips/sharp would require native deps).
+
+**UI/INTERACTION ISSUES FOUND:**
+- Recipe params panel has no scroll indicator — long param list (16 controls) may not be obvious that it scrolls on shorter screens.
+- No keyboard navigation in focus mode (arrow keys don't cycle photos).
+- Focus mode gallery shows all grid photos but doesn't indicate which have been simulated vs original.
+- `findOrAddToCollage` silently fails when grid is full — no user feedback.
+- Before-after toggle in toolbar uses `display: none/flex` which can still cause minor reflow of toolbar items when it appears.
+- No loading/busy state on recipe library load — clicking LIBRARY with many recipes may feel unresponsive.
+
+**SPEED: SIMULATION PIPELINE:**
+- Current: ~1s per photo (upload RAF ~1s, patch profile <10ms, convert <100ms, download JPEG ~500ms).
+- For 9-photo collage: ~9-12s total (sequential). Bottleneck is USB transfer (39MB RAF upload per photo).
+- Optimization: if same RAF was already uploaded and camera still has it, skip re-upload. Would require tracking last-uploaded stem and checking camera handles. Could reduce collage sim to ~5s for re-renders of same photos with different params.
+- Parallel simulation not possible — camera processes one RAF at a time (single PTP session).
+
 ### Session 14 feedback (2026-05-02, verbatim from Oren)
 
 **TOPBAR / NAVIGATION:**
