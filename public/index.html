@@ -4072,6 +4072,7 @@ body::before {
             if (exif._iso != null) p.iso = exif._iso;
             if (exif._aperture != null) p.aperture = exif._aperture;
             if (exif._focalLength != null) p.focalLength = exif._focalLength;
+            if (exif._dateTaken) p.dateTaken = exif._dateTaken;
           }
         });
       }
@@ -4176,11 +4177,23 @@ body::before {
         if (exif._iso != null && !photo.iso) photo.iso = exif._iso;
         if (exif._aperture != null && !photo.aperture) photo.aperture = exif._aperture;
         if (exif._focalLength != null && !photo.focalLength) photo.focalLength = exif._focalLength;
+        if (exif._dateTaken && !photo.dateTaken) photo.dateTaken = exif._dateTaken;
       }
     }
 
     const metaEl = document.getElementById('focus-photo-meta');
     metaEl.innerHTML = '';
+    if (photo.dateTaken) {
+      const s = document.createElement('span');
+      const dt = photo.dateTaken.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3');
+      const d = new Date(dt);
+      if (!isNaN(d)) {
+        s.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      } else {
+        s.textContent = photo.dateTaken;
+      }
+      metaEl.appendChild(s);
+    }
     if (photo.shutterSpeed) {
       const s = document.createElement('span');
       s.textContent = photo.shutterSpeed < 1 ? '1/' + Math.round(1 / photo.shutterSpeed) + 's' : photo.shutterSpeed + 's';

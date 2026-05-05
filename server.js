@@ -1922,7 +1922,7 @@ app.post('/api/batch-recipe-exif', express.json(), async (req, res) => {
       '-NoiseReduction', '-Clarity',
       '-GrainEffectRoughness', '-GrainEffectSize',
       '-ColorChromeEffect', '-ColorChromeFXBlue',
-      '-ShutterSpeed', '-ISO', '-Aperture', '-FocalLength',
+      '-ShutterSpeed', '-ISO', '-Aperture', '-FocalLength', '-DateTimeOriginal',
       ...matchedPaths
     ];
     const stdout = execSync(`/opt/homebrew/bin/exiftool ${exiftoolArgs.map(a => JSON.stringify(a)).join(' ')}`, {
@@ -1945,6 +1945,7 @@ app.post('/api/batch-recipe-exif', express.json(), async (req, res) => {
           const flMatch = String(raw.FocalLength).match(/([\d.]+)/);
           params._focalLength = flMatch ? parseFloat(flMatch[1]) : null;
         }
+        if (raw.DateTimeOriginal) params._dateTaken = raw.DateTimeOriginal;
         perFile[stem] = params;
       }
     }
