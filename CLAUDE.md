@@ -126,6 +126,27 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Essentially a navigation stack for focus mode (push/pop photo history).
 - Document as future enhancement if complex — not blocking.
 
+### Session 21 changes (2026-05-06)
+
+**IMPLEMENTED:**
+- Disabled right panel pattern: per-control `pointer-events: none`, en-dash `–` placeholders with `var(--amber-dim)`, scroll preserved, tooltips still interactive
+- Tooltip restructured: HTML with `.tip-title` (amber, uppercase) and `.tip-body` (line-broken sentences), fade-out via CSS `transition: opacity 0.3s` + `.fading` class
+- PARAM_DEFS first group renamed to empty string with separate "RECIPE" header above dropdown in drawer-top HTML
+- "Open a folder to start" hint in recipe active dropdown when no baseline loaded
+- XT-30 JPG fallback: grid-select, grid-replace, grid-shuffle endpoints fall back to `Liked/JPG/` when `Liked/HIF/` doesn't exist
+- Recipe Lab center preview: `renderRecipeResumeSection()` with JPG fallback for resume thumbnails
+- SIMULATE/REVERT buttons completely absent when not applicable (not faded). `checkParamsChanged()` is single source of truth for `#recipe-drawer-actions` visibility
+- SIMULATE button redesigned: just "SIMULATE" centered, separate chevron button on right opens dropdown (This photo / Entire collage / Entire library). Scope implied by context.
+- SIMULATE hidden when camera not connected (`recipeState.cameraConnected` check). Camera poll at 5s interval, `await checkCameraStatus()` on Recipe Lab entry.
+- REVERT renamed to REVERT ALL (per-item revert icons already exist)
+- Per-item revert icons moved to left side next to tooltip `?` icon (was on right by value)
+- `/feedback` skill created for documenting feedback verbatim to FEEDBACK.md
+
+**ARCHITECTURAL:**
+- `checkParamsChanged()` now controls `#recipe-drawer-actions` display directly (show when changed, hide when matching or no cleanParams). Removed redundant drawerActions handling from `renderParams()` and `restoreRightPanel()`.
+- `#sim-scope-dropdown` replaces old `#simulate-scope-select`. Dropdown anchored to `#simulate-row` (position: relative). Options filtered by context (photo option hidden in collage mode).
+- `#sim-scope-toggle` is now a separate `<button>` sibling of `#simulate-btn`, not a child span.
+
 ### Session 20 changes (2026-05-06)
 
 **IMPLEMENTED:**

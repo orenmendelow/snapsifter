@@ -2046,21 +2046,26 @@ app.get('/api/grid-select', (req, res) => {
   }
 
   const rafDir = path.join(dir, 'Liked', 'RAF');
-  const hifDir = path.join(dir, 'Liked', 'HIF');
+  let hifDir = path.join(dir, 'Liked', 'HIF');
+  const jpgDir = path.join(dir, 'Liked', 'JPG');
 
   if (!fs.existsSync(rafDir)) {
     return res.status(404).json({ error: 'Liked/RAF/ directory not found' });
   }
   if (!fs.existsSync(hifDir)) {
-    return res.status(404).json({ error: 'Liked/HIF/ directory not found' });
+    if (fs.existsSync(jpgDir)) {
+      hifDir = jpgDir;
+    } else {
+      return res.status(404).json({ error: 'Liked/HIF/ directory not found' });
+    }
   }
 
-  // Build a map of HIF files by stem (case-insensitive)
+  // Build a map of HIF/JPG files by stem (case-insensitive)
   let hifFiles;
   try {
     hifFiles = fs.readdirSync(hifDir).filter(f => {
       const upper = f.toUpperCase();
-      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF')) && !f.startsWith('.') && !f.startsWith('._');
+      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.JPG') || upper.endsWith('.JPEG')) && !f.startsWith('.') && !f.startsWith('._');
     });
   } catch (e) {
     return res.status(500).json({ error: 'Cannot read HIF directory' });
@@ -2091,13 +2096,18 @@ app.post('/api/grid-replace', (req, res) => {
   }
 
   const rafDir = path.join(dir, 'Liked', 'RAF');
-  const hifDir = path.join(dir, 'Liked', 'HIF');
+  let hifDir = path.join(dir, 'Liked', 'HIF');
+  const jpgDir2 = path.join(dir, 'Liked', 'JPG');
 
   if (!fs.existsSync(rafDir)) {
     return res.status(404).json({ error: 'Liked/RAF/ directory not found' });
   }
   if (!fs.existsSync(hifDir)) {
-    return res.status(404).json({ error: 'Liked/HIF/ directory not found' });
+    if (fs.existsSync(jpgDir2)) {
+      hifDir = jpgDir2;
+    } else {
+      return res.status(404).json({ error: 'Liked/HIF/ directory not found' });
+    }
   }
   if (!Array.isArray(selected) || typeof replaceIndex !== 'number') {
     return res.status(400).json({ error: 'selected (array) and replaceIndex (number) required' });
@@ -2106,12 +2116,12 @@ app.post('/api/grid-replace', (req, res) => {
     return res.status(400).json({ error: 'replaceIndex out of bounds' });
   }
 
-  // Build HIF stem map
+  // Build HIF/JPG stem map
   let hifFiles;
   try {
     hifFiles = fs.readdirSync(hifDir).filter(f => {
       const upper = f.toUpperCase();
-      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF')) && !f.startsWith('.') && !f.startsWith('._');
+      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.JPG') || upper.endsWith('.JPEG')) && !f.startsWith('.') && !f.startsWith('._');
     });
   } catch (e) {
     return res.status(500).json({ error: 'Cannot read HIF directory' });
@@ -2171,21 +2181,26 @@ app.post('/api/grid-shuffle', (req, res) => {
   }
 
   const rafDir = path.join(dir, 'Liked', 'RAF');
-  const hifDir = path.join(dir, 'Liked', 'HIF');
+  let hifDir = path.join(dir, 'Liked', 'HIF');
+  const jpgDir3 = path.join(dir, 'Liked', 'JPG');
 
   if (!fs.existsSync(rafDir)) {
     return res.status(404).json({ error: 'Liked/RAF/ directory not found' });
   }
   if (!fs.existsSync(hifDir)) {
-    return res.status(404).json({ error: 'Liked/HIF/ directory not found' });
+    if (fs.existsSync(jpgDir3)) {
+      hifDir = jpgDir3;
+    } else {
+      return res.status(404).json({ error: 'Liked/HIF/ directory not found' });
+    }
   }
 
-  // Build HIF stem map
+  // Build HIF/JPG stem map
   let hifFiles;
   try {
     hifFiles = fs.readdirSync(hifDir).filter(f => {
       const upper = f.toUpperCase();
-      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF')) && !f.startsWith('.') && !f.startsWith('._');
+      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.JPG') || upper.endsWith('.JPEG')) && !f.startsWith('.') && !f.startsWith('._');
     });
   } catch (e) {
     return res.status(500).json({ error: 'Cannot read HIF directory' });
