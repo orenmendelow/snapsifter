@@ -4331,6 +4331,7 @@ body::before {
       loadRecipeFilmstrip();
     } else {
       showRecipePreview();
+      loadRecipes();
       if (recipeState.gridPhotos.length > 0) {
         renderGrid();
       }
@@ -4967,6 +4968,56 @@ body::before {
 
       grid.appendChild(card);
     });
+
+    const importCard = document.createElement('div');
+    importCard.className = 'library-card-new';
+    importCard.innerHTML = '<span>IMPORT FROM CAMERA</span>';
+    importCard.addEventListener('click', async () => {
+      showToast('Scanning camera presets...');
+      try {
+        const scanRes = await fetch('/api/camera/scan-presets', { method: 'POST' });
+        if (!scanRes.ok) {
+          const err = await scanRes.json().catch(() => ({}));
+          showToast(err.error || 'Failed to scan camera');
+          return;
+        }
+        const { presets } = await scanRes.json();
+        if (!presets || presets.length === 0) {
+          showToast('No presets found on camera');
+          return;
+        }
+        let imported = 0, skipped = 0;
+        const existingTitles = new Set(
+          Object.values(recipeState.recipes).map(r => (r.title || '').trim())
+        );
+        for (const preset of presets) {
+          if (existingTitles.has(preset.name.trim())) {
+            skipped++;
+            continue;
+          }
+          const saveRes = await fetch('/api/recipe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: preset.name, params: preset.params })
+          });
+          if (saveRes.ok) {
+            imported++;
+            existingTitles.add(preset.name.trim());
+          }
+        }
+        await loadRecipes();
+        renderLibrary();
+        if (skipped > 0) {
+          showToast(imported + ' imported, ' + skipped + ' already exist');
+        } else {
+          showToast('Imported ' + imported + ' recipe' + (imported !== 1 ? 's' : ''));
+        }
+      } catch (e) {
+        console.error('Import failed', e);
+        showToast('Import failed: ' + e.message);
+      }
+    });
+    grid.appendChild(importCard);
 
     const newCard = document.createElement('div');
     newCard.className = 'library-card-new';

@@ -89,7 +89,7 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 **AS-SHOT LABEL / RECIPE MATCHING:**
 - Film simulation name alone (e.g. "RealaACE") is not helpful — it's just ONE param of the recipe.
 - Should say "As Shot" OR if it matches a saved recipe, show the RECIPE NAME.
-- Question: can we pull saved recipes off the camera into our library? — RESEARCH: X100VI stores Custom presets at PTP properties D18E-D1A5 (per `/tmp/filmkit/src/profile/preset-translate.ts`). `camera-bridge.readProp(propId)` can read them. Need to: read D18C (active preset slot), then read D18E-D1A5 for each Custom slot, translate via NativeIdx map. Requires camera connected in RAW CONV mode. NOT YET IMPLEMENTED.
+- Question: can we pull saved recipes off the camera into our library? — DONE (session 19). `POST /api/camera/scan-presets` reads all 7 Custom slots via PTP, "IMPORT FROM CAMERA" button in Cookbook.
 
 **SAVE AS NEW / LOAD RECIPE PLACEMENT:**
 - SAVE AS NEW RECIPE should ONLY appear if current params don't match any existing saved recipe.
@@ -123,6 +123,22 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Same pattern: click photo → click another from filmstrip → back should return to previous photo.
 - Essentially a navigation stack for focus mode (push/pop photo history).
 - Document as future enhancement if complex — not blocking.
+
+### Session 19 changes (2026-05-06)
+
+**IMPLEMENTED:**
+- Camera preset import: `POST /api/camera/scan-presets` endpoint scans all 7 Custom preset slots (D18E-D1A5) via PTP. Reads D18C (active slot), switches to each slot, reads D18D (name) + all recipe properties, translates to recipe-compatible params, restores original slot. Skips empty slots.
+- "IMPORT FROM CAMERA" button in Cookbook — scans camera, saves non-duplicate presets as recipes, shows import count toast.
+- Global recipe storage: recipes moved from `{recipeDir}/recipes.json` to `~/.snapsifter/recipes.json`. Recipe CRUD no longer requires a loaded directory. One-time migration copies existing per-dir recipes to global on first load.
+- `requireRecipeDir` removed from recipe CRUD endpoints (GET/POST/PUT/DELETE recipes). Kept on FP1, scan-outputs, preview-output-image.
+
+**ARCHITECTURAL:**
+- PTP decode helpers in server.js: `decodePtpUint16()`, `decodePtpInt16()`, `decodePtpString()`, `encodeSlotValue()`, value maps (FILM_SIM_MAP, WB_MAP, GRAIN_MAP, EFFECT_MAP, NR_DECODE)
+- `loadRecipes()` checks global path first, then migrates from per-dir if global doesn't exist
+- `loadRecipes()` called on Recipe Lab re-entry even without a directory loaded
+
+**UNRESOLVED (Oren reported camera preset names not showing — needs investigation):**
+- Import returned "0 recipes" on first attempt because `requireRecipeDir` blocked saves. Fixed by moving to global storage. But Oren also mentioned "some have names" — unclear if names are blank in UI after successful import. Needs testing with camera connected.
 
 ### Session 18 changes (2026-05-05)
 

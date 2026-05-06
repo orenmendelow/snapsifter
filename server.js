@@ -924,7 +924,7 @@ app.get('/api/recipe-last-dir', (req, res) => {
 // ── Recipe CRUD endpoints ──
 
 function recipesFilePath() {
-  return path.join(recipeDir, 'recipes.json');
+  return path.join(stateDir, 'recipes.json');
 }
 
 const sampleRecipes = {
@@ -956,6 +956,16 @@ function loadRecipes() {
     if (fs.existsSync(fp)) {
       return JSON.parse(fs.readFileSync(fp, 'utf8'));
     }
+    // One-time migration: copy per-directory recipes.json to global location
+    if (recipeDir) {
+      const oldFp = path.join(recipeDir, 'recipes.json');
+      if (fs.existsSync(oldFp)) {
+        const data = fs.readFileSync(oldFp, 'utf8');
+        fs.writeFileSync(fp, data);
+        console.log('Migrated recipes.json from', oldFp, 'to', fp);
+        return JSON.parse(data);
+      }
+    }
   } catch (e) {
     console.error('Failed to parse recipes.json:', e.message);
   }
@@ -966,11 +976,11 @@ function saveRecipes(data) {
   fs.writeFileSync(recipesFilePath(), JSON.stringify(data, null, 2));
 }
 
-app.get('/api/recipes', requireRecipeDir, (req, res) => {
+app.get('/api/recipes', (req, res) => {
   res.json(loadRecipes());
 });
 
-app.post('/api/recipe', requireRecipeDir, (req, res) => {
+app.post('/api/recipe', (req, res) => {
   const { title, params } = req.body;
   const data = loadRecipes();
   const id = crypto.randomUUID();
@@ -981,7 +991,7 @@ app.post('/api/recipe', requireRecipeDir, (req, res) => {
   res.json(recipe);
 });
 
-app.put('/api/recipe/:id', requireRecipeDir, (req, res) => {
+app.put('/api/recipe/:id', (req, res) => {
   const { id } = req.params;
   const data = loadRecipes();
   if (!data.recipes[id]) {
@@ -995,7 +1005,7 @@ app.put('/api/recipe/:id', requireRecipeDir, (req, res) => {
   res.json(recipe);
 });
 
-app.delete('/api/recipe/:id', requireRecipeDir, (req, res) => {
+app.delete('/api/recipe/:id', (req, res) => {
   const { id } = req.params;
   const data = loadRecipes();
   if (!data.recipes[id]) {
@@ -1009,7 +1019,7 @@ app.delete('/api/recipe/:id', requireRecipeDir, (req, res) => {
   res.json({ ok: true });
 });
 
-app.put('/api/recipes/active', requireRecipeDir, (req, res) => {
+app.put('/api/recipes/active', (req, res) => {
   const { id } = req.body;
   const data = loadRecipes();
   if (id !== null && !data.recipes[id]) {
@@ -2372,6 +2382,182 @@ app.post('/api/camera/write-prop', async (req, res) => {
     const result = await cameraBridge.writeProp(propId, data);
     res.json(result);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Scan camera Custom presets (C1-C7) ---
+
+const FILM_SIM_MAP = {
+  1: 'Provia', 2: 'Velvia', 3: 'Astia', 4: 'Classic',
+  5: 'ProNegHi', 6: 'ProNegStd', 7: 'ClassicNeg', 8: 'Eterna',
+  9: 'BleachBypass', 10: 'Nostalgic', 11: 'RealaACE',
+  16: 'Acros', 17: 'AcrosYe', 18: 'AcrosR', 19: 'AcrosG',
+  20: 'Mono', 21: 'MonoYe', 22: 'MonoR', 23: 'MonoG', 24: 'Sepia'
+};
+
+const WB_MAP = {
+  2: 'Auto', 4: 'Daylight', 5: 'Shade', 6: 'Fluorescent1', 7: 'Fluorescent2',
+  8: 'Fluorescent3', 9: 'Incandescent', 10: 'Underwater', 15: 'ColorTemp',
+  18: 'AutoWhite', 19: 'AutoAmbiance', 20: 'Custom1', 21: 'Custom2', 22: 'Custom3'
+};
+
+const GRAIN_MAP = {
+  1: { grainEffect: 'Off', grainSize: 'Small' },
+  2: { grainEffect: 'Weak', grainSize: 'Small' },
+  3: { grainEffect: 'Strong', grainSize: 'Small' },
+  4: { grainEffect: 'Weak', grainSize: 'Large' },
+  5: { grainEffect: 'Strong', grainSize: 'Large' },
+};
+
+const EFFECT_MAP = { 1: 'Off', 2: 'Weak', 3: 'Strong' };
+
+const NR_DECODE = {
+  0x8000: -4, 0x7000: -3, 0x4000: -2, 0x3000: -1,
+  0x2000: 0, 0x1000: 1, 0x0000: 2, 0x6000: 3, 0x5000: 4
+};
+
+function decodePtpUint16(base64Data) {
+  const buf = Buffer.from(base64Data, 'base64');
+  return buf.readUInt16LE(0);
+}
+
+function decodePtpInt16(base64Data) {
+  const raw = decodePtpUint16(base64Data);
+  return raw >= 0x8000 ? raw - 0x10000 : raw;
+}
+
+function decodePtpString(base64Data) {
+  const buf = Buffer.from(base64Data, 'base64');
+  if (buf.length < 1) return '';
+  const charCount = buf[0]; // includes null terminator
+  if (charCount <= 1) return '';
+  const chars = [];
+  for (let i = 0; i < charCount - 1; i++) {
+    const offset = 1 + i * 2;
+    if (offset + 1 >= buf.length) break;
+    const code = buf.readUInt16LE(offset);
+    if (code === 0) break;
+    chars.push(String.fromCharCode(code));
+  }
+  return chars.join('');
+}
+
+function encodeSlotValue(slot) {
+  const buf = Buffer.alloc(2);
+  buf.writeUInt16LE(slot);
+  return buf.toString('base64');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+app.post('/api/camera/scan-presets', async (req, res) => {
+  try {
+    // List first to ensure camera is discovered before connecting
+    const listing = await cameraBridge.list();
+    if (!listing.cameras || listing.cameras.length === 0) {
+      return res.status(404).json({ error: 'No Fujifilm camera found' });
+    }
+    await cameraBridge.connect();
+
+    // Read current slot to restore later
+    const origSlotResult = await cameraBridge.readProp(0xD18C);
+    const origSlot = decodePtpUint16(origSlotResult.data);
+
+    const presets = [];
+
+    for (let slot = 1; slot <= 7; slot++) {
+      // Switch to this slot
+      await cameraBridge.writeProp(0xD18C, encodeSlotValue(slot));
+      await sleep(150);
+
+      // Read preset name (D18D)
+      const nameResult = await cameraBridge.readProp(0xD18D);
+      const name = decodePtpString(nameResult.data);
+
+      // Read film simulation first to check if slot is empty
+      const filmSimResult = await cameraBridge.readProp(0xD192);
+      const filmSimRaw = decodePtpUint16(filmSimResult.data);
+
+      // Read grain to check validity
+      const grainResult = await cameraBridge.readProp(0xD195);
+      const grainRaw = decodePtpUint16(grainResult.data);
+
+      // Skip empty slots
+      if (!name || filmSimRaw === 0 || !FILM_SIM_MAP[filmSimRaw] || grainRaw > 5) {
+        continue;
+      }
+
+      // Read all other properties
+      const drResult = await cameraBridge.readProp(0xD190);
+      const ccResult = await cameraBridge.readProp(0xD196);
+      const ccBlueResult = await cameraBridge.readProp(0xD197);
+      const wbResult = await cameraBridge.readProp(0xD199);
+      const wbRResult = await cameraBridge.readProp(0xD19A);
+      const wbBResult = await cameraBridge.readProp(0xD19B);
+      const hlResult = await cameraBridge.readProp(0xD19D);
+      const shResult = await cameraBridge.readProp(0xD19E);
+      const colorResult = await cameraBridge.readProp(0xD19F);
+      const sharpResult = await cameraBridge.readProp(0xD1A0);
+      const nrResult = await cameraBridge.readProp(0xD1A1);
+      const clarityResult = await cameraBridge.readProp(0xD1A2);
+
+      // Decode WB — handle sentinel values (bit 15 set)
+      const wbRaw = decodePtpUint16(wbResult.data);
+      const whiteBalance = (wbRaw & 0x8000) ? 'Auto' : (WB_MAP[wbRaw] || 'Auto');
+
+      // Decode tone values — handle sentinel 0x8000 (-32768) as 0
+      const hlRaw = decodePtpInt16(hlResult.data);
+      const shRaw = decodePtpInt16(shResult.data);
+      const colorRaw = decodePtpInt16(colorResult.data);
+      const sharpRaw = decodePtpInt16(sharpResult.data);
+      const clarityRaw = decodePtpInt16(clarityResult.data);
+
+      const highlightTone = hlRaw === -32768 ? 0 : Math.round(hlRaw / 10);
+      const shadowTone = shRaw === -32768 ? 0 : Math.round(shRaw / 10);
+      const color = colorRaw === -32768 ? 0 : Math.round(colorRaw / 10);
+      const sharpness = sharpRaw === -32768 ? 0 : Math.round(sharpRaw / 10);
+      const clarity = clarityRaw === -32768 ? 0 : Math.round(clarityRaw / 10);
+
+      // Decode noise reduction
+      const nrRaw = decodePtpUint16(nrResult.data);
+      const noiseReduction = NR_DECODE[nrRaw] !== undefined ? NR_DECODE[nrRaw] : 0;
+
+      // Decode grain
+      const grain = GRAIN_MAP[grainRaw] || { grainEffect: 'Off', grainSize: 'Small' };
+
+      const params = {
+        filmSimulation: FILM_SIM_MAP[filmSimRaw],
+        dynamicRange: decodePtpUint16(drResult.data),
+        grainEffect: grain.grainEffect,
+        grainSize: grain.grainSize,
+        colorChromeEffect: EFFECT_MAP[decodePtpUint16(ccResult.data)] || 'Off',
+        colorChromeFXBlue: EFFECT_MAP[decodePtpUint16(ccBlueResult.data)] || 'Off',
+        whiteBalance,
+        wbShiftR: decodePtpInt16(wbRResult.data),
+        wbShiftB: decodePtpInt16(wbBResult.data),
+        highlightTone,
+        shadowTone,
+        color,
+        sharpness,
+        noiseReduction,
+        clarity
+      };
+
+      presets.push({ slot, name, params });
+    }
+
+    // Restore original slot
+    await cameraBridge.writeProp(0xD18C, encodeSlotValue(origSlot));
+    await sleep(150);
+
+    // Disconnect
+    await cameraBridge.disconnect();
+
+    res.json({ presets });
+  } catch (err) {
+    // Try to disconnect on error
+    try { await cameraBridge.disconnect(); } catch (_) {}
     res.status(500).json({ error: err.message });
   }
 });
