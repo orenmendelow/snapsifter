@@ -151,7 +151,7 @@ body::before {
 }
 #recipe-left-toggle {
   display: none;
-  align-self: center;
+  align-self: flex-start;
   flex-shrink: 0;
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.12);
@@ -159,7 +159,8 @@ body::before {
   border-radius: 0 6px 6px 0;
   color: var(--amber);
   font-size: 16px;
-  padding: 14px 5px;
+  padding: 10px 5px;
+  margin-top: 4px;
   cursor: pointer;
   line-height: 1;
   transition: background 0.15s, color 0.15s;
@@ -351,6 +352,7 @@ body::before {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 4px;
   padding: 8px 6px;
   overflow-y: auto;
@@ -386,6 +388,7 @@ body::before {
   justify-content: center;
   min-height: 0;
   position: relative;
+  overflow: hidden;
 }
 
 #focus-back-btn {
@@ -404,6 +407,10 @@ body::before {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  cursor: zoom-in;
+}
+#focus-photo.zoomed {
+  cursor: zoom-out;
 }
 
 #focus-photo-info {
@@ -726,11 +733,28 @@ body::before {
   margin-left: 5px;
   vertical-align: middle;
   transition: opacity 0.15s;
+  position: relative;
 }
 .param-tip-icon:hover {
   opacity: 1;
   color: var(--amber);
   border-color: var(--amber);
+}
+.param-tip-popup {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  border: 1px solid var(--amber-dim);
+  color: var(--text);
+  font-size: 11px;
+  font-family: var(--mono);
+  padding: 8px 10px;
+  width: 200px;
+  z-index: 100;
+  line-height: 1.4;
+  pointer-events: none;
 }
 
 .param-slider-value {
@@ -825,6 +849,19 @@ body::before {
   margin-bottom: 12px;
 }
 
+.recipe-match-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: var(--amber);
+  background: rgba(196, 90, 48, 0.12);
+  border: 1px solid rgba(196, 90, 48, 0.3);
+  padding: 2px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
 /* (old #recipe-grid-panel, #recipe-grid-toolbar, #recipe-grid-count, #recipe-grid removed — replaced by center panel + collage) */
 
 .recipe-grid-cell {
@@ -902,23 +939,62 @@ body::before {
 #recipe-simulate-section.visible {
   display: flex;
 }
+#simulate-row {
+  display: flex;
+  gap: 4px;
+}
 #simulate-btn {
   font-family: var(--mono);
   font-size: 12px;
   letter-spacing: 1px;
-  padding: 10px 24px;
+  padding: 8px 0 6px;
   background: var(--amber);
   color: #000;
   border: none;
   cursor: pointer;
   font-weight: 500;
   transition: opacity 0.15s;
-  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
 }
+#simulate-btn .sim-scope-label {
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  opacity: 0.7;
+  margin-top: 2px;
+  cursor: pointer;
+}
+#simulate-btn .sim-scope-label:hover { opacity: 1; }
 #simulate-btn:hover { opacity: 0.85; }
 #simulate-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+#cancel-to-last-sim-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 10px 0;
+  background: none;
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  flex: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+#cancel-to-last-sim-btn:hover { color: var(--amber); border-color: var(--amber); }
+#simulate-scope-select {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.15);
+  width: 100%;
+  margin-top: 4px;
 }
 #simulate-progress {
   font-family: var(--mono);
@@ -930,6 +1006,55 @@ body::before {
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.5px;
+  padding: 10px 0;
+  background: none;
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  flex: 1;
+}
+#revert-as-shot-btn.visible {
+  display: block;
+}
+#revert-as-shot-btn:hover {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+#recipe-drawer-top {
+  flex-shrink: 0;
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#recipe-load-select {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color 0.15s, color 0.15s;
+}
+#recipe-load-select:hover {
+  border-color: var(--amber);
+  color: #fff;
+}
+#recipe-save-as-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
   padding: 8px 16px;
   background: none;
   color: var(--text-dim);
@@ -938,10 +1063,23 @@ body::before {
   transition: color 0.15s, border-color 0.15s;
   width: 100%;
 }
-#revert-as-shot-btn.visible {
-  display: block;
+#recipe-save-as-btn:hover {
+  color: var(--amber);
+  border-color: var(--amber);
 }
-#revert-as-shot-btn:hover {
+#recipe-compare-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 8px 16px;
+  background: none;
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  width: 100%;
+}
+#recipe-compare-btn:hover {
   color: var(--amber);
   border-color: var(--amber);
 }
@@ -963,6 +1101,133 @@ body::before {
 }
 .compare-indicator.visible {
   opacity: 1;
+}
+
+/* Compare Mode */
+#compare-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+#compare-right-controls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px;
+  gap: 16px;
+  overflow-y: auto;
+}
+#compare-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#compare-back-btn {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  transition: color 0.15s;
+}
+#compare-back-btn:hover { color: var(--amber); }
+#compare-param-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#compare-param-select {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+#compare-param-select:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+#compare-values-section {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.compare-value-chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 5px 10px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.compare-value-chip.active {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #000;
+}
+.compare-value-chip:hover:not(.active) {
+  border-color: var(--amber);
+  color: #fff;
+}
+#compare-actions {
+  margin-top: auto;
+  padding-top: 12px;
+}
+#compare-simulate-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 10px 0;
+  background: var(--amber);
+  color: #000;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  width: 100%;
+  transition: opacity 0.15s;
+}
+#compare-simulate-btn:hover { opacity: 0.85; }
+#compare-simulate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#compare-grid {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+.compare-cell {
+  position: relative;
+  overflow: hidden;
+  background: #0a0a0a;
+}
+.compare-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.compare-cell-label {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #fff;
+  background: rgba(0,0,0,0.7);
+  padding: 2px 6px;
 }
 
 .recipe-grid-cell .cell-sim-spinner {
@@ -2244,7 +2509,7 @@ body::before {
       <div id="recipe-shell-meta">
         <div id="camera-status"></div>
         <button class="recipe-action-btn primary hidden" id="recipe-save-btn">SAVE</button>
-        <button class="recipe-action-btn" id="recipe-library-btn">LIBRARY</button>
+        <button class="recipe-action-btn" id="recipe-library-btn">COOKBOOK</button>
       </div>
     </div>
   </div>
@@ -2296,12 +2561,6 @@ body::before {
 
       <!-- Compare Mode (hidden initially) -->
       <div id="compare-view" style="display:none">
-        <div id="compare-toolbar">
-          <span id="compare-back-btn">&#8592;</span>
-          <span>Compare Mode</span>
-          <select id="compare-param-select"></select>
-          <div id="compare-values-section"></div>
-        </div>
         <div id="compare-grid"></div>
       </div>
     </div>
@@ -2309,12 +2568,37 @@ body::before {
     <!-- Right: recipe params (always visible) -->
     <div id="recipe-right-panel">
       <div id="recipe-right-panel-params"></div>
+      <div id="compare-right-controls" style="display:none">
+        <div id="compare-toolbar">
+          <span id="compare-back-btn">&#8592; Back</span>
+        </div>
+        <div id="compare-param-section">
+          <label style="font-size:10px;color:var(--text-dim);letter-spacing:0.5px;font-family:var(--mono)">PARAMETER</label>
+          <select id="compare-param-select"></select>
+        </div>
+        <div id="compare-values-section"></div>
+        <div id="compare-actions">
+          <button id="compare-simulate-btn">SIMULATE</button>
+        </div>
+      </div>
+      <div id="recipe-drawer-top">
+        <select id="recipe-load-select"><option value="">Load recipe...</option></select>
+        <button id="recipe-save-as-btn" style="display:none">SAVE AS NEW</button>
+        <button id="recipe-compare-btn" style="display:none">COMPARE</button>
+      </div>
       <div id="recipe-drawer-actions">
         <div id="recipe-simulate-section">
-          <button id="simulate-btn">SIMULATE</button>
+          <div id="simulate-row">
+            <button id="simulate-btn"><span class="sim-main-label">SIMULATE</span><span class="sim-scope-label" id="sim-scope-toggle">this photo</span></button>
+            <button id="revert-as-shot-btn">REVERT</button>
+            <button id="cancel-to-last-sim-btn" style="display:none">CANCEL</button>
+          </div>
+          <select id="simulate-scope-select" style="display:none;position:absolute;opacity:0;pointer-events:none;">
+            <option value="photo">This photo</option>
+            <option value="collage">Entire collage</option>
+          </select>
           <span id="simulate-progress"></span>
         </div>
-        <button id="revert-as-shot-btn">REVERT TO AS-SHOT</button>
       </div>
     </div>
   </div>
@@ -3933,6 +4217,8 @@ body::before {
     focusIndex: 0,
     focusBrowse: false,
     focusBrowsePhoto: null,
+    focusHistory: [],
+    lastSimParams: null,
     cameraConnected: false
   };
 
@@ -4052,6 +4338,118 @@ body::before {
     }
   }
 
+  function enterCompareMode() {
+    recipeState.mode = 'compare';
+    document.getElementById('recipe-collage').style.display = 'none';
+    document.getElementById('focus-view').style.display = 'none';
+    document.getElementById('compare-view').style.display = 'flex';
+    document.getElementById('recipe-shuffle-btn').style.display = 'none';
+    document.getElementById('recipe-pick-btn').style.display = 'none';
+    document.getElementById('recipe-compare-btn').style.display = 'none';
+    document.getElementById('focus-back-btn').style.display = 'none';
+    // Swap right panel to compare controls
+    document.getElementById('recipe-right-panel-params').style.display = 'none';
+    document.getElementById('recipe-drawer-top').style.display = 'none';
+    document.getElementById('recipe-drawer-actions').style.display = 'none';
+    document.getElementById('compare-right-controls').style.display = 'flex';
+    if (window._focusResetZoom) window._focusResetZoom();
+    initCompareMode();
+  }
+
+  function initCompareMode() {
+    const paramSelect = document.getElementById('compare-param-select');
+    const valuesSection = document.getElementById('compare-values-section');
+    const grid = document.getElementById('compare-grid');
+
+    paramSelect.innerHTML = '';
+    const allParams = [];
+    for (const group of PARAM_DEFS) {
+      for (const p of group.params) {
+        allParams.push(p);
+        const opt = document.createElement('option');
+        opt.value = p.key;
+        opt.textContent = p.label;
+        paramSelect.appendChild(opt);
+      }
+    }
+
+    let selectedValues = new Set();
+
+    function renderGrid() {
+      grid.innerHTML = '';
+      const active = [...selectedValues];
+      if (active.length === 0) return;
+      const cols = Math.min(active.length, 3);
+      grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+
+      const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
+      if (!photo) return;
+      const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
+
+      active.forEach(v => {
+        const cell = document.createElement('div');
+        cell.className = 'compare-cell';
+        const img = document.createElement('img');
+        img.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
+        cell.appendChild(img);
+        const label = document.createElement('div');
+        label.className = 'compare-cell-label';
+        label.textContent = v;
+        cell.appendChild(label);
+        grid.appendChild(cell);
+      });
+    }
+
+    function renderValues() {
+      valuesSection.innerHTML = '';
+      grid.innerHTML = '';
+      const key = paramSelect.value;
+      const paramDef = allParams.find(p => p.key === key);
+      if (!paramDef) return;
+
+      let values = [];
+      if (paramDef.type === 'dropdown') {
+        values = [...paramDef.options];
+      } else if (paramDef.type === 'slider') {
+        for (let v = paramDef.min; v <= paramDef.max; v++) values.push(v);
+      }
+
+      recipeState.compareValues = values;
+      recipeState.compareParam = key;
+
+      // Default: only as-shot value selected
+      selectedValues = new Set();
+      const asShotVal = recipeState.exifBaseline ? recipeState.exifBaseline[key] : null;
+      if (asShotVal != null && values.includes(asShotVal)) {
+        selectedValues.add(asShotVal);
+      } else if (values.includes(String(asShotVal))) {
+        selectedValues.add(String(asShotVal));
+      }
+
+      values.forEach(v => {
+        const chip = document.createElement('span');
+        chip.className = 'compare-value-chip' + (selectedValues.has(v) ? ' active' : '');
+        chip.textContent = v;
+        chip.addEventListener('click', () => {
+          if (selectedValues.has(v)) {
+            selectedValues.delete(v);
+            chip.classList.remove('active');
+          } else {
+            selectedValues.add(v);
+            chip.classList.add('active');
+          }
+          renderGrid();
+        });
+        valuesSection.appendChild(chip);
+      });
+
+      renderGrid();
+    }
+
+    paramSelect.addEventListener('change', renderValues);
+    renderValues();
+  }
+
   async function loadBatchExif() {
     try {
       const files = recipeState.gridPhotos.map(p => p.file.replace(/\.[^.]+$/, '') + '.RAF');
@@ -4105,29 +4503,51 @@ body::before {
 
   // ── Mode switching ──
 
+  function restoreRightPanel() {
+    document.getElementById('recipe-right-panel-params').style.display = '';
+    document.getElementById('recipe-drawer-top').style.display = '';
+    document.getElementById('recipe-drawer-actions').style.display = '';
+    document.getElementById('compare-right-controls').style.display = 'none';
+  }
+
   function showRecipePreview() {
     recipeState.mode = 'preview';
+    restoreRightPanel();
     document.getElementById('recipe-collage').style.display = '';
     document.getElementById('focus-view').style.display = 'none';
     document.getElementById('compare-view').style.display = 'none';
     const hasPhotos = recipeState.gridPhotos.length > 0;
     document.getElementById('recipe-shuffle-btn').style.display = hasPhotos ? '' : 'none';
     document.getElementById('recipe-pick-btn').style.display = hasPhotos ? '' : 'none';
+    document.getElementById('recipe-compare-btn').style.display = 'none';
     document.getElementById('focus-back-btn').style.display = 'none';
   }
 
   function enterFocusMode(index, opts) {
     const browse = opts && opts.browse;
+    // Push current focus state to history if already in focus mode
+    if (recipeState.mode === 'focus') {
+      recipeState.focusHistory.push({
+        index: recipeState.focusIndex,
+        browse: recipeState.focusBrowse,
+        photo: recipeState.focusBrowsePhoto
+      });
+    } else {
+      recipeState.focusHistory = [];
+    }
     recipeState.mode = 'focus';
     recipeState.focusIndex = index;
     recipeState.focusBrowse = browse || false;
     recipeState.focusBrowsePhoto = browse ? (opts.photo || null) : null;
+    restoreRightPanel();
     document.getElementById('recipe-collage').style.display = 'none';
     document.getElementById('focus-view').style.display = 'flex';
     document.getElementById('compare-view').style.display = 'none';
     document.getElementById('recipe-shuffle-btn').style.display = 'none';
     document.getElementById('recipe-pick-btn').style.display = 'none';
+    document.getElementById('recipe-compare-btn').style.display = '';
     document.getElementById('focus-back-btn').style.display = '';
+    if (window._focusResetZoom) window._focusResetZoom();
     renderFocusMode();
   }
 
@@ -4271,6 +4691,7 @@ body::before {
         // No recipes saved — keep "As Shot" baseline
       }
       renderParams();
+      if (typeof updateInlineLoadSelect === 'function') updateInlineLoadSelect();
     } catch(e) {
       console.error('Failed to load recipes', e);
     }
@@ -4299,14 +4720,10 @@ body::before {
   }
 
   async function saveRecipe() {
+    if (!recipeState.currentId) return;
     const payload = { title: recipeState.currentTitle, params: recipeState.currentParams };
     let res;
-    if (recipeState.currentId) {
-      res = await fetch('/api/recipe/' + recipeState.currentId, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r => r.json());
-    } else {
-      res = await fetch('/api/recipe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r => r.json());
-      if (res.id) recipeState.currentId = res.id;
-    }
+    res = await fetch('/api/recipe/' + recipeState.currentId, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r => r.json());
     recipeState.dirty = false;
     recipeSaveBtn.classList.add('hidden');
     // Also set as active
@@ -4318,11 +4735,16 @@ body::before {
 
   function checkParamsChanged() {
     const section = document.getElementById('recipe-simulate-section');
-    const btn = document.getElementById('simulate-btn');
     const revertBtn = document.getElementById('revert-as-shot-btn');
+    const scopeLabel = document.getElementById('sim-scope-toggle');
+    const scopeSelect = document.getElementById('simulate-scope-select');
+    const saveAsBtn = document.getElementById('recipe-save-as-btn');
+    const cancelBtn = document.getElementById('cancel-to-last-sim-btn');
     if (!recipeState.cleanParams) {
       section.classList.remove('visible');
       revertBtn.classList.remove('visible');
+      if (saveAsBtn) saveAsBtn.style.display = 'none';
+      if (cancelBtn) cancelBtn.style.display = 'none';
       return;
     }
     const changed = Object.keys(recipeState.currentParams).some(
@@ -4331,14 +4753,30 @@ body::before {
     if (changed) {
       if (recipeState.cameraConnected) {
         section.classList.add('visible');
-        btn.textContent = recipeState.mode === 'focus' ? 'SIMULATE PHOTO' : 'SIMULATE COLLAGE';
+        if (scopeLabel) scopeLabel.style.display = recipeState.mode === 'focus' ? '' : 'none';
       } else {
         section.classList.remove('visible');
       }
       revertBtn.classList.add('visible');
+      // Show save-as only if params don't match any existing recipe
+      if (saveAsBtn) {
+        const match = findMatchingRecipe(recipeState.currentParams);
+        saveAsBtn.style.display = match ? 'none' : '';
+      }
+      // Show cancel if lastSimParams exists and current differs from it
+      if (cancelBtn && recipeState.lastSimParams) {
+        const diffFromLastSim = Object.keys(recipeState.currentParams).some(
+          k => recipeState.currentParams[k] !== recipeState.lastSimParams[k]
+        );
+        cancelBtn.style.display = diffFromLastSim ? '' : 'none';
+      } else if (cancelBtn) {
+        cancelBtn.style.display = 'none';
+      }
     } else {
       section.classList.remove('visible');
       revertBtn.classList.remove('visible');
+      if (saveAsBtn) saveAsBtn.style.display = 'none';
+      if (cancelBtn) cancelBtn.style.display = 'none';
     }
   }
 
@@ -4417,7 +4855,18 @@ body::before {
   function renderLibrary() {
     const grid = document.getElementById('library-grid');
     const recipes = recipeState.recipes;
-    const ids = Object.keys(recipes);
+    const ids = Object.keys(recipes).filter(id => {
+      const r = recipes[id];
+      const title = (r.title || '').toLowerCase().trim();
+      if (!title || title === 'untitled recipe' || title === 'untitled' || title === 'as shot') {
+        const hasNonDefault = r.params && Object.keys(r.params).some(k => {
+          const def = RECIPE_DEFAULTS[k];
+          return r.params[k] !== def && r.params[k] !== undefined;
+        });
+        if (!hasNonDefault) return false;
+      }
+      return true;
+    });
 
     document.getElementById('library-count').textContent = ids.length + ' recipe' + (ids.length !== 1 ? 's' : '');
     grid.innerHTML = '';
@@ -4537,13 +4986,58 @@ body::before {
 
   // ── Param rendering ──
 
+  function findMatchingRecipe(params) {
+    if (!params || !recipeState.recipes) return null;
+    const keys = ['filmSimulation','grainEffect','grainSize','colorChromeEffect','colorChromeFXBlue','whiteBalance','wbShiftR','wbShiftB','dynamicRange','highlightTone','shadowTone','color','sharpness','noiseReduction','clarity'];
+    for (const [id, recipe] of Object.entries(recipeState.recipes)) {
+      if (!recipe.params) continue;
+      const match = keys.every(k => String(params[k] ?? '') === String(recipe.params[k] ?? ''));
+      if (match) return recipe;
+    }
+    return null;
+  }
+
   function renderParams() {
     recipeParamsPanel.innerHTML = '';
     if (recipeState.exifBaseline) {
+      const baselineRow = document.createElement('div');
+      baselineRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
       const baseline = document.createElement('div');
       baseline.className = 'param-baseline-label';
-      baseline.textContent = 'As-Shot: ' + (recipeState.exifBaseline.filmSimulation || 'Unknown');
-      recipeParamsPanel.appendChild(baseline);
+      baseline.style.margin = '0';
+      const matchedRecipe = findMatchingRecipe(recipeState.exifBaseline);
+      if (matchedRecipe) {
+        baseline.textContent = 'As-Shot: ';
+        const badge = document.createElement('span');
+        badge.className = 'recipe-match-badge';
+        badge.textContent = matchedRecipe.title;
+        baseline.appendChild(badge);
+      } else {
+        baseline.textContent = 'As Shot';
+      }
+      baselineRow.appendChild(baseline);
+      const changed = Object.keys(recipeState.currentParams).some(
+        k => recipeState.currentParams[k] !== recipeState.exifBaseline[k]
+      );
+      if (changed) {
+        const revertTop = document.createElement('button');
+        revertTop.textContent = 'REVERT';
+        revertTop.style.cssText = 'font-family:var(--mono);font-size:9px;letter-spacing:0.5px;padding:3px 8px;background:none;color:var(--text-dim);border:1px solid rgba(255,255,255,0.15);cursor:pointer;transition:color 0.15s,border-color 0.15s;';
+        revertTop.addEventListener('mouseenter', () => { revertTop.style.color = 'var(--amber)'; revertTop.style.borderColor = 'var(--amber)'; });
+        revertTop.addEventListener('mouseleave', () => { revertTop.style.color = 'var(--text-dim)'; revertTop.style.borderColor = 'rgba(255,255,255,0.15)'; });
+        revertTop.addEventListener('click', () => {
+          recipeState.currentParams = { ...recipeState.exifBaseline };
+          recipeState.cleanParams = { ...recipeState.exifBaseline };
+          recipeState.dirty = false;
+          recipeState.currentId = null;
+          recipeState.currentTitle = 'As Shot';
+          recipeSaveBtn.classList.add('hidden');
+          renderParams();
+          checkParamsChanged();
+        });
+        baselineRow.appendChild(revertTop);
+      }
+      recipeParamsPanel.appendChild(baselineRow);
     }
     for (const group of PARAM_DEFS) {
       const lbl = document.createElement('div');
@@ -4568,7 +5062,7 @@ body::before {
       const info = document.createElement('span');
       info.className = 'param-tip-icon';
       info.textContent = '?';
-      info.title = p.tip;
+      info.addEventListener('click', (e) => { e.stopPropagation(); showParamTip(info, p.tip); });
       label.appendChild(info);
     }
     wrap.appendChild(label);
@@ -4644,7 +5138,7 @@ body::before {
       const info = document.createElement('span');
       info.className = 'param-tip-icon';
       info.textContent = '?';
-      info.title = p.tip;
+      info.addEventListener('click', (e) => { e.stopPropagation(); showParamTip(info, p.tip); });
       label.appendChild(info);
     }
     const valSpan = document.createElement('span');
@@ -4764,6 +5258,17 @@ body::before {
     recipeParamsPanel.querySelectorAll('.param-dropdown-list').forEach(el => el.style.display = 'none');
   }
 
+  function showParamTip(icon, text) {
+    const existing = document.querySelector('.param-tip-popup');
+    if (existing) existing.remove();
+    const popup = document.createElement('div');
+    popup.className = 'param-tip-popup';
+    popup.textContent = text;
+    icon.appendChild(popup);
+    setTimeout(() => { popup.remove(); }, 4000);
+    document.addEventListener('click', function dismiss() { popup.remove(); document.removeEventListener('click', dismiss); }, { once: true });
+  }
+
   document.addEventListener('click', () => { closeAllDropdowns(); });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeAllDropdowns();
@@ -4771,21 +5276,22 @@ body::before {
 
   // ── Simulate ──
 
-  async function simulateOnePhoto(photoIndex) {
-    const btn = document.getElementById('simulate-btn');
+  async function simulateOnePhoto(photoIndex, skipToggle) {
+    const simBtn = document.getElementById('simulate-btn');
     const progress = document.getElementById('simulate-progress');
-    btn.disabled = true;
+    simBtn.disabled = true;
+    recipeState.lastSimParams = { ...recipeState.currentParams };
 
     try {
       const listRes = await fetch('/api/camera/list').then(r => r.json());
       if (!listRes.cameras || listRes.cameras.length === 0) {
         showToast('No camera connected');
-        btn.disabled = false;
+        simBtn.disabled = false;
         return;
       }
     } catch(e) {
       showToast('Camera check failed');
-      btn.disabled = false;
+      simBtn.disabled = false;
       return;
     }
 
@@ -4798,7 +5304,7 @@ body::before {
       await fetch('/api/camera/connect', { method: 'POST' }).then(r => r.json());
     } catch(e) {
       showToast('Camera connection failed');
-      btn.disabled = false;
+      simBtn.disabled = false;
       progress.textContent = '';
       return;
     }
@@ -4867,9 +5373,9 @@ body::before {
     } catch(e) {}
 
     progress.textContent = targets.length === 1 ? 'Rendered' : targets.length + ' rendered';
-    btn.disabled = false;
+    simBtn.disabled = false;
 
-    if (Object.keys(recipeState.simulatedPhotos).length > 0) {
+    if (!skipToggle && Object.keys(recipeState.simulatedPhotos).length > 0) {
       recipeState.showSimulated = true;
       toggleBeforeAfter(true);
     }
@@ -4914,12 +5420,24 @@ body::before {
     }
   }
 
-  document.getElementById('simulate-btn').addEventListener('click', () => {
-    if (recipeState.mode === 'focus') {
-      simulateOnePhoto(recipeState.focusIndex);
+  document.getElementById('simulate-btn').addEventListener('click', (e) => {
+    if (e.target.id === 'sim-scope-toggle') return;
+    const scopeSelect = document.getElementById('simulate-scope-select');
+    const scope = recipeState.mode === 'focus' ? scopeSelect.value : null;
+    if (recipeState.mode === 'focus' && scope === 'collage') {
+      simulateOnePhoto();
+    } else if (recipeState.mode === 'focus') {
+      simulateOnePhoto(recipeState.focusIndex || 0);
     } else {
       simulateOnePhoto();
     }
+  });
+
+  document.getElementById('sim-scope-toggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const scopeSelect = document.getElementById('simulate-scope-select');
+    scopeSelect.value = scopeSelect.value === 'photo' ? 'collage' : 'photo';
+    e.target.textContent = scopeSelect.value === 'photo' ? 'this photo' : 'entire collage';
   });
 
   document.getElementById('revert-as-shot-btn').addEventListener('click', () => {
@@ -4934,19 +5452,98 @@ body::before {
     checkParamsChanged();
   });
 
-  // ── Focus photo hold-to-compare (persistent handler) ──
+  document.getElementById('cancel-to-last-sim-btn').addEventListener('click', () => {
+    if (!recipeState.lastSimParams) return;
+    recipeState.currentParams = { ...recipeState.lastSimParams };
+    renderParams();
+    checkParamsChanged();
+  });
+
+  document.getElementById('recipe-load-select').addEventListener('change', (e) => {
+    const id = e.target.value;
+    if (!id) return;
+    selectRecipe(id);
+    e.target.value = '';
+  });
+
+  document.getElementById('recipe-save-as-btn').addEventListener('click', async () => {
+    const title = prompt('Recipe name:', (recipeState.currentTitle || 'As Shot') + ' copy');
+    if (!title) return;
+    const payload = { title, params: { ...recipeState.currentParams } };
+    const res = await fetch('/api/recipe', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r => r.json());
+    if (res.id) {
+      recipeState.currentId = res.id;
+      recipeState.currentTitle = title;
+      recipeState.cleanParams = { ...recipeState.currentParams };
+      recipeState.dirty = false;
+      recipeSaveBtn.classList.add('hidden');
+      await loadRecipes();
+      updateInlineLoadSelect();
+    }
+  });
+
+  function updateInlineLoadSelect() {
+    const sel = document.getElementById('recipe-load-select');
+    sel.innerHTML = '<option value="">Load recipe...</option>';
+    for (const [id, recipe] of Object.entries(recipeState.recipes || {})) {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = recipe.title || 'Untitled';
+      sel.appendChild(opt);
+    }
+  }
+
+  // ── Focus photo: hold-to-compare + click-to-zoom ──
   (function() {
     const focusPhoto = document.getElementById('focus-photo');
+    const focusContainer = document.getElementById('focus-photo-container');
     const focusIndicator = document.getElementById('focus-compare-indicator');
     let focusComparing = false;
+    let focusHoldTimer = null;
+    let focusZoomLevel = 1;
 
     function getFocusPhoto() {
       if (recipeState.focusBrowse) return recipeState.focusBrowsePhoto;
       return recipeState.gridPhotos[recipeState.focusIndex];
     }
 
-    function focusCompareStart(e) {
-      if (e.type === 'touchstart') e.preventDefault();
+    function focusResetZoom() {
+      focusZoomLevel = 1;
+      focusPhoto.style.transform = '';
+      focusPhoto.style.transformOrigin = '';
+      focusPhoto.classList.remove('zoomed');
+    }
+
+    function focusToggleZoom(clientX, clientY) {
+      if (focusZoomLevel > 1) {
+        focusResetZoom();
+      } else {
+        const naturalW = focusPhoto.naturalWidth;
+        const displayW = focusPhoto.clientWidth;
+        if (naturalW && displayW) {
+          focusZoomLevel = Math.min(naturalW / displayW, 3);
+          const rect = focusPhoto.getBoundingClientRect();
+          const ox = clientX != null ? clientX - rect.left : rect.width / 2;
+          const oy = clientY != null ? clientY - rect.top : rect.height / 2;
+          focusPhoto.style.transformOrigin = ox + 'px ' + oy + 'px';
+          focusPhoto.style.transform = 'scale(' + focusZoomLevel + ')';
+          focusPhoto.classList.add('zoomed');
+        }
+      }
+    }
+
+    focusContainer.addEventListener('mousemove', (e) => {
+      if (focusZoomLevel <= 1) return;
+      const imgW = focusPhoto.clientWidth;
+      const imgH = focusPhoto.clientHeight;
+      const rect = focusContainer.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) / rect.width;
+      const my = (e.clientY - rect.top) / rect.height;
+      focusPhoto.style.transformOrigin = (mx * imgW) + 'px ' + (my * imgH) + 'px';
+      focusPhoto.style.transform = 'scale(' + focusZoomLevel + ')';
+    });
+
+    function showOriginal() {
       const photo = getFocusPhoto();
       if (!photo) return;
       if (recipeState.showSimulated && recipeState.simulatedPhotos[photo.file]) {
@@ -4956,7 +5553,8 @@ body::before {
         focusIndicator.classList.add('visible');
       }
     }
-    function focusCompareEnd() {
+
+    function revertToSim() {
       if (!focusComparing) return;
       focusComparing = false;
       const photo = getFocusPhoto();
@@ -4970,11 +5568,35 @@ body::before {
       focusIndicator.classList.remove('visible');
     }
 
-    focusPhoto.addEventListener('mousedown', focusCompareStart);
-    focusPhoto.addEventListener('mouseup', focusCompareEnd);
-    focusPhoto.addEventListener('mouseleave', focusCompareEnd);
-    focusPhoto.addEventListener('touchstart', focusCompareStart, { passive: false });
-    focusPhoto.addEventListener('touchend', focusCompareEnd);
+    function focusDown(e) {
+      if (e.type === 'touchstart') e.preventDefault();
+      focusHoldTimer = setTimeout(showOriginal, 150);
+    }
+    function focusUp(e) {
+      const wasComparing = focusComparing;
+      clearTimeout(focusHoldTimer);
+      if (wasComparing) {
+        revertToSim();
+      } else {
+        const clientX = e.touches ? e.changedTouches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.changedTouches[0].clientY : e.clientY;
+        focusToggleZoom(clientX, clientY);
+      }
+    }
+    function focusLeave() {
+      clearTimeout(focusHoldTimer);
+      if (focusComparing) revertToSim();
+    }
+
+    focusPhoto.addEventListener('mousedown', focusDown);
+    focusPhoto.addEventListener('mouseup', focusUp);
+    focusPhoto.addEventListener('mouseleave', focusLeave);
+    focusPhoto.addEventListener('touchstart', focusDown, { passive: false });
+    focusPhoto.addEventListener('touchend', focusUp);
+
+    // Reset zoom when exiting focus mode or changing photo
+    const origEnterFocus = window.enterFocusMode;
+    window._focusResetZoom = focusResetZoom;
   })();
 
   // ── Grid ──
@@ -5123,7 +5745,7 @@ body::before {
         if (e.type === 'touchstart') e.preventDefault();
         cellDownTime = Date.now();
         if (recipeState.showSimulated && recipeState.simulatedPhotos[photo.file]) {
-          cellHoldTimer = setTimeout(showOriginal, 200);
+          cellHoldTimer = setTimeout(showOriginal, 150);
         }
       }
       function cellCompareEnd(e) {
@@ -5578,6 +6200,10 @@ body::before {
 
   recipeLoadBtn.addEventListener('click', async () => {
     if (!recipeSelectedPath) return;
+    if (recipeSelectedPath === recipeLoadedDir) {
+      collapseRecipeLeftPanel();
+      return;
+    }
     try {
       const res = await fetch('/api/recipe-load', {
         method: 'POST',
@@ -5616,15 +6242,95 @@ body::before {
     pendingDeleteId = null;
   });
 
-  // Focus mode back button
+  // Focus mode back button — pops history stack or returns to collage
   document.getElementById('focus-back-btn').addEventListener('click', () => {
-    recipeState.focusBrowse = false;
-    recipeState.focusBrowsePhoto = null;
-    showRecipePreview();
+    if (recipeState.mode === 'compare') {
+      // From compare, go back to focus (don't push to history)
+      recipeState.mode = 'focus';
+      restoreRightPanel();
+      document.getElementById('compare-view').style.display = 'none';
+      document.getElementById('focus-view').style.display = 'flex';
+      document.getElementById('recipe-compare-btn').style.display = '';
+      document.getElementById('focus-back-btn').style.display = '';
+      renderFocusMode();
+    } else if (recipeState.focusHistory.length > 0) {
+      const prev = recipeState.focusHistory.pop();
+      recipeState.focusIndex = prev.index;
+      recipeState.focusBrowse = prev.browse;
+      recipeState.focusBrowsePhoto = prev.photo;
+      renderFocusMode();
+    } else {
+      recipeState.focusBrowse = false;
+      recipeState.focusBrowsePhoto = null;
+      showRecipePreview();
+    }
   });
 
   document.getElementById('recipe-shuffle-btn').addEventListener('click', shuffleGrid);
   document.getElementById('recipe-pick-btn').addEventListener('click', openPhotoPicker);
+  document.getElementById('recipe-compare-btn').addEventListener('click', enterCompareMode);
+  document.getElementById('compare-back-btn').addEventListener('click', () => {
+    enterFocusMode(recipeState.focusIndex || 0);
+  });
+
+  document.getElementById('compare-simulate-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('compare-simulate-btn');
+    const grid = document.getElementById('compare-grid');
+    const selectedValues = recipeState.compareValues ? recipeState.compareValues.filter(v => {
+      const chips = document.querySelectorAll('#compare-values-section .compare-value-chip.active');
+      return [...chips].some(c => c.textContent === String(v));
+    }) : [];
+    if (selectedValues.length === 0) return;
+
+    btn.disabled = true;
+    const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
+    if (!photo) { btn.disabled = false; return; }
+
+    try {
+      const listRes = await fetch('/api/camera/list').then(r => r.json());
+      if (!listRes.cameras || listRes.cameras.length === 0) {
+        showToast('No camera connected');
+        btn.disabled = false;
+        return;
+      }
+      await fetch('/api/camera/connect', { method: 'POST' });
+    } catch(e) {
+      showToast('Camera connection failed');
+      btn.disabled = false;
+      return;
+    }
+
+    const stem = photo.file.replace(/\.[^.]+$/, '');
+    const rafPath = recipeLoadedDir + '/Liked/RAF/' + stem + '.RAF';
+    const paramKey = recipeState.compareParam;
+
+    for (let i = 0; i < selectedValues.length; i++) {
+      const val = selectedValues[i];
+      const outputPath = recipeLoadedDir + '/Liked/RAF/.sim-cache/' + stem + '_cmp_' + paramKey + '_' + i + '.jpg';
+      const params = { ...recipeState.currentParams, [paramKey]: val };
+
+      try {
+        await fetch('/api/camera/upload-raf', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ path: rafPath }) }).then(r => r.json());
+        const profileRes = await fetch('/api/camera/profile').then(r => r.json());
+        await fetch('/api/camera/profile', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ data: profileRes.data, params }) }).then(r => r.json());
+        await fetch('/api/camera/convert', { method: 'POST' }).then(r => r.json());
+        const resultRes = await fetch('/api/camera/wait-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ outputPath, timeout: 10000 }) }).then(r => r.json());
+
+        if (resultRes.ok) {
+          const cell = grid.children[i];
+          if (cell) {
+            const img = cell.querySelector('img');
+            if (img) img.src = '/api/preview-image/' + btoa(unescape(encodeURIComponent(outputPath.substring(0, outputPath.lastIndexOf('/'))))) + '/' + encodeURIComponent(outputPath.substring(outputPath.lastIndexOf('/') + 1)) + '?t=' + Date.now();
+          }
+        }
+      } catch(e) {
+        console.error('Compare sim failed for ' + val, e);
+      }
+    }
+
+    try { await fetch('/api/camera/disconnect', { method: 'POST' }); } catch(e) {}
+    btn.disabled = false;
+  });
 
   // ── Photo Picker Modal ──
   const pickerModal = document.getElementById('photo-picker-modal');

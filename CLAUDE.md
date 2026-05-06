@@ -84,6 +84,74 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
   - Film simulation and white balance removed from metadata display (belong in recipe drawer)
 - Image serving: `Cache-Control: public, max-age=3600` added to `preview-thumb` and `preview-image` endpoints (browser caches after first load)
 
+### Session 18 feedback (2026-05-05, verbatim from Oren)
+
+**AS-SHOT LABEL / RECIPE MATCHING:**
+- Film simulation name alone (e.g. "RealaACE") is not helpful — it's just ONE param of the recipe.
+- Should say "As Shot" OR if it matches a saved recipe, show the RECIPE NAME.
+- Question: can we pull saved recipes off the camera into our library? — RESEARCH: X100VI stores Custom presets at PTP properties D18E-D1A5 (per `/tmp/filmkit/src/profile/preset-translate.ts`). `camera-bridge.readProp(propId)` can read them. Need to: read D18C (active preset slot), then read D18E-D1A5 for each Custom slot, translate via NativeIdx map. Requires camera connected in RAW CONV mode. NOT YET IMPLEMENTED.
+
+**SAVE AS NEW / LOAD RECIPE PLACEMENT:**
+- SAVE AS NEW RECIPE should ONLY appear if current params don't match any existing saved recipe.
+- LOAD RECIPE belongs at the TOP of the right panel drawer, not the bottom.
+- SAVE AS NEW should also be near the top, next to/near load.
+
+**SIMULATE BUTTON:**
+- Revert to a SINGLE simulate button. Default behavior = simulate what's in view (single photo in focus mode, collage in collage mode).
+- In focus mode: add dropdown/option to simulate entire collage from within focus view.
+- Library-wide batch simulate should be a separate button ELSEWHERE with "are you sure?" confirmation.
+- Rename LIBRARY button (top right) to COOKBOOK (that's where you keep recipes).
+- REVERT + SIMULATE should be side-by-side (two buttons in a row).
+
+**HOLD-TO-COMPARE TIMING:**
+- Works great. Reduce threshold from 200ms to 150ms (both collage and focus).
+
+**COMPARE MODE PLACEMENT & UX:**
+- Compare button in the center toolbar is confusing / easy to miss.
+- Move compare functionality INTO the right panel — when in compare mode, right panel content changes to compare controls (param select, value chips, etc.) instead of normal recipe params.
+- Film simulation dropdown shows only 6 options — should show ALL 20.
+- BUG: clicking "simulate collage" from compare context simulated the 9-photo collage instead of rendering compare variants. Scope confusion.
+- Rendering individual compare cells: button placement unclear, needs to be obvious within each cell or as single action.
+
+**LEFT PANEL FOLDER TOGGLE:**
+- Folder drawer toggle icon must stay at the SAME vertical height as the collage grid button and back button.
+- Both the drawer-open and drawer-closed states should exist at the same UI height (consistent toolbar row).
+- Currently the folder icon position shifts or disappears between states.
+
+**NAVIGATION / BACK HISTORY:**
+- If viewing a collage photo in focus, then clicking a filmstrip photo, should have option to go BACK to the previous collage photo (not just back to collage grid).
+- Same pattern: click photo → click another from filmstrip → back should return to previous photo.
+- Essentially a navigation stack for focus mode (push/pop photo history).
+- Document as future enhancement if complex — not blocking.
+
+### Session 18 changes (2026-05-05)
+
+**IMPLEMENTED (session 18a — pre-feedback):**
+- Recipe match badge, inline LOAD/SAVE, Compare Mode, Click-to-zoom, Simulate scope buttons
+
+**IMPLEMENTED (session 18b — post-feedback):**
+- As-Shot label: shows recipe name if matched, otherwise just "As Shot" (no film sim name)
+- Hold-to-compare reduced to 150ms (both collage and focus)
+- LIBRARY renamed to COOKBOOK (top-right button)
+- Right panel restructured: LOAD RECIPE dropdown at top, SAVE AS NEW (conditional — only shows if no recipe match), COMPARE button (shows in focus mode)
+- Single SIMULATE button with REVERT side-by-side. Scope dropdown (this photo / entire collage) appears in focus mode only.
+- Compare Mode moved to right panel: entering compare swaps right panel content to compare controls (param select + value chips). Center shows compare grid. All film sim options shown (full list, not 6).
+- Folder drawer toggle moved to `align-self: flex-start` (top-aligned with toolbar row)
+- Focus mode navigation history: entering focus from focus pushes to stack, back button pops (allows returning to previous photo before going to collage)
+
+**ARCHITECTURAL:**
+- `#recipe-drawer-top` — new section above params panel (load select + save-as + compare btn)
+- `#compare-right-controls` — replaces params panel when in compare mode
+- `restoreRightPanel()` — helper to show params/drawer-top/actions and hide compare controls
+- `recipeState.focusHistory` — array of `{index, browse, photo}` for back navigation in focus mode
+- `#simulate-row` wraps simulate + revert side-by-side (flex row)
+- `#simulate-scope-select` — dropdown for photo/collage scope in focus mode
+- `findMatchingRecipe(params)` — compares all 15 recipe keys against saved recipes
+- `enterCompareMode()` / `initCompareMode()` — renders param select + value grid for comparison
+- `_focusResetZoom()` — global function to reset zoom state, called on mode transitions
+- `updateInlineLoadSelect()` — populates load-recipe dropdown, called after `loadRecipes()`
+- Focus photo container gets `overflow: hidden` for zoom containment
+
 ### Session 17 changes (2026-05-05)
 
 **IMPLEMENTED (all session 15 feedback items):**
@@ -143,9 +211,9 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - ~~For each photo: show the EXACT recipe as-shot. As soon as any param changes, make it VERY clear that params have been modified vs as-shot.~~ DONE — session 17 (as-shot baseline + visual diff).
 - ~~SIMULATE button belongs IN the recipe drawer (not toolbar), appears when params differ from as-shot.~~ DONE — session 17.
 - ~~REVERT TO AS-SHOT button should also appear when params are modified.~~ DONE — session 17.
-- If a photo's as-shot params match a saved recipe, indicate this with a tag/badge in the recipe drawer.
-- Loading existing recipes is not intuitive. Need ability to LOAD a recipe and SAVE AS NEW RECIPE directly from this drawer while editing.
-- A button to manage full recipe catalogue/collection is fine, but editing workflow needs inline load/save.
+- ~~If a photo's as-shot params match a saved recipe, indicate this with a tag/badge in the recipe drawer.~~ DONE — session 18.
+- ~~Loading existing recipes is not intuitive. Need ability to LOAD a recipe and SAVE AS NEW RECIPE directly from this drawer while editing.~~ DONE — session 18.
+- ~~A button to manage full recipe catalogue/collection is fine, but editing workflow needs inline load/save.~~ DONE — session 18.
 
 **SPACING / PADDING:**
 - ~~Recipe drawer has generous padding — good. Collage padding is much tighter — mismatch. Match padding throughout.~~ DONE — session 17.
@@ -156,9 +224,9 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - ~~Film simulation names need descriptions of the look they produce.~~ DONE — included in film sim tooltip.
 
 **MISSING FEATURES (documented, not yet built):**
-- Simulate buttons needed for: single photo, entire collage, entire library (batch).
-- Compare variants: same photo rendered with different param values side-by-side (Phase I Compare Mode from session 9).
-- Click-to-zoom on photos in Recipe Lab (matching Photo Cull zoom behavior).
+- ~~Simulate buttons needed for: single photo, entire collage, entire library (batch).~~ DONE — session 18, three scope buttons.
+- ~~Compare variants: same photo rendered with different param values side-by-side (Phase I Compare Mode from session 9).~~ DONE — session 18, wired with param select + grid.
+- ~~Click-to-zoom on photos in Recipe Lab (matching Photo Cull zoom behavior).~~ DONE — session 18.
 - Side-by-side comparison view (original vs simulated, synced zoom). WANT this but lower priority.
 - ~~On-image toggle (tap/click to flash between original and simulated). HIGHER priority than side-by-side.~~ DONE — session 17.
 - Slider comparison (drag divider) — NOT needed. Skip this.
@@ -221,12 +289,12 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Shows when no camera is plugged in — shouldn't. CODE DONE (hides when !cameraConnected), needs testing.
 - Scope labeling — DONE ("SIMULATE PHOTO" in focus mode, "SIMULATE COLLAGE" in preview mode).
 - PTP pipeline — WORKING (stale object clearing, auto-create output dir, focus mode image swap all fixed).
-- Causes layout shift. Pushes "714 available" count. — NOT FIXED.
-- "714 available" — why is that stat even there? — NOT FIXED.
-- UI elements should not push or rearrange other elements. EVER. — NOT FIXED.
+- ~~Causes layout shift. Pushes "714 available" count.~~ FIXED — session 18 (simulate moved to right panel, no center impact).
+- ~~"714 available" — why is that stat even there?~~ FIXED — removed (no longer in codebase).
+- ~~UI elements should not push or rearrange other elements. EVER.~~ FIXED — simulate in fixed right panel.
 
 **SAVE BUTTON:**
-- After changing params and changing them back, save lingers for a bit then disappears. Weird. Should clear immediately when params match clean state.
+- ~~After changing params and changing them back, save lingers for a bit then disappears. Weird. Should clear immediately when params match clean state.~~ FIXED — `markDirty()` immediately clears save + cancels autosave timer when params match cleanParams.
 
 **RECIPE LIBRARY:**
 - Empty on first use. Should ship with 3-5 sample recipes.
