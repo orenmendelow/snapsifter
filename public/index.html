@@ -151,16 +151,12 @@ body::before {
 }
 #recipe-left-toggle {
   display: none;
-  align-self: flex-start;
-  flex-shrink: 0;
-  background: rgba(255,255,255,0.04);
+  background: none;
   border: 1px solid rgba(255,255,255,0.12);
-  border-left: none;
-  border-radius: 0 6px 6px 0;
+  border-radius: 4px;
   color: var(--amber);
   font-size: 16px;
-  padding: 10px 5px;
-  margin-top: 4px;
+  padding: 6px 8px;
   cursor: pointer;
   line-height: 1;
   transition: background 0.15s, color 0.15s;
@@ -348,15 +344,14 @@ body::before {
 }
 
 #focus-gallery {
-  width: 72px;
+  width: 88px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 4px;
-  padding: 8px 6px;
+  padding: 8px 6px 8px 20px;
   overflow-y: auto;
-  border-right: 1px solid rgba(255,255,255,0.06);
 }
 #focus-gallery::-webkit-scrollbar { display: none; }
 
@@ -404,8 +399,8 @@ body::before {
 #focus-back-btn svg { display: block; }
 
 #focus-photo {
-  max-width: 100%;
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   cursor: zoom-in;
 }
@@ -418,9 +413,27 @@ body::before {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 4px 12px;
+  padding: 6px 12px;
   flex-shrink: 0;
   border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 11px;
+  position: relative;
+}
+#focus-ditch-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: 1px solid rgba(255,100,100,0.3);
+  color: rgba(255,100,100,0.7);
+  font: 10px var(--mono);
+  padding: 2px 8px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: background 0.15s, color 0.15s;
+}
+#focus-ditch-btn:hover {
+  background: rgba(255,100,100,0.15);
+  color: rgba(255,100,100,1);
 }
 
 #focus-photo-name {
@@ -1955,6 +1968,89 @@ body::before {
   margin-top: 16px;
 }
 
+/* ── Import conflict modal ── */
+#import-conflict-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#import-conflict-modal.visible {
+  display: flex;
+}
+#import-conflict-content {
+  max-width: 420px;
+  padding: 40px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+#import-conflict-content h2 {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--amber);
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+}
+#import-conflict-name {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+#import-conflict-detail {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+#import-conflict-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+#import-conflict-actions button {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 24px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: none;
+  transition: background 0.15s ease;
+}
+.conflict-btn-overwrite {
+  background: var(--amber);
+  color: var(--bg);
+}
+.conflict-btn-overwrite:hover {
+  background: #d4664a;
+}
+.conflict-btn-duplicate {
+  background: none;
+  color: var(--text);
+  border: 1px solid var(--amber) !important;
+}
+.conflict-btn-duplicate:hover {
+  background: rgba(196,90,48,0.15);
+}
+.conflict-btn-skip {
+  background: none;
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.18) !important;
+}
+.conflict-btn-skip:hover {
+  color: var(--text);
+  border-color: rgba(255,255,255,0.2) !important;
+}
+
 /* ── Main image area ── */
 #main-area {
   flex: 1;
@@ -2468,6 +2564,19 @@ body::before {
   </div>
 </div>
 
+<div id="import-conflict-modal">
+  <div id="import-conflict-content">
+    <h2>Import Conflict</h2>
+    <div id="import-conflict-name"></div>
+    <div id="import-conflict-detail"></div>
+    <div id="import-conflict-actions">
+      <button class="conflict-btn-overwrite" id="conflict-overwrite-btn">Overwrite</button>
+      <button class="conflict-btn-duplicate" id="conflict-duplicate-btn">Save as Duplicate</button>
+      <button class="conflict-btn-skip" id="conflict-skip-btn">Skip</button>
+    </div>
+  </div>
+</div>
+
 <div id="help-overlay">
   <div id="help-content">
     <h2>Shortcuts</h2>
@@ -2527,12 +2636,11 @@ body::before {
       </div>
     </div>
 
-    <button id="recipe-left-toggle" title="Open file browser"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 3V12C1 12.5523 1.44772 13 2 13H14C14.5523 13 15 12.5523 15 12V5C15 4.44772 14.5523 4 14 4H8L6 1H2C1.44772 1 1 1.44772 1 2V3Z"/></svg></button>
-
     <!-- Center: mode-dependent content -->
     <div id="recipe-center">
       <!-- Toolbar -->
       <div id="recipe-center-toolbar">
+        <button id="recipe-left-toggle" title="Open file browser"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 3V12C1 12.5523 1.44772 13 2 13H14C14.5523 13 15 12.5523 15 12V5C15 4.44772 14.5523 4 14 4H8L6 1H2C1.44772 1 1 1.44772 1 2V3Z"/></svg></button>
         <button id="focus-back-btn" title="Back to collage" style="display:none"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="4.5" height="4.5"/><rect x="5.75" y="0" width="4.5" height="4.5"/><rect x="11.5" y="0" width="4.5" height="4.5"/><rect x="0" y="5.75" width="4.5" height="4.5"/><rect x="5.75" y="5.75" width="4.5" height="4.5"/><rect x="11.5" y="5.75" width="4.5" height="4.5"/><rect x="0" y="11.5" width="4.5" height="4.5"/><rect x="5.75" y="11.5" width="4.5" height="4.5"/><rect x="11.5" y="11.5" width="4.5" height="4.5"/></svg></button>
         <button class="recipe-action-btn" id="recipe-shuffle-btn" style="display:none">SHUFFLE</button>
         <button class="recipe-action-btn" id="recipe-pick-btn" style="display:none">PICK PHOTOS</button>
@@ -2554,6 +2662,7 @@ body::before {
             <div id="focus-photo-info">
               <span id="focus-photo-name"></span>
               <span id="focus-photo-meta"></span>
+              <button id="focus-ditch-btn" title="Move to Ditch">DITCH</button>
             </div>
           </div>
         </div>
@@ -4218,6 +4327,8 @@ body::before {
     focusBrowse: false,
     focusBrowsePhoto: null,
     focusHistory: [],
+    filmstripPhotos: [],
+    savedCollageFocus: null,
     lastSimParams: null,
     cameraConnected: false
   };
@@ -4283,10 +4394,16 @@ body::before {
         el.className = 'connected';
         el.innerHTML = '<span class="dot"></span>' + res.cameras[0].name;
         recipeState.cameraConnected = true;
+        // Slow down polling once connected
+        if (cameraCheckInterval) clearInterval(cameraCheckInterval);
+        cameraCheckInterval = setInterval(checkCameraStatus, 30000);
       } else {
         el.className = 'disconnected';
         el.innerHTML = '<span class="dot"></span>No camera';
         recipeState.cameraConnected = false;
+        // Fast poll until connected
+        if (cameraCheckInterval) clearInterval(cameraCheckInterval);
+        cameraCheckInterval = setInterval(checkCameraStatus, 5000);
       }
     } catch(e) {
       el.className = 'disconnected';
@@ -4295,6 +4412,8 @@ body::before {
     }
     checkParamsChanged();
   }
+  document.getElementById('camera-status').addEventListener('click', () => checkCameraStatus());
+  document.getElementById('camera-status').style.cursor = 'pointer';
 
   let recipeEditorInitialized = false;
 
@@ -4522,18 +4641,18 @@ body::before {
     document.getElementById('recipe-pick-btn').style.display = hasPhotos ? '' : 'none';
     document.getElementById('recipe-compare-btn').style.display = 'none';
     document.getElementById('focus-back-btn').style.display = 'none';
+    document.getElementById('recipe-filmstrip').querySelectorAll('.thumb-wrapper.active').forEach(w => w.classList.remove('active'));
   }
 
   function enterFocusMode(index, opts) {
     const browse = opts && opts.browse;
-    // Push current focus state to history if already in focus mode
-    if (recipeState.mode === 'focus') {
-      recipeState.focusHistory.push({
-        index: recipeState.focusIndex,
-        browse: recipeState.focusBrowse,
-        photo: recipeState.focusBrowsePhoto
-      });
-    } else {
+    // Save collage focus state when switching to filmstrip browse
+    if (browse && recipeState.mode === 'focus' && !recipeState.focusBrowse) {
+      recipeState.savedCollageFocus = { index: recipeState.focusIndex };
+    } else if (!browse) {
+      recipeState.savedCollageFocus = null;
+    }
+    if (recipeState.mode !== 'focus') {
       recipeState.focusHistory = [];
     }
     recipeState.mode = 'focus';
@@ -4623,6 +4742,18 @@ body::before {
     if (photo.iso) { const s = document.createElement('span'); s.textContent = 'ISO ' + photo.iso; metaEl.appendChild(s); }
     if (photo.aperture) { const s = document.createElement('span'); s.textContent = 'f/' + photo.aperture; metaEl.appendChild(s); }
     if (photo.focalLength) { const s = document.createElement('span'); s.textContent = photo.focalLength + 'mm'; metaEl.appendChild(s); }
+
+    // Highlight active photo in filmstrip
+    const strip = document.getElementById('recipe-filmstrip');
+    strip.querySelectorAll('.thumb-wrapper').forEach(w => w.classList.remove('active'));
+    const curFile = photo.file;
+    strip.querySelectorAll('.thumb-wrapper').forEach(w => {
+      const label = w.querySelector('.thumb-label');
+      if (label && label.textContent === curFile.replace(/\.[^.]+$/, '')) {
+        w.classList.add('active');
+        w.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+      }
+    });
   }
 
   // ── Filmstrip ──
@@ -4637,6 +4768,7 @@ body::before {
     try {
       const gridRes = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=999').then(r => r.json());
       if (!gridRes.selected) return;
+      recipeState.filmstripPhotos = gridRes.selected;
       const useDirB64 = btoa(unescape(encodeURIComponent(gridRes.hifDir || recipeLoadedDir + '/Liked/HIF/')));
 
       gridRes.selected.forEach(photo => {
@@ -4986,15 +5118,32 @@ body::before {
           showToast('No presets found on camera');
           return;
         }
-        let imported = 0, skipped = 0;
+        showToast('Found ' + presets.length + ' preset' + (presets.length !== 1 ? 's' : '') + ': ' + presets.map(p => p.name).join(', '));
+        let imported = 0, skipped = 0, overwritten = 0, duplicated = 0;
         const existingTitles = new Set(
           Object.values(recipeState.recipes).map(r => (r.title || '').trim())
         );
+        // Build a lookup: title → {id, recipe} for existing recipes
+        const existingByTitle = {};
+        for (const [id, recipe] of Object.entries(recipeState.recipes)) {
+          existingByTitle[(recipe.title || '').trim()] = { id, recipe };
+        }
+        // Separate into non-conflicting and conflicting
+        const noConflict = [];
+        const conflicts = [];
         for (const preset of presets) {
-          if (existingTitles.has(preset.name.trim())) {
+          const name = preset.name.trim();
+          const existing = existingByTitle[name];
+          if (!existing) {
+            noConflict.push(preset);
+          } else if (paramsIdentical(preset.params, existing.recipe.params)) {
             skipped++;
-            continue;
+          } else {
+            conflicts.push({ preset, existingId: existing.id, existingRecipe: existing.recipe });
           }
+        }
+        // Import all non-conflicting first
+        for (const preset of noConflict) {
           const saveRes = await fetch('/api/recipe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -5005,13 +5154,39 @@ body::before {
             existingTitles.add(preset.name.trim());
           }
         }
+        // Handle conflicts one at a time
+        for (const { preset, existingId, existingRecipe } of conflicts) {
+          const choice = await showImportConflictModal(preset.name.trim());
+          if (choice === 'skip') {
+            skipped++;
+          } else if (choice === 'overwrite') {
+            const res = await fetch('/api/recipe/' + existingId, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ params: preset.params })
+            });
+            if (res.ok) overwritten++;
+          } else if (choice === 'duplicate') {
+            const dupName = nextDuplicateName(preset.name.trim(), existingTitles);
+            const res = await fetch('/api/recipe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: dupName, params: preset.params })
+            });
+            if (res.ok) {
+              duplicated++;
+              existingTitles.add(dupName);
+            }
+          }
+        }
         await loadRecipes();
         renderLibrary();
-        if (skipped > 0) {
-          showToast(imported + ' imported, ' + skipped + ' already exist');
-        } else {
-          showToast('Imported ' + imported + ' recipe' + (imported !== 1 ? 's' : ''));
-        }
+        const parts = [];
+        if (imported > 0) parts.push(imported + ' imported');
+        if (skipped > 0) parts.push(skipped + ' skipped');
+        if (overwritten > 0) parts.push(overwritten + ' overwritten');
+        if (duplicated > 0) parts.push(duplicated + ' duplicated');
+        showToast(parts.length > 0 ? parts.join(', ') : 'No presets to import');
       } catch (e) {
         console.error('Import failed', e);
         showToast('Import failed: ' + e.message);
@@ -5033,6 +5208,46 @@ body::before {
     recipeToast.textContent = msg;
     recipeToast.classList.add('visible');
     setTimeout(() => recipeToast.classList.remove('visible'), 2500);
+  }
+
+  // ── Import conflict modal ──
+
+  function paramsIdentical(a, b) {
+    const keys = ['filmSimulation','grainEffect','grainSize','colorChromeEffect','colorChromeFXBlue','whiteBalance','wbShiftR','wbShiftB','dynamicRange','highlightTone','shadowTone','color','sharpness','noiseReduction','clarity'];
+    return keys.every(k => String(a[k] ?? '') === String(b[k] ?? ''));
+  }
+
+  function showImportConflictModal(presetName) {
+    return new Promise(resolve => {
+      const modal = document.getElementById('import-conflict-modal');
+      const nameEl = document.getElementById('import-conflict-name');
+      const detailEl = document.getElementById('import-conflict-detail');
+      nameEl.textContent = presetName;
+      detailEl.textContent = 'Camera version has different settings than the existing recipe.';
+      modal.classList.add('visible');
+      const cleanup = (result) => {
+        modal.classList.remove('visible');
+        overwriteBtn.removeEventListener('click', onOverwrite);
+        duplicateBtn.removeEventListener('click', onDuplicate);
+        skipBtn.removeEventListener('click', onSkip);
+        resolve(result);
+      };
+      const overwriteBtn = document.getElementById('conflict-overwrite-btn');
+      const duplicateBtn = document.getElementById('conflict-duplicate-btn');
+      const skipBtn = document.getElementById('conflict-skip-btn');
+      const onOverwrite = () => cleanup('overwrite');
+      const onDuplicate = () => cleanup('duplicate');
+      const onSkip = () => cleanup('skip');
+      overwriteBtn.addEventListener('click', onOverwrite);
+      duplicateBtn.addEventListener('click', onDuplicate);
+      skipBtn.addEventListener('click', onSkip);
+    });
+  }
+
+  function nextDuplicateName(baseName, existingTitles) {
+    let n = 1;
+    while (existingTitles.has(baseName + ' (' + n + ')')) n++;
+    return baseName + ' (' + n + ')';
   }
 
   // ── Param rendering ──
@@ -5979,6 +6194,10 @@ body::before {
           detail.textContent = (s.ratedCount || 0) + ' of ' + (s.fileCount || 0) + ' rated';
           row.appendChild(detail);
           row.addEventListener('click', async () => {
+            if (s.dir === recipeLoadedDir) {
+              collapseRecipeLeftPanel();
+              return;
+            }
             try {
               const res = await fetch('/api/recipe-load', {
                 method: 'POST',
@@ -6296,7 +6515,6 @@ body::before {
   // Focus mode back button — pops history stack or returns to collage
   document.getElementById('focus-back-btn').addEventListener('click', () => {
     if (recipeState.mode === 'compare') {
-      // From compare, go back to focus (don't push to history)
       recipeState.mode = 'focus';
       restoreRightPanel();
       document.getElementById('compare-view').style.display = 'none';
@@ -6304,16 +6522,89 @@ body::before {
       document.getElementById('recipe-compare-btn').style.display = '';
       document.getElementById('focus-back-btn').style.display = '';
       renderFocusMode();
-    } else if (recipeState.focusHistory.length > 0) {
-      const prev = recipeState.focusHistory.pop();
-      recipeState.focusIndex = prev.index;
-      recipeState.focusBrowse = prev.browse;
-      recipeState.focusBrowsePhoto = prev.photo;
-      renderFocusMode();
-    } else {
+    } else if (recipeState.focusBrowse && recipeState.savedCollageFocus) {
+      // Browsing filmstrip after collage focus — return to collage focus
+      const saved = recipeState.savedCollageFocus;
+      recipeState.savedCollageFocus = null;
       recipeState.focusBrowse = false;
       recipeState.focusBrowsePhoto = null;
+      recipeState.focusIndex = saved.index;
+      renderFocusMode();
+    } else {
+      recipeState.focusHistory = [];
+      recipeState.focusBrowse = false;
+      recipeState.focusBrowsePhoto = null;
+      recipeState.savedCollageFocus = null;
       showRecipePreview();
+    }
+  });
+
+  // Ditch button — move photo from Liked to Ditch
+  document.getElementById('focus-ditch-btn').addEventListener('click', async () => {
+    if (recipeState.mode !== 'focus') return;
+    const isBrowse = recipeState.focusBrowse;
+    const photo = isBrowse ? recipeState.focusBrowsePhoto : recipeState.gridPhotos[recipeState.focusIndex];
+    if (!photo) return;
+    const stem = photo.file.replace(/\.[^.]+$/, '');
+    if (!confirm('Ditch ' + stem + '? This will move it and any RAW pair to the Ditch folder.')) return;
+    try {
+      const res = await fetch('/api/recipe-cull', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dir: recipeLoadedDir, file: photo.file })
+      });
+      const data = await res.json();
+      if (!data.ok) { showToast('Failed to ditch'); return; }
+      showToast('Ditched ' + data.stem);
+      // Remove from filmstrip
+      recipeState.filmstripPhotos = recipeState.filmstripPhotos.filter(p => p.file !== photo.file);
+      const strip = document.getElementById('recipe-filmstrip');
+      strip.querySelectorAll('.thumb-wrapper').forEach(w => {
+        const label = w.querySelector('.thumb-label');
+        if (label && label.textContent === photo.file.replace(/\.[^.]+$/, '')) w.remove();
+      });
+      if (isBrowse) {
+        // Advance to next filmstrip photo or go back
+        const photos = recipeState.filmstripPhotos;
+        if (photos.length === 0) { showRecipePreview(); return; }
+        const curFile = photo.file;
+        let idx = photos.findIndex(p => p.file === curFile);
+        if (idx < 0 || idx >= photos.length) idx = Math.max(0, photos.length - 1);
+        else if (idx >= photos.length) idx = photos.length - 1;
+        enterFocusMode(0, { browse: true, photo: photos[Math.min(idx, photos.length - 1)] });
+      } else {
+        // Remove from collage grid
+        recipeState.gridPhotos.splice(recipeState.focusIndex, 1);
+        if (recipeState.gridPhotos.length === 0) { showRecipePreview(); renderGrid(); return; }
+        recipeState.focusIndex = Math.min(recipeState.focusIndex, recipeState.gridPhotos.length - 1);
+        renderFocusMode();
+        renderGrid();
+      }
+    } catch (e) {
+      showToast('Failed to ditch: ' + e.message);
+    }
+  });
+
+  // Arrow keys in focus mode — cycle through collage or filmstrip photos
+  document.addEventListener('keydown', (e) => {
+    if (recipeState.mode !== 'focus') return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const dir = e.key === 'ArrowRight' ? 1 : -1;
+    if (recipeState.focusBrowse) {
+      const photos = recipeState.filmstripPhotos || [];
+      if (photos.length === 0) return;
+      const curFile = recipeState.focusBrowsePhoto ? recipeState.focusBrowsePhoto.file : null;
+      let curIdx = photos.findIndex(p => p.file === curFile);
+      if (curIdx < 0) curIdx = 0;
+      const nextIdx = (curIdx + dir + photos.length) % photos.length;
+      enterFocusMode(0, { browse: true, photo: photos[nextIdx] });
+    } else {
+      const count = recipeState.gridPhotos.length;
+      if (count === 0) return;
+      const nextIdx = (recipeState.focusIndex + dir + count) % count;
+      enterFocusMode(nextIdx);
     }
   });
 

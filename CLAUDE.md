@@ -69,6 +69,8 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 - **Progress bar**: Increased to 5px with hover text. May still be too subtle.
 - **No logo**: Favicon is aperture SVG. No app logo yet.
+- **Film sim tooltip**: Gets cropped near edges (positioning issue). Doesn't fully disappear when mouse leaves.
+- **Oren has additional feedback** to deliver next session.
 
 ### Session 16 changes (2026-05-05)
 
@@ -124,6 +126,29 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Essentially a navigation stack for focus mode (push/pop photo history).
 - Document as future enhancement if complex — not blocking.
 
+### Session 20 changes (2026-05-06)
+
+**IMPLEMENTED:**
+- Camera import conflict resolution: same-name presets with different params show Skip/Overwrite/Save Duplicate modal. Same params = silent skip. New names import automatically. `#import-conflict-modal` with `paramsIdentical()`, `showImportConflictModal()`, `nextDuplicateName()`.
+- Import feedback: shows "Found N presets: NAME, NAME..." toast before processing results.
+- Camera polling: 5s intervals until connected, then 30s. Camera status text is clickable to force immediate check.
+- Folder/grid button alignment: `#recipe-left-toggle` moved inside `#recipe-center-toolbar` (same flex row).
+- Same-directory click fix: session row click handler returns early if `s.dir === recipeLoadedDir`.
+- Grid back button: remembers collage focus state via `recipeState.savedCollageFocus`. Collage focus → filmstrip → grid returns to collage focus first, then grid again returns to full collage.
+- Arrow key navigation in focus mode: left/right cycles through collage photos (if entered from collage) or filmstrip photos (if entered from filmstrip browse). Uses `recipeState.filmstripPhotos` stored on filmstrip load.
+- Filmstrip active highlight: `renderFocusMode()` sets `.active` class on matching `thumb-wrapper` in filmstrip, with `scrollIntoView`.
+- DITCH button: `#focus-ditch-btn` in `#focus-photo-info`, absolute-positioned right. `confirm()` dialog before action. `POST /api/recipe-cull` endpoint moves file + all stem-mates from Liked/ subdirs to Ditch/ subdirs. Removes from grid/filmstrip, advances to next photo.
+- Focus gallery column: left side with 20px left padding, no border divider, 88px width.
+- Focus photo sizing: `width: 100%; height: 100%` (was max-width/max-height).
+- Focus info bar: metadata stays centered (ditch button absolute-positioned), 6px vertical padding.
+
+**ARCHITECTURAL:**
+- `recipeState.filmstripPhotos` — array of all filmstrip photos, populated in `loadRecipeFilmstrip()`
+- `recipeState.savedCollageFocus` — `{index}` saved when entering filmstrip browse from collage focus
+- `POST /api/recipe-cull` — moves stem-matched files from Liked/{EXT}/ to Ditch/{EXT}/
+- Focus history stack no longer used for filmstrip-to-filmstrip navigation (only collage-to-filmstrip saves state)
+- `enterFocusMode()` no longer pushes to focusHistory on every call
+
 ### Session 19 changes (2026-05-06)
 
 **IMPLEMENTED:**
@@ -137,8 +162,8 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - `loadRecipes()` checks global path first, then migrates from per-dir if global doesn't exist
 - `loadRecipes()` called on Recipe Lab re-entry even without a directory loaded
 
-**UNRESOLVED (Oren reported camera preset names not showing — needs investigation):**
-- Import returned "0 recipes" on first attempt because `requireRecipeDir` blocked saves. Fixed by moving to global storage. But Oren also mentioned "some have names" — unclear if names are blank in UI after successful import. Needs testing with camera connected.
+**RESOLVED:**
+- Camera preset names DO come through (D18D PTP string decode works — NORDIC/ETERNA/KGOLDEXP/ICELAND). The "0 imported" was the `requireRecipeDir` issue, not a name issue. Confirmed working with camera connected.
 
 ### Session 18 changes (2026-05-05)
 

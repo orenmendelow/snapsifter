@@ -2451,6 +2451,48 @@ function encodeSlotValue(slot) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// Move a photo (and all stem-mates) from Liked to Ditch
+app.post('/api/recipe-cull', (req, res) => {
+  const { dir, file } = req.body || {};
+  if (!dir || !file) return res.status(400).json({ error: 'dir and file required' });
+  const stem = file.replace(/\.[^.]+$/, '');
+  const likedDir = path.join(dir, 'Liked');
+  const ditchDir = path.join(dir, 'Ditch');
+  let moved = 0;
+  // Scan all ext subdirs under Liked/ for files matching this stem
+  const extDirs = ['HIF', 'JPG', 'RAF', 'HEIF', 'JPEG'];
+  for (const ext of extDirs) {
+    const srcDir = path.join(likedDir, ext);
+    if (!fs.existsSync(srcDir)) continue;
+    const files = fs.readdirSync(srcDir);
+    for (const f of files) {
+      if (f.replace(/\.[^.]+$/, '') === stem) {
+        const fileExt = f.split('.').pop().toUpperCase();
+        const destDir = path.join(ditchDir, fileExt);
+        fs.mkdirSync(destDir, { recursive: true });
+        fs.renameSync(path.join(srcDir, f), path.join(destDir, f));
+        moved++;
+      }
+    }
+  }
+  // Also check Liked/ root for non-subdir files
+  if (fs.existsSync(likedDir)) {
+    const rootFiles = fs.readdirSync(likedDir);
+    for (const f of rootFiles) {
+      const fPath = path.join(likedDir, f);
+      if (!fs.statSync(fPath).isFile()) continue;
+      if (f.replace(/\.[^.]+$/, '') === stem) {
+        const fileExt = f.split('.').pop().toUpperCase();
+        const destDir = path.join(ditchDir, fileExt);
+        fs.mkdirSync(destDir, { recursive: true });
+        fs.renameSync(fPath, path.join(destDir, f));
+        moved++;
+      }
+    }
+  }
+  res.json({ ok: true, moved, stem });
+});
+
 app.post('/api/camera/scan-presets', async (req, res) => {
   try {
     // List first to ensure camera is discovered before connecting
