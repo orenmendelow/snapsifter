@@ -126,6 +126,30 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Essentially a navigation stack for focus mode (push/pop photo history).
 - Document as future enhancement if complex — not blocking.
 
+### Session 22 changes (2026-05-07)
+
+**IMPLEMENTED:**
+- Photo picker grid fix: `#photo-picker-grid` wrapped in `#photo-picker-scroll` container — grid was inside a flex child with definite height, causing CSS grid rows to compress instead of overflow-scroll. Picker cell img uses `position: absolute; inset: 0`.
+- Arrow keys swapped: Up/Down cycles collage photos, Left/Right cycles filmstrip photos (was reversed).
+- Gallery column slide animation: `#focus-gallery` uses `transition: transform 0.15s linear` with `.hidden` class (`translateX(-88px)`) for slide in/out. Slides in when entering collage focus from collage view, slides out when returning to collage or switching to filmstrip browse. No opacity/fade.
+- Film sim diff badge: `.cell-diff-badge` (amber circle, top-left) on collage photos whose `filmSimulation` differs from majority. Tooltip shows matched recipe name or lists all differing params. Uses `findMatchingRecipe()` for recipe name lookup.
+- Focus mode thumbnail preload: shows cached 300px thumbnail immediately via `/api/preview-thumb/`, swaps to full 2000px image via `new Image()` preload when ready.
+- Skeleton loading (left panel + center resume): pulsing placeholder shapes while sessions API loads. Left panel shows "Recent" label + session-shaped bars. Center shows resume card shapes with thumbnail strips.
+
+**ARCHITECTURAL:**
+- `#photo-picker-scroll` wraps `#photo-picker-grid` — scroll container is the flex child, grid flows freely inside.
+- `#focus-gallery.hidden` uses `position: absolute; left: 0; transform: translateX(-88px)` so it slides off without affecting layout. `#focus-body` has `position: relative; overflow: hidden`.
+- `enterFocusMode()` tracks `wasFocus`, `wasBrowse`, `isNowBrowse` to determine when gallery slide should fire vs photo-to-photo cycling (no animation).
+- `showRecipePreview()` delays `focus-view` hide by 160ms so gallery slide-out completes.
+- Diff badge only compares `filmSimulation` key (not all recipe params) to avoid false positives from minor param variations.
+- Skeleton CSS classes: `.skel-bar`, `.skel-session`, `.skel-resume-card`, `.skel-thumb` — all use `cell-pulse` keyframe.
+
+**ANIMATION ANTI-PATTERNS (hard-won):**
+- No slide-in or ease-in animations on mode transitions — Oren finds them dizzying/janky.
+- No staggered cell animations on collage load — load immediately.
+- No opacity fades on view swaps.
+- Gallery column slide is the ONLY animation: pure translateX, no opacity, 150ms linear.
+
 ### Session 21 changes (2026-05-06)
 
 **IMPLEMENTED:**
