@@ -1169,7 +1169,8 @@ body::before {
   padding: 4px 8px;
   background: rgba(255,255,255,0.04);
   color: var(--text-dim);
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid var(--amber);
+  border-radius: 0;
   width: 100%;
   margin-top: 4px;
 }
@@ -1178,34 +1179,20 @@ body::before {
   font-size: 11px;
   color: var(--text-dim);
 }
-#revert-as-shot-btn {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  padding: 10px 0;
-  background: none;
-  color: var(--text-dim);
-  border: 1px solid rgba(255,255,255,0.15);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, opacity 0.15s;
-  flex: 1;
-}
-#revert-as-shot-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
-  pointer-events: none;
-}
-#revert-as-shot-btn:hover {
-  color: var(--amber);
-  border-color: var(--amber);
-}
 #recipe-drawer-top {
   flex-shrink: 0;
   padding: 16px 24px 12px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: 12px;
+  margin-bottom: 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+#recipe-compare-row {
+  display: flex;
+  position: relative;
+  gap: 0;
 }
 #recipe-compare-btn {
   font-family: var(--mono);
@@ -1214,14 +1201,51 @@ body::before {
   padding: 8px 16px;
   background: none;
   color: var(--text-dim);
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid var(--amber);
+  border-radius: 0;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
-  width: 100%;
+  flex: 1;
+  text-align: center;
 }
 #recipe-compare-btn:hover {
   color: var(--amber);
   border-color: var(--amber);
+}
+#recipe-compare-chevron {
+  background: none;
+  color: var(--text-dim);
+  border: 1px solid var(--amber);
+  border-left: none;
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 10px;
+  transition: color 0.15s, border-color 0.15s;
+}
+#recipe-compare-chevron:hover { color: var(--amber); border-color: var(--amber); }
+#recipe-compare-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 120px;
+  z-index: 100;
+  background: #1a1a1a;
+  border: 1px solid var(--amber);
+  border-radius: 0;
+  margin-top: 2px;
+}
+#recipe-compare-dropdown .param-dropdown-option {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px 12px;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+#recipe-compare-dropdown .param-dropdown-option:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
 }
 .compare-indicator {
   position: absolute;
@@ -1272,6 +1296,120 @@ body::before {
   transition: color 0.15s;
 }
 #compare-back-btn:hover { color: var(--amber); }
+/* compare cell tag for as-shot/standard indicator (icon) */
+.compare-cell-tag {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  pointer-events: none;
+  line-height: 0;
+}
+.compare-cell-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cell-action-btn {
+  background: none;
+  color: var(--amber);
+  border: none;
+  cursor: pointer;
+  font-size: 28px;
+  font-weight: bold;
+  padding: 2px 6px;
+  line-height: 1;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.5);
+}
+.cell-action-btn:hover { background: none; text-shadow: 0 1px 5px rgba(0,0,0,0.95); }
+.cell-action-camera-icon {
+  line-height: 0;
+}
+.cell-action-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.15);
+  z-index: 20;
+  min-width: 180px;
+  margin-top: 2px;
+}
+.cell-action-item {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 8px 12px;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cell-action-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+#compare-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+#compare-meta-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+#compare-meta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  min-width: 0;
+}
+#compare-meta-name {
+  color: rgba(255,255,255,0.7);
+}
+#compare-meta-details {
+  opacity: 0.7;
+}
+#compare-sim-row {
+  display: flex;
+  gap: 6px;
+}
+#compare-cancel-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  font-weight: 500;
+}
+#compare-cancel-btn:hover { border-color: var(--amber); color: var(--amber); }
+.compare-post-actions { display: none; gap: 6px; flex-direction: column; margin-top: 8px; }
+.compare-post-actions button {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 8px 0;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.compare-post-actions button:hover { border-color: var(--amber); color: var(--amber); }
+.compare-post-actions button.primary { background: var(--amber); color: #000; border: none; }
+.compare-post-actions button.primary:hover { opacity: 0.85; }
 #compare-param-section {
   display: flex;
   flex-direction: column;
@@ -1283,7 +1421,7 @@ body::before {
   padding: 8px 12px;
   background: rgba(255,255,255,0.04);
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid var(--amber);
   width: 100%;
   appearance: none;
   -webkit-appearance: none;
@@ -1333,14 +1471,18 @@ body::before {
   padding: 10px 0;
   background: var(--amber);
   color: #000;
-  border: none;
+  border: 1px solid var(--amber);
   cursor: pointer;
   font-weight: 500;
-  width: 100%;
+  flex: 1;
   transition: opacity 0.15s;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
 }
 #compare-simulate-btn:hover { opacity: 0.85; }
-#compare-simulate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#compare-simulate-btn.simulating { cursor: wait; }
+#compare-simulate-btn:disabled:not(.simulating) { opacity: 0.4; cursor: not-allowed; }
 #compare-grid {
   flex: 1;
   display: grid;
@@ -1379,6 +1521,71 @@ body::before {
   letter-spacing: 1px;
   color: rgba(255,255,255,0.4);
 }
+/* removed .compare-cell.clickable — synced zoom replaces click-to-focus */
+#compare-side-by-side {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  min-height: 0;
+}
+.sbs-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sbs-dropdown {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
+  width: auto;
+  min-width: 120px;
+  max-width: 250px;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+.sbs-dropdown:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+.sbs-dropdown option {
+  background: #111;
+  color: #fff;
+  padding: 6px 10px;
+}
+.sbs-panel-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sbs-photo-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+.sbs-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.sbs-divider {
+  width: 1px;
+  background: rgba(255,255,255,0.1);
+}
+
 
 .recipe-grid-cell .cell-sim-spinner {
   position: absolute;
@@ -2815,6 +3022,23 @@ body::before {
       <!-- Compare Mode (hidden initially) -->
       <div id="compare-view" style="display:none">
         <div id="compare-grid"></div>
+        <div id="compare-side-by-side" style="display:none">
+          <div class="sbs-panel">
+            <select class="sbs-dropdown" id="sbs-dropdown-left"></select>
+            <div class="sbs-photo-container">
+              <img class="sbs-photo" id="sbs-photo-left" src="" alt="">
+              <div class="sbs-panel-actions" id="sbs-actions-left"></div>
+            </div>
+          </div>
+          <div class="sbs-divider"></div>
+          <div class="sbs-panel">
+            <select class="sbs-dropdown" id="sbs-dropdown-right"></select>
+            <div class="sbs-photo-container">
+              <img class="sbs-photo" id="sbs-photo-right" src="" alt="">
+              <div class="sbs-panel-actions" id="sbs-actions-right"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2829,12 +3053,26 @@ body::before {
           </div>
           <div id="recipe-active-list" class="param-dropdown-list"></div>
         </div>
-        <button id="recipe-compare-btn" style="display:none">VARIANT TEST</button>
+        <div id="recipe-compare-row" style="display:none">
+          <button id="recipe-compare-btn">VARIANT TEST</button>
+          <button id="recipe-compare-chevron">&#9662;</button>
+          <div id="recipe-compare-dropdown" style="display:none">
+            <div class="param-dropdown-option" data-baseline="asshot">As Shot</div>
+            <div class="param-dropdown-option" data-baseline="standard">Standard</div>
+          </div>
+        </div>
       </div>
       <div id="recipe-right-panel-params"></div>
       <div id="compare-right-controls" style="display:none">
         <div id="compare-toolbar">
           <span id="compare-back-btn">&#8592; Back</span>
+        </div>
+        <div id="compare-meta-row">
+          <img id="compare-meta-thumb" src="" alt="">
+          <div id="compare-meta-text">
+            <span id="compare-meta-name"></span>
+            <span id="compare-meta-details"></span>
+          </div>
         </div>
         <div id="compare-param-section">
           <label style="font-size:10px;color:var(--text-dim);letter-spacing:0.5px;font-family:var(--mono)">PARAMETER</label>
@@ -2842,7 +3080,14 @@ body::before {
         </div>
         <div id="compare-values-section"></div>
         <div id="compare-actions">
-          <button id="compare-simulate-btn">SIMULATE</button>
+          <div id="compare-sim-row">
+            <button id="compare-simulate-btn">SIMULATE</button>
+            <button id="compare-cancel-btn" style="display:none">STOP</button>
+          </div>
+          <div id="compare-post-actions" class="compare-post-actions">
+            <button id="compare-sbs-btn"><svg viewBox="0 0 20 14" width="16" height="12" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;margin-right:4px"><rect x="1" y="1" width="8" height="12" rx="1"/><rect x="11" y="1" width="8" height="12" rx="1"/></svg>COMPARE</button>
+            <button id="compare-sbs-back-btn" style="display:none!important">BACK TO GRID</button>
+          </div>
         </div>
       </div>
       <div id="recipe-drawer-actions">
@@ -2854,7 +3099,6 @@ body::before {
               <div class="sim-scope-option" data-scope="collage">Entire collage</div>
               <div class="sim-scope-option" data-scope="library">Entire library</div>
             </div>
-            <button id="revert-as-shot-btn">REVERT ALL</button>
             <button id="cancel-to-last-sim-btn" style="display:none">CANCEL</button>
           </div>
           <span id="simulate-progress"></span>
@@ -4480,7 +4724,8 @@ body::before {
     filmstripPhotos: [],
     savedCollageFocus: null,
     lastSimParams: null,
-    cameraConnected: false
+    cameraConnected: false,
+    compareSelectedFavorite: null
   };
 
   let recipeTreeState = {};
@@ -4561,6 +4806,10 @@ body::before {
       recipeState.cameraConnected = false;
     }
     checkParamsChanged();
+    // Update compare mode simulate button when camera status changes
+    if (recipeState.mode === 'compare' && window._compareUpdateSimBtn) {
+      window._compareUpdateSimBtn();
+    }
   }
   document.getElementById('camera-status').addEventListener('click', () => checkCameraStatus());
   document.getElementById('camera-status').style.cursor = 'pointer';
@@ -4616,15 +4865,21 @@ body::before {
     }
   }
 
-  function enterCompareMode() {
+  let compareZoomLevel = 1;
+
+  function enterCompareMode(baseline) {
     recipeState.mode = 'compare';
+    recipeState.compareRendered = new Set();
+    recipeState.compareSelectedFavorite = null;
+    recipeState._compareSimulating = false;
+    compareZoomLevel = 1;
     document.getElementById('recipe-center-preview').style.display = 'none';
     document.getElementById('recipe-collage').style.display = 'none';
     document.getElementById('focus-view').style.display = 'none';
     document.getElementById('compare-view').style.display = 'flex';
     document.getElementById('recipe-shuffle-btn').style.display = 'none';
     document.getElementById('recipe-pick-btn').style.display = 'none';
-    document.getElementById('recipe-compare-btn').style.display = 'none';
+    document.getElementById('recipe-compare-row').style.display = 'none';
     document.getElementById('focus-back-btn').style.display = 'none';
     // Swap right panel to compare controls
     document.getElementById('recipe-right-panel-params').style.display = 'none';
@@ -4632,6 +4887,44 @@ body::before {
     document.getElementById('recipe-drawer-actions').style.display = 'none';
     document.getElementById('compare-right-controls').style.display = 'flex';
     if (window._focusResetZoom) window._focusResetZoom();
+    // Set baseline from argument (default: asshot)
+    const bl = baseline || 'asshot';
+    recipeState.compareBaseline = bl;
+    if (bl === 'standard') {
+      recipeState.currentParams = { ...RECIPE_DEFAULTS };
+      recipeState.cleanParams = recipeState.exifBaseline ? { ...recipeState.exifBaseline } : { ...RECIPE_DEFAULTS };
+      recipeState.currentTitle = 'Standard';
+    } else {
+      if (recipeState.exifBaseline) {
+        recipeState.currentParams = { ...recipeState.exifBaseline };
+        recipeState.cleanParams = { ...recipeState.exifBaseline };
+      }
+      recipeState.currentTitle = 'As Shot';
+    }
+    recipeState.currentId = null;
+    recipeState.dirty = false;
+    // Populate compare sidebar metadata
+    const nameEl = document.getElementById('focus-photo-name');
+    const metaEl = document.getElementById('focus-photo-meta');
+    document.getElementById('compare-meta-name').textContent = nameEl ? nameEl.textContent : '';
+    document.getElementById('compare-meta-details').innerHTML = metaEl ? metaEl.innerHTML : '';
+    // Set thumb from focus photo
+    const cmpPhoto = recipeState.gridPhotos[recipeState.focusIndex || 0];
+    if (cmpPhoto && recipeState.gridDir) {
+      const cmpDirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
+      document.getElementById('compare-meta-thumb').src = '/api/preview-thumb/' + cmpDirB64 + '/' + encodeURIComponent(cmpPhoto.file);
+    }
+    // Show param/values sections immediately
+    document.getElementById('compare-param-section').style.display = '';
+    document.getElementById('compare-values-section').style.display = '';
+    document.getElementById('compare-actions').style.display = '';
+    document.getElementById('compare-post-actions').style.display = 'none';
+    document.getElementById('compare-cancel-btn').style.display = 'none';
+    // Reset side-by-side state
+    document.getElementById('compare-side-by-side').style.display = 'none';
+    document.getElementById('compare-grid').style.display = '';
+    document.getElementById('compare-sbs-btn').style.display = '';
+    document.getElementById('compare-sbs-back-btn').style.display = 'none';
     initCompareMode();
   }
 
@@ -4639,6 +4932,13 @@ body::before {
     const paramSelect = document.getElementById('compare-param-select');
     const valuesSection = document.getElementById('compare-values-section');
     const grid = document.getElementById('compare-grid');
+    const compareBtn = document.getElementById('compare-simulate-btn');
+    const postActions = document.getElementById('compare-post-actions');
+
+    recipeState.compareRendered = new Set();
+    recipeState.compareSelectedFavorite = null;
+    compareZoomLevel = 1;
+    postActions.style.display = 'none';
 
     paramSelect.innerHTML = '';
     const allParams = [];
@@ -4654,40 +4954,233 @@ body::before {
 
     let selectedValues = new Set();
 
+    function updateSimulateButton() {
+      const paramKey = recipeState.compareParam;
+      const currentVal = String(recipeState.currentParams[paramKey] || '');
+      const exifVal = recipeState.exifBaseline ? String(recipeState.exifBaseline[paramKey] || '') : '';
+      const cancelBtn = document.getElementById('compare-cancel-btn');
+      let pending = 0;
+      for (const v of selectedValues) {
+        if (String(v) !== exifVal && !recipeState.compareRendered.has(String(v))) {
+          pending++;
+        }
+      }
+      if (pending > 0) {
+        if (recipeState.cameraConnected) {
+          compareBtn.textContent = 'SIMULATE (' + pending + ')';
+          compareBtn.disabled = false;
+          compareBtn.style.background = '';
+          compareBtn.style.color = '';
+          compareBtn.style.opacity = '';
+        } else {
+          compareBtn.textContent = 'Connect camera to simulate';
+          compareBtn.disabled = true;
+          compareBtn.style.background = 'rgba(255,255,255,0.04)';
+          compareBtn.style.color = 'var(--text-dim)';
+          compareBtn.style.opacity = '0.6';
+        }
+        compareBtn.style.display = '';
+        cancelBtn.style.display = 'none';
+      } else {
+        compareBtn.textContent = 'SIMULATE';
+        compareBtn.disabled = true;
+        compareBtn.style.display = '';
+        compareBtn.style.background = 'transparent';
+        compareBtn.style.color = 'var(--text-dim)';
+        compareBtn.style.opacity = '0.5';
+        cancelBtn.style.display = 'none';
+      }
+    }
+
+    // Expose updateSimulateButton for camera status changes
+    window._compareUpdateSimBtn = updateSimulateButton;
+
+    function checkAllSimulated() {
+      const paramKey = recipeState.compareParam;
+      const currentVal = String(recipeState.currentParams[paramKey] || '');
+      const exifVal = recipeState.exifBaseline ? String(recipeState.exifBaseline[paramKey] || '') : '';
+      const active = [...selectedValues];
+      const allDone = active.every(v => String(v) === exifVal || recipeState.compareRendered.has(String(v)));
+      if (allDone && active.length > 0) {
+        // Show post-simulation actions (SBS compare)
+        const renderedCount = (recipeState.compareRendered ? recipeState.compareRendered.size : 0) + 1;
+        if (renderedCount >= 2) {
+          postActions.style.display = 'flex';
+          document.getElementById('compare-sbs-btn').style.display = '';
+        }
+      }
+    }
+
     function renderGrid() {
       grid.innerHTML = '';
       const active = [...selectedValues];
-      if (active.length === 0) return;
+      if (active.length === 0) { updateSimulateButton(); return; }
       const cols = Math.min(active.length, 3);
       grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
 
       const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
       if (!photo) return;
       const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
+      const paramKey = recipeState.compareParam;
+      const currentVal = String(recipeState.currentParams[paramKey] || '');
 
       active.forEach(v => {
         const cell = document.createElement('div');
         cell.className = 'compare-cell';
+        cell.dataset.value = String(v);
         const img = document.createElement('img');
-        img.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
-        img.style.filter = 'blur(8px) brightness(0.5)';
-        img.style.transition = 'filter 0.3s ease';
+        const isCurrentVal = String(v) === currentVal;
+        const isRendered = recipeState.compareRendered.has(String(v));
+        const isExifMatch = recipeState.exifBaseline && String(v) === String(recipeState.exifBaseline[paramKey]);
+        const isStandardMatch = String(v) === String(RECIPE_DEFAULTS[paramKey]);
+
+        if (isExifMatch) {
+          img.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
+          img.style.filter = 'none';
+        } else if (isCurrentVal && !isExifMatch) {
+          img.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
+          img.style.filter = 'blur(6px) brightness(0.7)';
+        } else if (isRendered) {
+          const stem = photo.file.replace(/\.[^.]+$/, '');
+          const safeVal = String(v).replace(/[^a-zA-Z0-9_-]/g, '_');
+          const outputPath = recipeLoadedDir + '/Liked/RAF/.sim-cache/' + stem + '_cmp_' + paramKey + '_' + safeVal + '.jpg';
+          img.src = '/api/preview-image/' + btoa(unescape(encodeURIComponent(outputPath.substring(0, outputPath.lastIndexOf('/'))))) + '/' + encodeURIComponent(outputPath.substring(outputPath.lastIndexOf('/') + 1)) + '?t=' + Date.now();
+          img.style.filter = 'none';
+        } else {
+          img.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
+          img.style.filter = 'blur(8px) brightness(0.5)';
+        }
         cell.appendChild(img);
+        // AS SHOT / STANDARD icon tag for current value cell (no actions overlay here — icon goes in actions container below)
+
         const label = document.createElement('div');
         label.className = 'compare-cell-label';
         label.textContent = v;
         cell.appendChild(label);
-        const pending = document.createElement('div');
-        pending.className = 'compare-cell-pending';
-        pending.textContent = 'PENDING';
-        cell.appendChild(pending);
+        if (!isExifMatch && !isRendered) {
+          const pending = document.createElement('div');
+          pending.className = 'compare-cell-pending';
+          pending.textContent = 'PENDING';
+          cell.appendChild(pending);
+        }
+        // Per-cell action buttons for rendered, current-value, exif-match, and standard-match cells
+        if (isCurrentVal || isRendered || isExifMatch || isStandardMatch) {
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'compare-cell-actions';
+          // Camera icon for as-shot value, sliders icon for standard value
+          if (isExifMatch && !(isStandardMatch && isExifMatch)) {
+            const camIcon = document.createElement('span');
+            camIcon.className = 'cell-action-camera-icon';
+            camIcon.title = 'As Shot';
+            camIcon.innerHTML = '<svg viewBox="0 0 24 20" width="20" height="16" fill="none" stroke="var(--amber)" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M8 5l1.5-3h5L16 5"/></svg>';
+            actionsDiv.appendChild(camIcon);
+          } else if (isStandardMatch) {
+            const camIcon = document.createElement('span');
+            camIcon.className = 'cell-action-camera-icon';
+            camIcon.title = 'Standard';
+            camIcon.innerHTML = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="var(--amber)" stroke-width="1.5"><line x1="3" y1="5" x2="17" y2="5"/><circle cx="7" cy="5" r="2"/><line x1="3" y1="15" x2="17" y2="15"/><circle cx="13" cy="15" r="2"/></svg>';
+            actionsDiv.appendChild(camIcon);
+          }
+          const actBtn = document.createElement('button');
+          actBtn.className = 'cell-action-btn';
+          actBtn.textContent = '⋮';
+          actBtn.title = 'Apply variant settings';
+          const actMenu = document.createElement('div');
+          actMenu.className = 'cell-action-menu';
+          actMenu.style.display = 'none';
+          const applyReturn = document.createElement('div');
+          applyReturn.className = 'cell-action-item';
+          applyReturn.textContent = 'APPLY & RETURN';
+          applyReturn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            recipeState.currentParams[paramKey] = isNaN(v) ? v : Number(v);
+            recipeState.cleanParams = { ...recipeState.currentParams };
+            recipeState.dirty = false;
+            renderParams();
+            enterFocusMode(recipeState.focusIndex || 0);
+          });
+          const applyNext = document.createElement('div');
+          applyNext.className = 'cell-action-item';
+          applyNext.textContent = 'APPLY & NEXT PARAMETER';
+          applyNext.addEventListener('click', (e) => {
+            e.stopPropagation();
+            recipeState.currentParams[paramKey] = isNaN(v) ? v : Number(v);
+            recipeState.cleanParams = { ...recipeState.currentParams };
+            recipeState.dirty = false;
+            renderParams();
+            const ps = window._compareParamSelect;
+            if (ps) {
+              const idx = ps.selectedIndex;
+              if (idx < ps.options.length - 1) {
+                ps.selectedIndex = idx + 1;
+              } else {
+                ps.selectedIndex = 0;
+              }
+              if (window._compareRenderValues) window._compareRenderValues();
+            }
+          });
+          actMenu.appendChild(applyReturn);
+          actMenu.appendChild(applyNext);
+          actBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Close other open menus
+            grid.querySelectorAll('.cell-action-menu').forEach(m => { if (m !== actMenu) m.style.display = 'none'; });
+            actMenu.style.display = actMenu.style.display === 'none' ? 'block' : 'none';
+          });
+          actionsDiv.appendChild(actBtn);
+          actionsDiv.appendChild(actMenu);
+          cell.appendChild(actionsDiv);
+        }
+        // Synced zoom: click toggles zoom on ALL cells
+        {
+          cell.addEventListener('click', (e) => {
+            // Don't zoom if clicking action button area
+            if (e.target.closest('.compare-cell-actions')) return;
+            const rect = cell.getBoundingClientRect();
+            const pctX = ((e.clientX - rect.left) / rect.width * 100);
+            const pctY = ((e.clientY - rect.top) / rect.height * 100);
+            if (compareZoomLevel === 1) {
+              compareZoomLevel = 3;
+              grid.querySelectorAll('.compare-cell img').forEach(im => {
+                im.style.transform = 'scale(3)';
+                im.style.transformOrigin = pctX + '% ' + pctY + '%';
+              });
+            } else {
+              compareZoomLevel = 1;
+              grid.querySelectorAll('.compare-cell img').forEach(im => {
+                im.style.transform = '';
+                im.style.transformOrigin = '';
+              });
+            }
+          });
+          // Pan zoom: mousemove updates transform-origin on ALL cells when zoomed
+          cell.addEventListener('mousemove', (e) => {
+            if (compareZoomLevel <= 1) return;
+            const rect = cell.getBoundingClientRect();
+            const pctX = ((e.clientX - rect.left) / rect.width * 100);
+            const pctY = ((e.clientY - rect.top) / rect.height * 100);
+            grid.querySelectorAll('.compare-cell img').forEach(im => {
+              im.style.transformOrigin = pctX + '% ' + pctY + '%';
+            });
+          });
+        }
         grid.appendChild(cell);
       });
+
+      updateSimulateButton();
     }
+
+    // Expose renderGrid and checkAllSimulated for simulate handler
+    window._compareRenderGrid = renderGrid;
+    window._compareCheckAllSimulated = checkAllSimulated;
 
     function renderValues() {
       valuesSection.innerHTML = '';
       grid.innerHTML = '';
+      recipeState.compareRendered = new Set();
+      recipeState.compareSelectedFavorite = null;
+      compareZoomLevel = 1;
+      postActions.style.display = 'none';
       const key = paramSelect.value;
       const paramDef = allParams.find(p => p.key === key);
       if (!paramDef) return;
@@ -4702,13 +5195,13 @@ body::before {
       recipeState.compareValues = values;
       recipeState.compareParam = key;
 
-      // Default: only as-shot value selected
+      // Default: select current value (Standard defaults or as-shot)
       selectedValues = new Set();
-      const asShotVal = recipeState.exifBaseline ? recipeState.exifBaseline[key] : null;
-      if (asShotVal != null && values.includes(asShotVal)) {
-        selectedValues.add(asShotVal);
-      } else if (values.includes(String(asShotVal))) {
-        selectedValues.add(String(asShotVal));
+      const defaultVal = recipeState.currentParams[key];
+      if (defaultVal != null && values.includes(defaultVal)) {
+        selectedValues.add(defaultVal);
+      } else if (defaultVal != null && values.includes(String(defaultVal))) {
+        selectedValues.add(String(defaultVal));
       }
 
       values.forEach(v => {
@@ -4730,6 +5223,10 @@ body::before {
 
       renderGrid();
     }
+
+    // Expose renderValues for next-param button
+    window._compareRenderValues = renderValues;
+    window._compareParamSelect = paramSelect;
 
     paramSelect.addEventListener('change', renderValues);
     renderValues();
@@ -4831,7 +5328,7 @@ body::before {
     document.getElementById('compare-view').style.display = 'none';
     document.getElementById('recipe-shuffle-btn').style.display = hasPhotos ? '' : 'none';
     document.getElementById('recipe-pick-btn').style.display = hasPhotos ? '' : 'none';
-    document.getElementById('recipe-compare-btn').style.display = 'none';
+    document.getElementById('recipe-compare-row').style.display = 'none';
     document.getElementById('focus-back-btn').style.display = 'none';
     document.getElementById('recipe-filmstrip').querySelectorAll('.thumb-wrapper.active').forEach(w => w.classList.remove('active'));
   }
@@ -4870,7 +5367,7 @@ body::before {
     document.getElementById('compare-view').style.display = 'none';
     document.getElementById('recipe-shuffle-btn').style.display = 'none';
     document.getElementById('recipe-pick-btn').style.display = 'none';
-    document.getElementById('recipe-compare-btn').style.display = '';
+    document.getElementById('recipe-compare-row').style.display = 'flex';
     document.getElementById('focus-back-btn').style.display = '';
     if (window._focusResetZoom) window._focusResetZoom();
     renderFocusMode();
@@ -5048,7 +5545,7 @@ body::before {
     recipeState.currentId = id;
     recipeState.currentTitle = r.title || 'Untitled';
     recipeState.currentParams = { ...RECIPE_DEFAULTS, ...r.params };
-    recipeState.cleanParams = { ...recipeState.currentParams };
+    recipeState.cleanParams = recipeState.exifBaseline ? { ...recipeState.exifBaseline } : { ...recipeState.currentParams };
     recipeState.dirty = false;
     renderParams();
     if (typeof updateRecipeActiveDropdown === 'function') updateRecipeActiveDropdown();
@@ -5058,7 +5555,7 @@ body::before {
     recipeState.currentId = null;
     recipeState.currentTitle = 'Untitled Recipe';
     recipeState.currentParams = { ...RECIPE_DEFAULTS };
-    recipeState.cleanParams = { ...recipeState.currentParams };
+    recipeState.cleanParams = recipeState.exifBaseline ? { ...recipeState.exifBaseline } : { ...recipeState.currentParams };
     recipeState.dirty = true;
     renderParams();
   }
@@ -5078,14 +5575,16 @@ body::before {
 
   function checkParamsChanged() {
     const simBtn = document.getElementById('simulate-btn');
-    const revertBtn = document.getElementById('revert-as-shot-btn');
     const cancelBtn = document.getElementById('cancel-to-last-sim-btn');
     const simRow = document.getElementById('simulate-row');
     const drawerActions = document.getElementById('recipe-drawer-actions');
+    if (recipeState.mode === 'compare') {
+      if (drawerActions) drawerActions.style.display = 'none';
+      return;
+    }
     if (!recipeState.cleanParams) {
       if (drawerActions) drawerActions.style.display = 'none';
       simBtn.style.display = 'none';
-      revertBtn.style.display = 'none';
       if (cancelBtn) cancelBtn.style.display = 'none';
       if (simRow) simRow.style.display = 'none';
       return;
@@ -5096,7 +5595,6 @@ body::before {
     if (changed) {
       if (drawerActions) drawerActions.style.display = '';
       simBtn.style.display = recipeState.cameraConnected ? '' : 'none';
-      revertBtn.style.display = '';
       if (cancelBtn && recipeState.lastSimParams) {
         const diffFromLastSim = Object.keys(recipeState.currentParams).some(
           k => recipeState.currentParams[k] !== recipeState.lastSimParams[k]
@@ -5109,9 +5607,14 @@ body::before {
     } else {
       if (drawerActions) drawerActions.style.display = 'none';
       simBtn.style.display = 'none';
-      revertBtn.style.display = 'none';
       if (cancelBtn) cancelBtn.style.display = 'none';
       if (simRow) simRow.style.display = 'none';
+    }
+    // Update recipe dropdown label to reflect current param state
+    if (!recipeState._updatingDropdown) {
+      recipeState._updatingDropdown = true;
+      updateRecipeActiveDropdown();
+      recipeState._updatingDropdown = false;
     }
   }
 
@@ -5702,6 +6205,8 @@ body::before {
     recipeParamsPanel.querySelectorAll('.param-dropdown-list').forEach(el => el.style.display = 'none');
     const activeList = document.getElementById('recipe-active-list');
     if (activeList) activeList.style.display = 'none';
+    const compareDropdown = document.getElementById('recipe-compare-dropdown');
+    if (compareDropdown) compareDropdown.style.display = 'none';
   }
 
   function showParamTip(icon, text) {
@@ -5936,17 +6441,6 @@ body::before {
     }
   });
 
-  document.getElementById('revert-as-shot-btn').addEventListener('click', () => {
-    if (!recipeState.exifBaseline) return;
-    recipeState.currentParams = { ...recipeState.exifBaseline };
-    recipeState.cleanParams = { ...recipeState.exifBaseline };
-    recipeState.dirty = false;
-    recipeState.currentId = null;
-    recipeState.currentTitle = 'As Shot';
-    renderParams();
-    checkParamsChanged();
-  });
-
   document.getElementById('cancel-to-last-sim-btn').addEventListener('click', () => {
     if (!recipeState.lastSimParams) return;
     recipeState.currentParams = { ...recipeState.lastSimParams };
@@ -5968,7 +6462,14 @@ body::before {
       currentLabel = recipeState.recipes[recipeState.currentId].title || 'Untitled';
     } else {
       const match = findMatchingRecipe(recipeState.currentParams);
-      if (match) currentLabel = match.title || 'Untitled';
+      if (match) {
+        currentLabel = match.title || 'Untitled';
+      } else {
+        // Check if params match Standard (RECIPE_DEFAULTS)
+        const defKeys = Object.keys(RECIPE_DEFAULTS);
+        const isStandard = defKeys.every(k => String(recipeState.currentParams[k] ?? '') === String(RECIPE_DEFAULTS[k] ?? ''));
+        if (isStandard) currentLabel = 'Standard';
+      }
     }
     label.textContent = currentLabel;
     const asShot = document.createElement('div');
@@ -5988,6 +6489,21 @@ body::before {
       list.style.display = 'none';
     });
     list.appendChild(asShot);
+    const standard = document.createElement('div');
+    standard.className = 'param-dropdown-option';
+    if (currentLabel === 'Standard') standard.classList.add('selected');
+    standard.textContent = 'Standard';
+    standard.addEventListener('click', () => {
+      recipeState.currentParams = { ...RECIPE_DEFAULTS };
+      recipeState.cleanParams = recipeState.exifBaseline ? { ...recipeState.exifBaseline } : { ...RECIPE_DEFAULTS };
+      recipeState.currentId = null;
+      recipeState.currentTitle = 'Standard';
+      recipeState.dirty = false;
+      renderParams();
+      checkParamsChanged();
+      list.style.display = 'none';
+    });
+    list.appendChild(standard);
     for (const [id, recipe] of Object.entries(recipeState.recipes || {})) {
       const item = document.createElement('div');
       item.className = 'param-dropdown-option';
@@ -6033,29 +6549,22 @@ body::before {
       if (focusZoomLevel > 1) {
         focusResetZoom();
       } else {
-        const naturalW = focusPhoto.naturalWidth;
-        const displayW = focusPhoto.clientWidth;
-        if (naturalW && displayW) {
-          focusZoomLevel = Math.min(naturalW / displayW, 3);
-          const rect = focusPhoto.getBoundingClientRect();
-          const ox = clientX != null ? clientX - rect.left : rect.width / 2;
-          const oy = clientY != null ? clientY - rect.top : rect.height / 2;
-          focusPhoto.style.transformOrigin = ox + 'px ' + oy + 'px';
-          focusPhoto.style.transform = 'scale(' + focusZoomLevel + ')';
-          focusPhoto.classList.add('zoomed');
-        }
+        focusZoomLevel = 3;
+        const rect = focusPhoto.getBoundingClientRect();
+        const pctX = clientX != null ? ((clientX - rect.left) / rect.width * 100) : 50;
+        const pctY = clientY != null ? ((clientY - rect.top) / rect.height * 100) : 50;
+        focusPhoto.style.transformOrigin = pctX + '% ' + pctY + '%';
+        focusPhoto.style.transform = 'scale(3)';
+        focusPhoto.classList.add('zoomed');
       }
     }
 
     focusContainer.addEventListener('mousemove', (e) => {
       if (focusZoomLevel <= 1) return;
-      const imgW = focusPhoto.clientWidth;
-      const imgH = focusPhoto.clientHeight;
       const rect = focusContainer.getBoundingClientRect();
-      const mx = (e.clientX - rect.left) / rect.width;
-      const my = (e.clientY - rect.top) / rect.height;
-      focusPhoto.style.transformOrigin = (mx * imgW) + 'px ' + (my * imgH) + 'px';
-      focusPhoto.style.transform = 'scale(' + focusZoomLevel + ')';
+      const pctX = (e.clientX - rect.left) / rect.width * 100;
+      const pctY = (e.clientY - rect.top) / rect.height * 100;
+      focusPhoto.style.transformOrigin = pctX + '% ' + pctY + '%';
     });
 
     function showOriginal() {
@@ -6065,6 +6574,7 @@ body::before {
         focusComparing = true;
         const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
         focusPhoto.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
+        focusIndicator.textContent = 'ORIGINAL';
         focusIndicator.classList.add('visible');
       }
     }
@@ -7091,7 +7601,7 @@ body::before {
       document.getElementById('compare-view').style.display = 'none';
       const focusEl = document.getElementById('focus-view');
       focusEl.style.display = 'flex';
-      document.getElementById('recipe-compare-btn').style.display = '';
+      document.getElementById('recipe-compare-row').style.display = 'flex';
       document.getElementById('focus-back-btn').style.display = '';
       renderFocusMode();
     } else if (recipeState.focusBrowse && recipeState.savedCollageFocus) {
@@ -7182,45 +7692,312 @@ body::before {
 
   document.getElementById('recipe-shuffle-btn').addEventListener('click', shuffleGrid);
   document.getElementById('recipe-pick-btn').addEventListener('click', openPhotoPicker);
-  document.getElementById('recipe-compare-btn').addEventListener('click', enterCompareMode);
+  document.getElementById('recipe-compare-btn').addEventListener('click', () => enterCompareMode());
+  document.getElementById('recipe-compare-chevron').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dd = document.getElementById('recipe-compare-dropdown');
+    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+  });
+  document.getElementById('recipe-compare-dropdown').addEventListener('click', (e) => {
+    const opt = e.target.closest('.param-dropdown-option');
+    if (!opt) return;
+    document.getElementById('recipe-compare-dropdown').style.display = 'none';
+    const bl = opt.dataset.baseline;
+    enterCompareMode(bl);
+  });
+  // Close compare dropdown on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#recipe-compare-row')) {
+      const dd = document.getElementById('recipe-compare-dropdown');
+      if (dd) dd.style.display = 'none';
+    }
+  });
   document.getElementById('compare-back-btn').addEventListener('click', () => {
+    // If side-by-side is showing, go back to grid first
+    const sbs = document.getElementById('compare-side-by-side');
+    if (sbs && sbs.style.display !== 'none') {
+      sbs.style.display = 'none';
+      document.getElementById('compare-grid').style.display = '';
+      document.getElementById('compare-sbs-btn').style.display = '';
+      document.getElementById('compare-sbs-back-btn').style.display = 'none';
+      return;
+    }
     enterFocusMode(recipeState.focusIndex || 0);
+  });
+
+  // Cancel/Stop button — cancel in-progress simulation
+  document.getElementById('compare-cancel-btn').addEventListener('click', () => {
+    recipeState.compareSimCancelled = true;
+  });
+
+  // Side-by-side comparison
+  let sbsZoomLevel = 1;
+
+  function getSbsImageUrl(value) {
+    const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
+    if (!photo) return '';
+    const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
+    const paramKey = recipeState.compareParam;
+    const currentVal = String(recipeState.currentParams[paramKey] || '');
+    if (value === '__original__' || value === currentVal) {
+      return '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
+    }
+    const stem = photo.file.replace(/\.[^.]+$/, '');
+    const safeVal = String(value).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const outputPath = recipeLoadedDir + '/Liked/RAF/.sim-cache/' + stem + '_cmp_' + paramKey + '_' + safeVal + '.jpg';
+    return '/api/preview-image/' + btoa(unescape(encodeURIComponent(outputPath.substring(0, outputPath.lastIndexOf('/'))))) + '/' + encodeURIComponent(outputPath.substring(outputPath.lastIndexOf('/') + 1)) + '?t=' + Date.now();
+  }
+
+  function populateSbsDropdowns() {
+    const paramKey = recipeState.compareParam;
+    const currentVal = String(recipeState.currentParams[paramKey] || '');
+    const rendered = recipeState.compareRendered ? [...recipeState.compareRendered] : [];
+    const leftSel = document.getElementById('sbs-dropdown-left');
+    const rightSel = document.getElementById('sbs-dropdown-right');
+    leftSel.innerHTML = '';
+    rightSel.innerHTML = '';
+
+    // Build options: all parameter values, mark as-shot with suffix
+    const options = [];
+    const asShotVal = recipeState.exifBaseline ? String(recipeState.exifBaseline[paramKey] || '') : '';
+    // Current value first
+    options.push({ value: currentVal, label: currentVal + (currentVal === asShotVal ? ' (As Shot)' : '') });
+    for (const rv of rendered) {
+      if (rv !== currentVal) {
+        options.push({ value: rv, label: String(rv) + (rv === asShotVal ? ' (As Shot)' : '') });
+      }
+    }
+
+    options.forEach(opt => {
+      const o1 = document.createElement('option');
+      o1.value = opt.value;
+      o1.textContent = opt.label;
+      leftSel.appendChild(o1);
+      const o2 = document.createElement('option');
+      o2.value = opt.value;
+      o2.textContent = opt.label;
+      rightSel.appendChild(o2);
+    });
+
+    // Defaults: left = current value, right = first rendered that isn't current
+    leftSel.value = currentVal;
+    const firstOther = rendered.find(rv => rv !== currentVal);
+    rightSel.value = firstOther || currentVal;
+
+    // Update images
+    document.getElementById('sbs-photo-left').src = getSbsImageUrl(leftSel.value);
+    document.getElementById('sbs-photo-right').src = getSbsImageUrl(rightSel.value);
+    // Populate action menus on each SBS panel
+    updateSbsPanelActions('left', leftSel.value);
+    updateSbsPanelActions('right', rightSel.value);
+  }
+
+  function updateSbsPanelActions(side, value) {
+    const container = document.getElementById('sbs-actions-' + side);
+    container.innerHTML = '';
+    const paramKey = recipeState.compareParam;
+    const isExifMatch = recipeState.exifBaseline && String(value) === String(recipeState.exifBaseline[paramKey]);
+    const isStandardMatch = String(value) === String(RECIPE_DEFAULTS[paramKey]);
+    // Camera icon for as-shot value, sliders icon for standard value
+    if (isExifMatch && !(isStandardMatch && isExifMatch)) {
+      const camIcon = document.createElement('span');
+      camIcon.className = 'cell-action-camera-icon';
+      camIcon.title = 'As Shot';
+      camIcon.innerHTML = '<svg viewBox="0 0 24 20" width="20" height="16" fill="none" stroke="var(--amber)" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M8 5l1.5-3h5L16 5"/></svg>';
+      container.appendChild(camIcon);
+    } else if (isStandardMatch) {
+      const camIcon = document.createElement('span');
+      camIcon.className = 'cell-action-camera-icon';
+      camIcon.title = 'Standard';
+      camIcon.innerHTML = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="var(--amber)" stroke-width="1.5"><line x1="3" y1="5" x2="17" y2="5"/><circle cx="7" cy="5" r="2"/><line x1="3" y1="15" x2="17" y2="15"/><circle cx="13" cy="15" r="2"/></svg>';
+      container.appendChild(camIcon);
+    }
+    // Action dots button with menu
+    const actBtn = document.createElement('button');
+    actBtn.className = 'cell-action-btn';
+    actBtn.textContent = '⋮';
+    actBtn.title = 'Apply variant settings';
+    const actMenu = document.createElement('div');
+    actMenu.className = 'cell-action-menu';
+    actMenu.style.display = 'none';
+    const applyReturn = document.createElement('div');
+    applyReturn.className = 'cell-action-item';
+    applyReturn.textContent = 'APPLY & RETURN';
+    applyReturn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      recipeState.currentParams[paramKey] = isNaN(value) ? value : Number(value);
+      recipeState.cleanParams = { ...recipeState.currentParams };
+      recipeState.dirty = false;
+      renderParams();
+      enterFocusMode(recipeState.focusIndex || 0);
+    });
+    const applyNext = document.createElement('div');
+    applyNext.className = 'cell-action-item';
+    applyNext.textContent = 'APPLY & NEXT PARAMETER';
+    applyNext.addEventListener('click', (e) => {
+      e.stopPropagation();
+      recipeState.currentParams[paramKey] = isNaN(value) ? value : Number(value);
+      recipeState.cleanParams = { ...recipeState.currentParams };
+      recipeState.dirty = false;
+      renderParams();
+      const ps = window._compareParamSelect;
+      if (ps) {
+        const idx = ps.selectedIndex;
+        ps.selectedIndex = idx < ps.options.length - 1 ? idx + 1 : 0;
+        if (window._compareRenderValues) window._compareRenderValues();
+      }
+    });
+    actMenu.appendChild(applyReturn);
+    actMenu.appendChild(applyNext);
+    actBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.sbs-panel-actions .cell-action-menu').forEach(m => { if (m !== actMenu) m.style.display = 'none'; });
+      actMenu.style.display = actMenu.style.display === 'none' ? 'block' : 'none';
+    });
+    container.appendChild(actBtn);
+    container.appendChild(actMenu);
+  }
+
+  function resetSbsZoom() {
+    sbsZoomLevel = 1;
+    document.querySelectorAll('.sbs-photo').forEach(img => {
+      img.style.transform = '';
+      img.style.transformOrigin = '';
+    });
+  }
+
+  document.getElementById('sbs-dropdown-left').addEventListener('change', function() {
+    document.getElementById('sbs-photo-left').src = getSbsImageUrl(this.value);
+    updateSbsPanelActions('left', this.value);
+    resetSbsZoom();
+  });
+  document.getElementById('sbs-dropdown-right').addEventListener('change', function() {
+    document.getElementById('sbs-photo-right').src = getSbsImageUrl(this.value);
+    updateSbsPanelActions('right', this.value);
+    resetSbsZoom();
+  });
+
+  // Synced zoom on side-by-side photos
+  document.querySelectorAll('.sbs-photo-container').forEach(container => {
+    container.addEventListener('click', (e) => {
+      const rect = container.getBoundingClientRect();
+      const pctX = ((e.clientX - rect.left) / rect.width * 100);
+      const pctY = ((e.clientY - rect.top) / rect.height * 100);
+      if (sbsZoomLevel === 1) {
+        sbsZoomLevel = 3;
+        document.querySelectorAll('.sbs-photo').forEach(img => {
+          img.style.transform = 'scale(3)';
+          img.style.transformOrigin = pctX + '% ' + pctY + '%';
+        });
+      } else {
+        sbsZoomLevel = 1;
+        document.querySelectorAll('.sbs-photo').forEach(img => {
+          img.style.transform = '';
+          img.style.transformOrigin = '';
+        });
+      }
+    });
+  });
+
+  // Mouse move panning when zoomed
+  document.querySelectorAll('.sbs-photo-container').forEach(container => {
+    container.addEventListener('mousemove', (e) => {
+      if (sbsZoomLevel <= 1) return;
+      const rect = container.getBoundingClientRect();
+      const pctX = ((e.clientX - rect.left) / rect.width * 100);
+      const pctY = ((e.clientY - rect.top) / rect.height * 100);
+      document.querySelectorAll('.sbs-photo').forEach(img => {
+        img.style.transformOrigin = pctX + '% ' + pctY + '%';
+      });
+    });
+  });
+
+  document.getElementById('compare-sbs-btn').addEventListener('click', () => {
+    document.getElementById('compare-grid').style.display = 'none';
+    document.getElementById('compare-side-by-side').style.display = 'flex';
+    document.getElementById('compare-sbs-btn').style.display = 'none';
+    document.getElementById('compare-sbs-back-btn').style.display = '';
+    resetSbsZoom();
+    populateSbsDropdowns();
+  });
+
+  document.getElementById('compare-sbs-back-btn').addEventListener('click', () => {
+    document.getElementById('compare-side-by-side').style.display = 'none';
+    document.getElementById('compare-grid').style.display = '';
+    document.getElementById('compare-sbs-btn').style.display = '';
+    document.getElementById('compare-sbs-back-btn').style.display = 'none';
+    resetSbsZoom();
   });
 
   document.getElementById('compare-simulate-btn').addEventListener('click', async () => {
     const btn = document.getElementById('compare-simulate-btn');
     const grid = document.getElementById('compare-grid');
-    const selectedValues = recipeState.compareValues ? recipeState.compareValues.filter(v => {
+    const paramKey = recipeState.compareParam;
+    const currentVal = String(recipeState.currentParams[paramKey] || '');
+
+    // Get active chip values
+    const allSelected = recipeState.compareValues ? recipeState.compareValues.filter(v => {
       const chips = document.querySelectorAll('#compare-values-section .compare-value-chip.active');
       return [...chips].some(c => c.textContent === String(v));
     }) : [];
-    if (selectedValues.length === 0) return;
 
-    btn.disabled = true;
+    // Filter to only values that need simulation (not exif baseline val, not already rendered)
+    const exifVal = recipeState.exifBaseline ? String(recipeState.exifBaseline[paramKey] || '') : '';
+    const toSimulate = allSelected.filter(v => String(v) !== exifVal && !recipeState.compareRendered.has(String(v)));
+    if (toSimulate.length === 0) return;
+    if (recipeState._compareSimulating) return;
+    recipeState._compareSimulating = true;
+    btn.classList.add('simulating');
+    const total = toSimulate.length;
+
+    function setSimProgress(done, total) {
+      const pct = Math.round((done / total) * 100);
+      const remaining = total - done;
+      const text = 'Simulating ' + done + '/' + total + (remaining > 0 ? ' (~' + remaining + 's)' : '');
+      btn.style.background = 'linear-gradient(to right, var(--amber) ' + pct + '%, rgba(255,255,255,0.04) ' + pct + '%)';
+      btn.innerHTML = '<span style="position:relative;mix-blend-mode:difference;color:#fff">' + text + '</span>';
+    }
+    setSimProgress(0, total);
+
     const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
-    if (!photo) { btn.disabled = false; return; }
+    if (!photo) { recipeState._compareSimulating = false; btn.classList.remove('simulating'); btn.textContent = 'SIMULATE (0)'; btn.style.background = ''; btn.style.color = ''; return; }
 
     try {
       const listRes = await fetch('/api/camera/list').then(r => r.json());
       if (!listRes.cameras || listRes.cameras.length === 0) {
         showToast('No camera connected');
-        btn.disabled = false;
+        recipeState._compareSimulating = false; btn.classList.remove('simulating');
+        btn.textContent = 'SIMULATE (' + total + ')';
+        btn.style.background = '';
+        btn.style.color = '';
         return;
       }
       await fetch('/api/camera/connect', { method: 'POST' });
     } catch(e) {
       showToast('Camera connection failed');
-      btn.disabled = false;
+      recipeState._compareSimulating = false; btn.classList.remove('simulating');
+      btn.textContent = 'SIMULATE (' + total + ')';
+      btn.style.background = '';
+      btn.style.color = '';
       return;
     }
 
     const stem = photo.file.replace(/\.[^.]+$/, '');
     const rafPath = recipeLoadedDir + '/Liked/RAF/' + stem + '.RAF';
-    const paramKey = recipeState.compareParam;
+    let completed = 0;
 
-    for (let i = 0; i < selectedValues.length; i++) {
-      const val = selectedValues[i];
-      const outputPath = recipeLoadedDir + '/Liked/RAF/.sim-cache/' + stem + '_cmp_' + paramKey + '_' + i + '.jpg';
+    // Show STOP button, set up cancellation
+    recipeState.compareSimCancelled = false;
+    const cancelBtn = document.getElementById('compare-cancel-btn');
+    cancelBtn.style.display = '';
+    cancelBtn.textContent = 'STOP';
+
+    for (let i = 0; i < toSimulate.length; i++) {
+      if (recipeState.compareSimCancelled) break;
+      const val = toSimulate[i];
+      const gridIdx = allSelected.indexOf(val);
+      const safeVal = String(val).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const outputPath = recipeLoadedDir + '/Liked/RAF/.sim-cache/' + stem + '_cmp_' + paramKey + '_' + safeVal + '.jpg';
       const params = { ...recipeState.currentParams, [paramKey]: val };
 
       try {
@@ -7231,7 +8008,8 @@ body::before {
         const resultRes = await fetch('/api/camera/wait-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ outputPath, timeout: 10000 }) }).then(r => r.json());
 
         if (resultRes.ok) {
-          const cell = grid.children[i];
+          recipeState.compareRendered.add(String(val));
+          const cell = grid.children[gridIdx];
           if (cell) {
             const img = cell.querySelector('img');
             if (img) {
@@ -7240,15 +8018,97 @@ body::before {
             }
             const pendingEl = cell.querySelector('.compare-cell-pending');
             if (pendingEl) pendingEl.remove();
+            // Add action buttons to newly rendered cell
+            if (!cell.querySelector('.compare-cell-actions')) {
+              const actionsDiv = document.createElement('div');
+              actionsDiv.className = 'compare-cell-actions';
+              const actBtn = document.createElement('button');
+              actBtn.className = 'cell-action-btn';
+              actBtn.textContent = '⋮';
+              actBtn.title = 'Apply variant settings';
+              const actMenu = document.createElement('div');
+              actMenu.className = 'cell-action-menu';
+              actMenu.style.display = 'none';
+              const applyReturn = document.createElement('div');
+              applyReturn.className = 'cell-action-item';
+              applyReturn.textContent = 'APPLY & RETURN';
+              applyReturn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                recipeState.currentParams[paramKey] = isNaN(val) ? val : Number(val);
+                recipeState.cleanParams = { ...recipeState.currentParams };
+                recipeState.dirty = false;
+                renderParams();
+                enterFocusMode(recipeState.focusIndex || 0);
+              });
+              const applyNext = document.createElement('div');
+              applyNext.className = 'cell-action-item';
+              applyNext.textContent = 'APPLY & NEXT PARAMETER';
+              applyNext.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                recipeState.currentParams[paramKey] = isNaN(val) ? val : Number(val);
+                recipeState.cleanParams = { ...recipeState.currentParams };
+                recipeState.dirty = false;
+                renderParams();
+                const ps = window._compareParamSelect;
+                if (ps) {
+                  const idx2 = ps.selectedIndex;
+                  ps.selectedIndex = idx2 < ps.options.length - 1 ? idx2 + 1 : 0;
+                  if (window._compareRenderValues) window._compareRenderValues();
+                }
+              });
+              actMenu.appendChild(applyReturn);
+              actMenu.appendChild(applyNext);
+              actBtn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                grid.querySelectorAll('.cell-action-menu').forEach(m => { if (m !== actMenu) m.style.display = 'none'; });
+                actMenu.style.display = actMenu.style.display === 'none' ? 'block' : 'none';
+              });
+              actionsDiv.appendChild(actBtn);
+              actionsDiv.appendChild(actMenu);
+              cell.appendChild(actionsDiv);
+            }
+          }
+        } else {
+          const cell = grid.children[gridIdx];
+          if (cell) {
+            const pendingEl = cell.querySelector('.compare-cell-pending');
+            if (pendingEl) { pendingEl.textContent = 'FAILED'; pendingEl.style.color = 'var(--amber)'; }
           }
         }
       } catch(e) {
         console.error('Compare sim failed for ' + val, e);
+        const cell = grid.children[gridIdx];
+        if (cell) {
+          const pendingEl = cell.querySelector('.compare-cell-pending');
+          if (pendingEl) { pendingEl.textContent = 'FAILED'; pendingEl.style.color = 'var(--amber)'; }
+        }
       }
+      completed++;
+      setSimProgress(completed, total);
     }
 
     try { await fetch('/api/camera/disconnect', { method: 'POST' }); } catch(e) {}
-    btn.disabled = false;
+    recipeState._compareSimulating = false;
+    btn.classList.remove('simulating');
+    cancelBtn.style.display = 'none';
+    recipeState.compareSimCancelled = false;
+    btn.style.background = '';
+    btn.style.color = '';
+    // Update button to reflect no more pending
+    const stillPending = allSelected.filter(v => String(v) !== currentVal && !recipeState.compareRendered.has(String(v))).length;
+    if (stillPending > 0) {
+      btn.textContent = 'SIMULATE (' + stillPending + ')';
+      btn.style.display = '';
+    } else {
+      btn.textContent = 'SIMULATE';
+      btn.disabled = true;
+      btn.style.display = '';
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-dim)';
+      btn.style.opacity = '0.5';
+    }
+    // Check if all cells are now simulated — enable selection
+    if (window._compareCheckAllSimulated) window._compareCheckAllSimulated();
   });
 
   // ── Photo Picker Modal ──

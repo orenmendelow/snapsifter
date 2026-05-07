@@ -126,6 +126,78 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Essentially a navigation stack for focus mode (push/pop photo history).
 - Document as future enhancement if complex — not blocking.
 
+### Session 23 changes (2026-05-07)
+
+**IMPLEMENTED (S21-9 through S23-9 — Complete Variant Test rework):**
+
+*Session 23a (S21-9 through S21-23):*
+- "Standard" baseline: RECIPE_DEFAULTS (Provia, all zeros) added to recipe active dropdown alongside "As Shot" and saved recipes.
+- Compare cell blur fix: 5-state cell model. As-shot match = no blur. Rendered = sim image. Pending = blur + PENDING.
+- Recipe dropdown live matching: `checkParamsChanged()` calls `updateRecipeActiveDropdown()` so label updates as params change.
+- Value-based sim-cache filenames: `_cmp_{param}_{value}.jpg` instead of index-based.
+- Unit tests: `test/compare-mode.test.js` with 59 test cases.
+
+*Session 23b (S23-1 through S23-9):*
+- Baseline selector: chevron dropdown (not two buttons), defaults to "As Shot", immediately enters compare mode
+- Synced zoom: click ANY compare cell → all cells zoom 1x/3x with shared transform-origin. Replaces old click-to-focus.
+- Camera state: simulate button shows "Connect camera to simulate" greyed out when disconnected. `window._compareUpdateSimBtn` called from camera poll.
+- Progress bar: button fills via `linear-gradient(to right, var(--amber) P%, ...)`, text "Simulating x/y (~Ns)", color flips #000 at 50%
+- Post-simulation workflow: rendered cells become selectable (click = amber border + checkmark). Current value pre-selected. Five action buttons: RESIMULATE, CANCEL, APPLY & RETURN TO COLLAGE, SIMULATE COLLAGE, NEXT PARAMETER
+- Side-by-side comparison: `#compare-side-by-side` with two panels, each with dropdown (Original/current/rendered variants), synced zoom
+- Simulate after recipe load: `selectRecipe()` sets `cleanParams = exifBaseline` so loaded recipe shows simulate button
+- Reset on re-entry: `enterCompareMode()` clears all compare state. Sim-cache files left on disk (overwritten on re-sim).
+- Dead code cleanup: removed `compareVariant`, `#focus-variant-bar`, `#compare-to-dropdown`, `#focus-apply-return-btn`, `getCompareTargetUrl()` — all superseded by in-grid workflow
+
+*Session 23c (S23-10 through S23-16):*
+- Chevron+dropdown on VARIANT TEST button itself (not inside compare view). Baseline dropdown removed from right panel.
+- Simulate+STOP in flex row. STOP shows during sim, sets `compareSimCancelled` flag. Cancel hidden when no simulate.
+- RESIMULATE removed. Checkmark/selected outline removed. AS SHOT/STANDARD tag badge on current-value cell.
+- SIMULATE COLLAGE removed. Per-cell ⋮ action menu with APPLY & RETURN and APPLY & NEXT PARAMETER.
+- SBS dropdowns show param values with "(As Shot)" suffix. Back button handles SBS-to-grid navigation.
+
+*Session 23d (S23-17 through S23-25 — Round 3):*
+- Zoom equality: percentage-based `transformOrigin` on all compare cells, resolution-independent.
+- AS SHOT tag: orange SVG camera icon. STANDARD: sliders SVG icon.
+- Simulate button stays full opacity during simulation via `_compareSimulating` flag + `.simulating` CSS class.
+- Mousemove pan zoom on all compare cells when zoomed to 3x.
+- Compare button: two-rectangles SVG icon.
+- Per-cell actions: 28px bold dots, `background: none`, double text-shadow, `color: var(--amber)`.
+- `#compare-meta-row` in right sidebar with thumbnail + metadata above PARAMETER select.
+- SBS panels: `.sbs-panel-actions` with dots + camera icon in each panel.
+
+*Session 23e (S23-26 through S23-35 — Round 4):*
+- Reverted param-dropdown-trigger/list borders to original `rgba(255,255,255,0.15)` (were accidentally changed to orange site-wide).
+- REVERT ALL button removed entirely. `checkParamsChanged()` guards hide `recipe-drawer-actions` in compare mode.
+- `renderValues()` now uses `currentParams[key]` (not `exifBaseline`) — Standard baseline correctly pre-selects Provia.
+- Cell tags use `isExifMatch` (exifBaseline) and `isStandardMatch` (RECIPE_DEFAULTS) independently.
+- Compare simulate button always visible with orange outline; transparent bg when 0 pending, filled when active.
+- Failed sim cells show "FAILED" in amber (not red — site is monochrome + orange only).
+
+*Session 23f (S23-36 through S23-44 — Round 5, changes applied but NOT yet verified by Oren):*
+- `#recipe-drawer-top` gets `border-bottom` + `padding-bottom: 12px` + `margin-bottom: 8px` for visual separation.
+- Focus mode zoom: fixed 3x scale with percentage-based `transformOrigin` (was broken for portrait photos — calculated zoom from naturalWidth/clientWidth yielded < 1).
+- Focus mode pan: percentage-based `transformOrigin` in mousemove handler.
+- Standard baseline cell rendering: `isExifMatch` determines unblurred state; `isCurrentVal && !isExifMatch` gets blurred (needs simulation). `updateSimulateButton`, `checkAllSimulated`, and simulate handler all use `exifVal` from exifBaseline.
+- Dots: 28px, bold, enhanced text-shadow.
+- Simulate progress text: `mix-blend-mode: difference` with white text for automatic per-letter color inversion.
+- SBS dropdown border: `rgba(255,255,255,0.15)` (removed orange). Added `.sbs-dropdown option` styling.
+- Action tooltips: dots = "Apply variant settings", camera icon = "As Shot", sliders = "Standard".
+
+**ARCHITECTURAL:**
+- `recipeState.compareBaseline` — 'asshot' | 'standard', set by baseline dropdown
+- `recipeState.compareRendered` — Set of value strings simulated, cleared on param change and re-entry
+- `recipeState.compareSelectedFavorite` — value string of user's selected favorite cell
+- `compareZoomLevel` — local var in initCompareMode scope, 1 or 3
+- `#compare-baseline-row` — dropdown with chevron in `#compare-right-controls`
+- `#compare-post-actions` — div with 5 action buttons, shown after all cells simulated
+- `#compare-side-by-side` — two `.sbs-panel` divs with `.sbs-dropdown` selects and synced zoom
+- `updateSimulateButton()` — counts pending cells using `exifVal` (not `currentVal`), handles camera state, button always visible
+- `window._compareUpdateSimBtn` — exposed for camera poll to update compare simulate button
+- Guard flag `recipeState._updatingDropdown` prevents infinite loop between `checkParamsChanged()` ↔ `updateRecipeActiveDropdown()`
+- `isExifMatch` / `isStandardMatch` — per-cell booleans in `renderGrid()` for tag display, independent of `isCurrentVal`
+- Focus zoom: fixed `scale(3)` with `pctX + '% ' + pctY + '%'` transformOrigin. NEVER use naturalWidth/clientWidth calculation.
+- Palette: monochrome + orange ONLY. No red, green, blue, or other hues. Error states use `var(--amber)`.
+
 ### Session 22 changes (2026-05-07)
 
 **IMPLEMENTED:**
