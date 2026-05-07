@@ -369,6 +369,8 @@ body::before {
 #recipe-filmstrip::-webkit-scrollbar { display: none; }
 
 /* Focus mode */
+
+
 #focus-view {
   flex: 1;
   display: flex;
@@ -381,6 +383,8 @@ body::before {
   flex: 1;
   display: flex;
   min-height: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 #focus-gallery {
@@ -392,6 +396,13 @@ body::before {
   gap: 4px;
   padding: 8px 6px 8px 20px;
   overflow-y: auto;
+  transition: transform 0.15s linear;
+}
+#focus-gallery.hidden {
+  transform: translateX(-88px);
+  pointer-events: none;
+  position: absolute;
+  left: 0;
 }
 #focus-gallery::-webkit-scrollbar { display: none; }
 
@@ -998,7 +1009,84 @@ body::before {
   0%, 100% { background: #0a0a0a; }
   50% { background: #141414; }
 }
+.skel-bar {
+  border-radius: 3px;
+  background: #141414;
+  animation: cell-pulse 1.5s ease-in-out infinite;
+}
+.skel-session {
+  padding: 10px 16px;
+}
+.skel-session .skel-name {
+  height: 13px;
+  width: 70%;
+  margin-bottom: 6px;
+}
+.skel-session .skel-detail {
+  height: 10px;
+  width: 45%;
+}
+.skel-resume-card {
+  padding: 0 0 20px;
+}
+.skel-resume-card .skel-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.skel-resume-card .skel-title {
+  height: 14px;
+  width: 80px;
+}
+.skel-resume-card .skel-count {
+  height: 10px;
+  width: 60px;
+}
+.skel-resume-card .skel-thumbs {
+  display: flex;
+  gap: 4px;
+}
+.skel-resume-card .skel-thumb {
+  width: 64px;
+  height: 44px;
+  border-radius: 3px;
+  background: #141414;
+  animation: cell-pulse 1.5s ease-in-out infinite;
+}
 #recipe-collage.stale .cell-swap { display: none; }
+.cell-diff-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(196,90,48,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #fff;
+  cursor: default;
+  z-index: 2;
+}
+.cell-diff-tooltip {
+  display: none;
+  position: absolute;
+  top: 28px;
+  left: 6px;
+  background: rgba(0,0,0,0.92);
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 6px 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+}
+.cell-diff-badge:hover + .cell-diff-tooltip { display: block; }
 
 #recipe-simulate-section {
   display: flex;
@@ -4717,18 +4805,29 @@ body::before {
   }
 
   function showRecipePreview() {
+    // Slide gallery out before hiding focus
+    const gallery = document.getElementById('focus-gallery');
+    if (!gallery.classList.contains('hidden')) {
+      gallery.classList.add('hidden');
+    }
     recipeState.mode = 'preview';
     restoreRightPanel();
     const hasPhotos = recipeState.gridPhotos.length > 0;
     const centerPreview = document.getElementById('recipe-center-preview');
     if (hasPhotos) {
-      document.getElementById('recipe-collage').style.display = '';
+      const collageEl = document.getElementById('recipe-collage');
+      collageEl.style.display = '';
       centerPreview.style.display = 'none';
     } else {
       document.getElementById('recipe-collage').style.display = 'none';
       centerPreview.style.display = '';
     }
-    document.getElementById('focus-view').style.display = 'none';
+    // Delay hiding focus-view so gallery slide completes
+    setTimeout(() => {
+      if (recipeState.mode === 'preview') {
+        document.getElementById('focus-view').style.display = 'none';
+      }
+    }, 160);
     document.getElementById('compare-view').style.display = 'none';
     document.getElementById('recipe-shuffle-btn').style.display = hasPhotos ? '' : 'none';
     document.getElementById('recipe-pick-btn').style.display = hasPhotos ? '' : 'none';
@@ -4745,7 +4844,11 @@ body::before {
     } else if (!browse) {
       recipeState.savedCollageFocus = null;
     }
-    if (recipeState.mode !== 'focus') {
+    const wasFocus = recipeState.mode === 'focus';
+    const wasBrowse = recipeState.focusBrowse;
+    const isNowBrowse = !!(opts && opts.browse);
+    const modeChanging = !wasFocus || (wasBrowse !== isNowBrowse);
+    if (!wasFocus) {
       recipeState.focusHistory = [];
     }
     recipeState.mode = 'focus';
@@ -4755,7 +4858,15 @@ body::before {
     restoreRightPanel();
     document.getElementById('recipe-center-preview').style.display = 'none';
     document.getElementById('recipe-collage').style.display = 'none';
-    document.getElementById('focus-view').style.display = 'flex';
+    const focusEl = document.getElementById('focus-view');
+    focusEl.style.display = 'flex';
+    // Slide gallery in when entering focus from non-focus
+    if (!wasFocus && !isNowBrowse) {
+      const gallery = document.getElementById('focus-gallery');
+      gallery.classList.add('hidden');
+      void gallery.offsetWidth;
+      gallery.classList.remove('hidden');
+    }
     document.getElementById('compare-view').style.display = 'none';
     document.getElementById('recipe-shuffle-btn').style.display = 'none';
     document.getElementById('recipe-pick-btn').style.display = 'none';
@@ -4774,9 +4885,9 @@ body::before {
 
     const gallery = document.getElementById('focus-gallery');
     if (isBrowse) {
-      gallery.style.display = 'none';
+      gallery.classList.add('hidden');
     } else {
-      gallery.style.display = '';
+      gallery.classList.remove('hidden');
       gallery.innerHTML = '';
       recipeState.gridPhotos.forEach((p, i) => {
         const thumb = document.createElement('div');
@@ -4791,15 +4902,22 @@ body::before {
     }
 
     const focusPhoto = document.getElementById('focus-photo');
+    // Show thumbnail immediately (cached), then swap to full-size
+    const thumbUrl = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(photo.file);
+    let fullUrl;
     if (!isBrowse && recipeState.showSimulated && recipeState.simulatedPhotos[photo.file]) {
       const simPath = recipeState.simulatedPhotos[photo.file];
       const simDirB64 = btoa(unescape(encodeURIComponent(simPath.substring(0, simPath.lastIndexOf('/')))));
       const simFile = simPath.substring(simPath.lastIndexOf('/') + 1);
       const ts = recipeState.simTimestamps[photo.file] || '';
-      focusPhoto.src = '/api/preview-image/' + simDirB64 + '/' + encodeURIComponent(simFile) + (ts ? '?t=' + ts : '');
+      fullUrl = '/api/preview-image/' + simDirB64 + '/' + encodeURIComponent(simFile) + (ts ? '?t=' + ts : '');
     } else {
-      focusPhoto.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
+      fullUrl = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
     }
+    focusPhoto.src = thumbUrl;
+    const fullImg = new Image();
+    fullImg.src = fullUrl;
+    fullImg.onload = () => { if (focusPhoto.src.includes(encodeURIComponent(photo.file)) || focusPhoto.src === thumbUrl) focusPhoto.src = fullUrl; };
     focusPhoto.fetchPriority = 'high';
     document.getElementById('focus-photo-name').textContent = stem;
 
@@ -6176,6 +6294,32 @@ body::before {
       cell.addEventListener('touchstart', cellCompareStart, { passive: false });
       cell.addEventListener('touchend', cellCompareEnd);
 
+      // Diff badge — show when this photo's film simulation differs from majority
+      if (recipeState.exifBaseline && recipeState.perFileExif[stem]) {
+        const fileExif = recipeState.perFileExif[stem];
+        const majority = recipeState.exifBaseline;
+        if (fileExif.filmSimulation && String(fileExif.filmSimulation) !== String(majority.filmSimulation)) {
+          const badge = document.createElement('div');
+          badge.className = 'cell-diff-badge';
+          badge.textContent = '✦';
+          cell.appendChild(badge);
+          const tip = document.createElement('div');
+          tip.className = 'cell-diff-tooltip';
+          const matchedRecipe = findMatchingRecipe(fileExif);
+          if (matchedRecipe) {
+            tip.textContent = matchedRecipe.title;
+          } else {
+            const recipeKeys = Object.keys(RECIPE_DEFAULTS);
+            const diffs = recipeKeys.filter(k => fileExif[k] != null && String(fileExif[k]) !== String(majority[k]));
+            tip.innerHTML = diffs.map(k => {
+              const label = k.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()).trim();
+              return '<span style="color:var(--amber)">' + label + '</span>: ' + fileExif[k];
+            }).join('<br>');
+          }
+          cell.appendChild(tip);
+        }
+      }
+
       recipeGridEl.appendChild(cell);
       cells.push({ cell, img });
     });
@@ -6312,17 +6456,40 @@ body::before {
     }
     container.innerHTML = '';
 
+    // Skeleton matching session row shapes
+    const skel = document.createElement('div');
+    const skelLabel = document.createElement('div');
+    skelLabel.className = 'tree-section-label';
+    skelLabel.style.opacity = '0.3';
+    skelLabel.textContent = 'Recent';
+    skel.appendChild(skelLabel);
+    for (let i = 0; i < 2; i++) {
+      const row = document.createElement('div');
+      row.className = 'skel-session';
+      const nameBar = document.createElement('div');
+      nameBar.className = 'skel-bar skel-name';
+      nameBar.style.animationDelay = (i * 0.15) + 's';
+      row.appendChild(nameBar);
+      const detailBar = document.createElement('div');
+      detailBar.className = 'skel-bar skel-detail';
+      detailBar.style.animationDelay = (i * 0.15 + 0.05) + 's';
+      row.appendChild(detailBar);
+      skel.appendChild(row);
+    }
+    container.appendChild(skel);
+
     // Recent sessions section
     const recentLabel = document.createElement('div');
     recentLabel.className = 'tree-section-label';
     recentLabel.textContent = 'Recent';
-    container.appendChild(recentLabel);
 
     const sessionsList = document.createElement('div');
-    container.appendChild(sessionsList);
 
     try {
       const sessions = await fetch('/api/sessions').then(r => r.json());
+      skel.remove();
+      container.appendChild(recentLabel);
+      container.appendChild(sessionsList);
       if (sessions && sessions.length > 0) {
         for (const s of sessions) {
           if (s.accessible === false) continue;
@@ -6363,7 +6530,11 @@ body::before {
           sessionsList.appendChild(row);
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      skel.remove();
+      container.appendChild(recentLabel);
+      container.appendChild(sessionsList);
+    }
 
     // Divider
     const div1 = document.createElement('div');
@@ -6734,8 +6905,40 @@ body::before {
     centerPreview.style.display = '';
     document.getElementById('recipe-collage').style.display = 'none';
 
+    // Skeleton matching resume card shapes
+    const skelHeading = document.createElement('div');
+    skelHeading.style.cssText = 'font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:16px;opacity:0.3';
+    skelHeading.textContent = 'Resume';
+    centerPreview.appendChild(skelHeading);
+    for (let i = 0; i < 2; i++) {
+      const card = document.createElement('div');
+      card.className = 'skel-resume-card';
+      const heading = document.createElement('div');
+      heading.className = 'skel-heading';
+      const title = document.createElement('div');
+      title.className = 'skel-bar skel-title';
+      title.style.animationDelay = (i * 0.2) + 's';
+      heading.appendChild(title);
+      const count = document.createElement('div');
+      count.className = 'skel-bar skel-count';
+      count.style.animationDelay = (i * 0.2 + 0.05) + 's';
+      heading.appendChild(count);
+      card.appendChild(heading);
+      const thumbs = document.createElement('div');
+      thumbs.className = 'skel-thumbs';
+      for (let j = 0; j < 6; j++) {
+        const thumb = document.createElement('div');
+        thumb.className = 'skel-thumb';
+        thumb.style.animationDelay = (i * 0.2 + j * 0.04) + 's';
+        thumbs.appendChild(thumb);
+      }
+      card.appendChild(thumbs);
+      centerPreview.appendChild(card);
+    }
+
     try {
       const sessions = await fetch('/api/sessions').then(r => r.json());
+      centerPreview.innerHTML = '';
       if (!sessions || sessions.length === 0) return;
 
       const accessible = sessions.filter(s => s.accessible !== false);
@@ -6886,12 +7089,12 @@ body::before {
       recipeState.mode = 'focus';
       restoreRightPanel();
       document.getElementById('compare-view').style.display = 'none';
-      document.getElementById('focus-view').style.display = 'flex';
+      const focusEl = document.getElementById('focus-view');
+      focusEl.style.display = 'flex';
       document.getElementById('recipe-compare-btn').style.display = '';
       document.getElementById('focus-back-btn').style.display = '';
       renderFocusMode();
     } else if (recipeState.focusBrowse && recipeState.savedCollageFocus) {
-      // Browsing filmstrip after collage focus — return to collage focus
       const saved = recipeState.savedCollageFocus;
       recipeState.savedCollageFocus = null;
       recipeState.focusBrowse = false;
