@@ -1558,13 +1558,14 @@ const FUJI_FILM_SIM_MAP = {
   0x0800: 'Acros', 0x0801: 'AcrosYe', 0x0802: 'AcrosR', 0x0803: 'AcrosG',
   0x0900: 'Mono', 0x0901: 'MonoYe', 0x0902: 'MonoR', 0x0903: 'MonoG',
   0x0A00: 'Sepia',
-  // String values exifr might return
+  // String values exifr / exiftool might return
   'PROVIA/STANDARD': 'Provia', 'Provia': 'Provia', 'PROVIA': 'Provia',
+  'F0/Standard (Provia)': 'Provia', 'F0/Standard': 'Provia',
   'Velvia/VIVID': 'Velvia', 'Velvia': 'Velvia', 'VELVIA': 'Velvia',
   'ASTIA/SOFT': 'Astia', 'Astia': 'Astia', 'ASTIA': 'Astia',
   'CLASSIC CHROME': 'Classic', 'Classic Chrome': 'Classic', 'Classic': 'Classic',
-  'CLASSIC Neg.': 'ClassicNeg', 'Classic Neg.': 'ClassicNeg', 'ClassicNeg': 'ClassicNeg', 'CLASSIC NEGATIVE': 'ClassicNeg',
-  'NOSTALGIC Neg.': 'Nostalgic', 'Nostalgic Neg.': 'Nostalgic', 'Nostalgic': 'Nostalgic', 'NOSTALGIC NEGATIVE': 'Nostalgic',
+  'CLASSIC Neg.': 'ClassicNeg', 'Classic Neg.': 'ClassicNeg', 'Classic Neg': 'ClassicNeg', 'Classic Negative': 'ClassicNeg', 'ClassicNeg': 'ClassicNeg', 'CLASSIC NEGATIVE': 'ClassicNeg',
+  'NOSTALGIC Neg.': 'Nostalgic', 'Nostalgic Neg.': 'Nostalgic', 'Nostalgic Neg': 'Nostalgic', 'Nostalgic': 'Nostalgic', 'NOSTALGIC NEGATIVE': 'Nostalgic',
   'REALA ACE': 'RealaACE', 'Reala ACE': 'RealaACE', 'RealaACE': 'RealaACE',
   'PRO Neg.Std': 'ProNegStd', 'PRO Neg. Std': 'ProNegStd', 'ProNegStd': 'ProNegStd',
   'PRO Neg.Hi': 'ProNegHi', 'PRO Neg. Hi': 'ProNegHi', 'ProNegHi': 'ProNegHi',
@@ -1584,10 +1585,27 @@ const FUJI_FILM_SIM_MAP = {
 function mapFilmSimulation(val) {
   if (val == null) return null;
   if (FUJI_FILM_SIM_MAP[val] !== undefined) return FUJI_FILM_SIM_MAP[val];
-  // Try case-insensitive partial match
+  // Try case-insensitive exact match
   const s = String(val).toLowerCase();
   for (const [k, v] of Object.entries(FUJI_FILM_SIM_MAP)) {
     if (String(k).toLowerCase() === s) return v;
+  }
+  // Try extracting name from parenthetical format: "F0/Standard (Provia)" → "Provia"
+  const parenMatch = String(val).match(/\(([^)]+)\)/);
+  if (parenMatch) {
+    const inner = parenMatch[1];
+    if (FUJI_FILM_SIM_MAP[inner] !== undefined) return FUJI_FILM_SIM_MAP[inner];
+    const innerLower = inner.toLowerCase();
+    for (const [k, v] of Object.entries(FUJI_FILM_SIM_MAP)) {
+      if (String(k).toLowerCase() === innerLower) return v;
+    }
+  }
+  // Try substring match — check if any known key is contained in val
+  const valLower = String(val).toLowerCase().replace(/[^a-z]/g, '');
+  const knownNames = ['provia', 'velvia', 'astia', 'classicneg', 'classicchrome', 'nostalgic', 'realaace', 'pronegstd', 'proneghi', 'eterna', 'bleachbypass', 'acros', 'mono', 'sepia'];
+  const nameMap = { provia: 'Provia', velvia: 'Velvia', astia: 'Astia', classicneg: 'ClassicNeg', classicchrome: 'Classic', nostalgic: 'Nostalgic', realaace: 'RealaACE', pronegstd: 'ProNegStd', proneghi: 'ProNegHi', eterna: 'Eterna', bleachbypass: 'BleachBypass', acros: 'Acros', mono: 'Mono', sepia: 'Sepia' };
+  for (const name of knownNames) {
+    if (valLower.includes(name)) return nameMap[name];
   }
   return null;
 }
@@ -1717,11 +1735,12 @@ function extractRecipeFromExiftool(data) {
     if (ge) params.grainEffect = ge;
   }
 
-  // Grain size (only meaningful when grain is not Off)
-  if (data.GrainEffectSize != null && params.grainEffect && params.grainEffect !== 'Off') {
+  // Grain size — always set for consistent comparison (defaults to Small when grain is Off)
+  if (data.GrainEffectSize != null) {
     const gs = mapGrainSize(data.GrainEffectSize);
     if (gs) params.grainSize = gs;
   }
+  if (!params.grainSize) params.grainSize = 'Small';
 
   // Color Chrome Effect
   if (data.ColorChromeEffect != null) {
@@ -2559,9 +2578,16 @@ app.post('/api/camera/scan-presets', async (req, res) => {
       const nrResult = await cameraBridge.readProp(0xD1A1);
       const clarityResult = await cameraBridge.readProp(0xD1A2);
 
-      // Decode WB — handle sentinel values (bit 15 set)
+      // Decode WB — handle sentinel values (bit 15 set means "auto" family)
       const wbRaw = decodePtpUint16(wbResult.data);
-      const whiteBalance = (wbRaw & 0x8000) ? 'Auto' : (WB_MAP[wbRaw] || 'Auto');
+      let whiteBalance;
+      if (wbRaw & 0x8000) {
+        // Bit 15 set — check lower bits for specific auto mode
+        const wbLower = wbRaw & 0x7FFF;
+        whiteBalance = WB_MAP[wbLower] || WB_MAP[wbRaw] || 'Auto';
+      } else {
+        whiteBalance = WB_MAP[wbRaw] || 'Auto';
+      }
 
       // Decode tone values — handle sentinel 0x8000 (-32768) as 0
       const hlRaw = decodePtpInt16(hlResult.data);

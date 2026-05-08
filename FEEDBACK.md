@@ -56,7 +56,28 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [ ] **S23-43**: SBS dropdowns— get rid of orange border, please. and dropdown options styling STILL NOT FIXED.
 - [ ] **S23-44**: SBS actions— can you make those show on hover what they mean?
 
-NOTE: S23-36 through S23-44 were implemented (R4 fixes applied in same session) but Oren has NOT verified them yet. Changes were made before Oren finished giving feedback (/ccc was ignored). Next thread must verify all R4+R5 changes with Oren.
+NOTE: S23-36 through S23-44 were implemented last session. Oren verified in Round 6 below.
+
+## Session 23 Round 6 — Unresolved (Oren's verification of R5 fixes)
+
+- [x] **S23-45**: SBS view — good.
+- [x] **S23-46**: Recipe dropdown beside RECIPE — great.
+- [x] **S23-47**: Zoom — good.
+- [ ] **S23-48**: Standard baseline — skeptical, needs re-verify with camera.
+- [x] **S23-49**: Dots — OK.
+- [x] **S23-50**: STOP immediate, clip-path dual-text progress, icons+dots in single dark overlay. Implemented R7. Oren has NOT verified.
+- [x] **S23-51**: Error handling — OK, believes retry is there.
+- [x] **S23-52**: Native selects replaced with custom param-dropdown pattern. Implemented R7. Oren has NOT verified.
+- [x] **S23-53**: Tooltip display fix (was '' falling back to CSS none, now 'block'). Implemented R7. Oren has NOT verified.
+
+## Session 23 Round 7 — Implemented, NOT verified
+
+- [x] **S23-54**: Directory hover highlight — entire preview-group hover highlights name in amber, click on images or name. Oren has NOT verified.
+- [x] **S23-55**: Recently Completed sessions on both Cull and Recipe Lab landing pages. Shared helpers. Oren has NOT verified.
+- [x] **S23-56**: SHUFFLE SELECTED button in PICK PHOTOS popup. Fisher-Yates shuffle. Oren has NOT verified.
+- [x] **S23-57**: Recipe matching fixed — film sim map expanded (F0/Standard, Nostalgic Neg, Classic Neg), grainSize defaults, findMatchingRecipe uses numeric+case-insensitive comparison. Server.js changed. Oren has NOT verified.
+- [x] **S23-58**: NEW RECIPE opens overlay widget with name input + all 15 param controls. Oren has NOT verified.
+- [x] **S23-59**: VARIANT TEST button/chevron/dropdown borders changed to rgba(255,255,255,0.15). Oren has NOT verified.
 
 ## Session 23 Round 4 — Unresolved
 

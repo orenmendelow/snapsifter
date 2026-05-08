@@ -173,15 +173,31 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Compare simulate button always visible with orange outline; transparent bg when 0 pending, filled when active.
 - Failed sim cells show "FAILED" in amber (not red — site is monochrome + orange only).
 
-*Session 23f (S23-36 through S23-44 — Round 5, changes applied but NOT yet verified by Oren):*
-- `#recipe-drawer-top` gets `border-bottom` + `padding-bottom: 12px` + `margin-bottom: 8px` for visual separation.
-- Focus mode zoom: fixed 3x scale with percentage-based `transformOrigin` (was broken for portrait photos — calculated zoom from naturalWidth/clientWidth yielded < 1).
+*Session 23f (S23-36 through S23-44 — Round 5, verified by Oren in R6):*
+- RECIPE label + dropdown now inline (same row via `#recipe-label-row` flex container).
+- Focus mode zoom: fixed 3x scale with percentage-based `transformOrigin`.
 - Focus mode pan: percentage-based `transformOrigin` in mousemove handler.
-- Standard baseline cell rendering: `isExifMatch` determines unblurred state; `isCurrentVal && !isExifMatch` gets blurred (needs simulation). `updateSimulateButton`, `checkAllSimulated`, and simulate handler all use `exifVal` from exifBaseline.
-- Dots: 28px, bold, enhanced text-shadow.
-- Simulate progress text: `mix-blend-mode: difference` with white text for automatic per-letter color inversion.
-- SBS dropdown border: `rgba(255,255,255,0.15)` (removed orange). Added `.sbs-dropdown option` styling.
-- Action tooltips: dots = "Apply variant settings", camera icon = "As Shot", sliders = "Standard".
+- Standard baseline cell rendering: `isExifMatch` determines unblurred state.
+- Dots: changed to `●●●` filled circles, 10px font, `letter-spacing: -1px`, amber color.
+- SBS dropdown border: `rgba(255,255,255,0.15)` (removed orange).
+- Action tooltips: custom instant tooltip via `attachCellTagTooltip()` (replaces slow native `title`).
+
+*Session 23g (S23-45 through S23-59 — Rounds 6-7, implemented but NOT yet verified by Oren):*
+- SBS view: removed BACK TO GRID button. Right panel condenses to 200px (`sbs-condensed` class) with CSS transition, hides param/values/actions.
+- Grid↔SBS transition: 150ms opacity crossfade.
+- STOP/CANCEL button always visible. Text toggles: "CANCEL" normally, "STOP" during sim. STOP set immediately on click (before async).
+- Simulate progress: clip-path dual-text approach (`.sim-text-back` white, `.sim-text-front` black clipped to progress %). Replaced broken `mix-blend-mode: difference`.
+- Icons (AS SHOT/STANDARD) + dots grouped in single `.compare-cell-overlay` div with shared `rgba(0,0,0,0.5)` background.
+- Native `<select>` replaced with custom dropdowns: `#compare-param-dropdown` and `.sbs-custom-dropdown` use `param-dropdown` pattern. `window._compareParamSelect` proxy object preserves `.selectedIndex`/`.value`/`.options` API. `populateSbsDropdowns()` builds custom options.
+- Failed sim cells show clickable RETRY button (`retryCompareCell()` re-runs single-cell simulate).
+- COMPARE button: `line-height:1`, SVG height=11 matched to font.
+- VARIANT TEST button/chevron/dropdown borders: `rgba(255,255,255,0.15)` (removed orange).
+- `#compare-param-select` border: `rgba(255,255,255,0.15)` (removed orange).
+- Directory browser: hover on name OR images highlights directory name in amber. Click on either navigates. Both Cull and Recipe Lab.
+- Landing page: "Recently Completed" sections on both Cull and Recipe Lab. `isSessionCompleted()`, `buildSessionRow()`, `buildCompletedCard()` shared helpers.
+- PICK PHOTOS: SHUFFLE SELECTED button with Fisher-Yates shuffle.
+- Recipe matching fix (server.js): `F0/Standard (Provia)`, `Nostalgic Neg`, `Classic Neg` added to `FUJI_FILM_SIM_MAP`. Parenthetical extraction fallback. `grainSize` defaults to `'Small'`. `findMatchingRecipe()` uses numeric + case-insensitive comparison with `RECIPE_DEFAULTS` fallback for missing keys.
+- NEW RECIPE: `#new-recipe-widget` overlay with name input + all 15 param controls from `PARAM_DEFS`. SAVE persists via POST /api/recipe.
 
 **ARCHITECTURAL:**
 - `recipeState.compareBaseline` — 'asshot' | 'standard', set by baseline dropdown
@@ -189,14 +205,20 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - `recipeState.compareSelectedFavorite` — value string of user's selected favorite cell
 - `compareZoomLevel` — local var in initCompareMode scope, 1 or 3
 - `#compare-baseline-row` — dropdown with chevron in `#compare-right-controls`
-- `#compare-post-actions` — div with 5 action buttons, shown after all cells simulated
-- `#compare-side-by-side` — two `.sbs-panel` divs with `.sbs-dropdown` selects and synced zoom
+- `#compare-post-actions` — div with action buttons, shown after all cells simulated
+- `#compare-side-by-side` — two `.sbs-panel` divs with custom dropdowns (`.sbs-custom-dropdown`) and synced zoom
+- `#compare-param-dropdown` — custom dropdown replacing native `<select>`. `window._compareParamSelect` proxy with `.selectedIndex`/`.value`/`.options`.
+- `.compare-cell-overlay` — single container for icons + dots per cell, shared dark background
 - `updateSimulateButton()` — counts pending cells using `exifVal` (not `currentVal`), handles camera state, button always visible
 - `window._compareUpdateSimBtn` — exposed for camera poll to update compare simulate button
 - Guard flag `recipeState._updatingDropdown` prevents infinite loop between `checkParamsChanged()` ↔ `updateRecipeActiveDropdown()`
 - `isExifMatch` / `isStandardMatch` — per-cell booleans in `renderGrid()` for tag display, independent of `isCurrentVal`
+- `isSessionCompleted(s)` / `buildSessionRow()` / `buildCompletedCard()` — shared session helpers for landing pages
+- `retryCompareCell(cell, val, paramKey)` — re-runs single-cell simulation on failure
+- `showNewRecipeWidget()` — opens overlay form for manual recipe creation
 - Focus zoom: fixed `scale(3)` with `pctX + '% ' + pctY + '%'` transformOrigin. NEVER use naturalWidth/clientWidth calculation.
 - Palette: monochrome + orange ONLY. No red, green, blue, or other hues. Error states use `var(--amber)`.
+- Dropdown borders: `rgba(255,255,255,0.15)` default, NOT orange. Only active/selected states use amber.
 
 ### Session 22 changes (2026-05-07)
 

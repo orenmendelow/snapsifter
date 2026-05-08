@@ -284,6 +284,15 @@ body::before {
   display: flex;
   flex-direction: column;
   border-left: 1px solid rgba(255,255,255,0.12);
+  transition: width 0.2s ease;
+}
+#recipe-right-panel.sbs-condensed {
+  width: 200px;
+}
+#recipe-right-panel.sbs-condensed #compare-param-section,
+#recipe-right-panel.sbs-condensed #compare-values-section,
+#recipe-right-panel.sbs-condensed #compare-actions {
+  display: none !important;
 }
 
 #recipe-right-placeholder {
@@ -644,6 +653,129 @@ body::before {
   font-size: 12px;
   color: var(--text-dim);
   letter-spacing: 1px;
+}
+
+/* ── New Recipe Widget ── */
+#new-recipe-widget {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0,0,0,0.85);
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+}
+#new-recipe-widget.visible {
+  display: flex;
+}
+#new-recipe-widget-inner {
+  background: #0a0a0a;
+  border: 1px solid rgba(255,255,255,0.15);
+  width: 520px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+#new-recipe-widget-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  flex-shrink: 0;
+}
+#new-recipe-widget-header label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+#new-recipe-name-input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 16px;
+  padding: 10px 12px;
+  outline: none;
+  letter-spacing: 1px;
+}
+#new-recipe-name-input:focus {
+  border-color: var(--amber);
+}
+#new-recipe-widget-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px 24px;
+}
+.nrw-group-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--amber);
+  text-transform: uppercase;
+  margin: 16px 0 8px;
+}
+.nrw-group-label:first-child {
+  margin-top: 0;
+}
+.nrw-param-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.nrw-param-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  width: 140px;
+}
+.nrw-param-row select,
+.nrw-param-row input[type="number"] {
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 8px;
+  outline: none;
+  flex: 1;
+  max-width: 200px;
+}
+.nrw-param-row select:focus,
+.nrw-param-row input[type="number"]:focus {
+  border-color: var(--amber);
+}
+#new-recipe-widget-footer {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+#new-recipe-widget-footer button {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 10px 24px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+#new-recipe-widget-footer button:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+#nrw-save-btn {
+  background: var(--amber) !important;
+  border-color: var(--amber) !important;
+  color: #000 !important;
+}
+#nrw-save-btn:hover {
+  opacity: 0.9;
 }
 
 #camera-status {
@@ -1201,7 +1333,7 @@ body::before {
   padding: 8px 16px;
   background: none;
   color: var(--text-dim);
-  border: 1px solid var(--amber);
+  border: 1px solid rgba(255,255,255,0.15);
   border-radius: 0;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
@@ -1210,12 +1342,12 @@ body::before {
 }
 #recipe-compare-btn:hover {
   color: var(--amber);
-  border-color: var(--amber);
+  border-color: var(--amber-dim);
 }
 #recipe-compare-chevron {
   background: none;
   color: var(--text-dim);
-  border: 1px solid var(--amber);
+  border: 1px solid rgba(255,255,255,0.15);
   border-left: none;
   border-radius: 0;
   cursor: pointer;
@@ -1223,7 +1355,7 @@ body::before {
   padding: 8px 10px;
   transition: color 0.15s, border-color 0.15s;
 }
-#recipe-compare-chevron:hover { color: var(--amber); border-color: var(--amber); }
+#recipe-compare-chevron:hover { color: var(--amber); border-color: var(--amber-dim); }
 #recipe-compare-dropdown {
   position: absolute;
   top: 100%;
@@ -1231,7 +1363,7 @@ body::before {
   min-width: 120px;
   z-index: 100;
   background: #1a1a1a;
-  border: 1px solid var(--amber);
+  border: 1px solid rgba(255,255,255,0.15);
   border-radius: 0;
   margin-top: 2px;
 }
@@ -1299,10 +1431,13 @@ body::before {
 /* compare cell tag for as-shot/standard indicator (icon) */
 .compare-cell-tag {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 8px;
+  right: 8px;
   pointer-events: none;
   line-height: 0;
+  background: rgba(0,0,0,0.5);
+  padding: 4px;
+  border-radius: 2px;
 }
 .compare-cell-actions {
   position: absolute;
@@ -1313,20 +1448,66 @@ body::before {
   align-items: center;
   gap: 4px;
 }
+.compare-cell-overlay {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0,0,0,0.5);
+  padding: 3px 6px;
+  border-radius: 2px;
+  z-index: 10;
+}
+.compare-cell-overlay .cell-action-btn {
+  padding: 0;
+  text-shadow: none;
+}
+.compare-cell-overlay .cell-action-camera-icon {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+.compare-cell-overlay .cell-action-menu {
+  top: calc(100% + 3px);
+  right: -6px;
+}
 .cell-action-btn {
   background: none;
   color: var(--amber);
   border: none;
   cursor: pointer;
-  font-size: 28px;
+  font-size: 10px;
   font-weight: bold;
   padding: 2px 6px;
   line-height: 1;
+  letter-spacing: -1px;
   text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.5);
 }
 .cell-action-btn:hover { background: none; text-shadow: 0 1px 5px rgba(0,0,0,0.95); }
 .cell-action-camera-icon {
   line-height: 0;
+  background: rgba(0,0,0,0.5);
+  padding: 4px;
+  border-radius: 2px;
+  position: relative;
+  pointer-events: auto;
+  cursor: default;
+}
+.cell-tag-tip {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  right: 0;
+  background: #111;
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 3px 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 30;
+  display: none;
 }
 .cell-action-menu {
   position: absolute;
@@ -1406,6 +1587,10 @@ body::before {
   align-items: center;
   justify-content: center;
   gap: 4px;
+  line-height: 1;
+}
+.compare-post-actions button svg {
+  flex-shrink: 0;
 }
 .compare-post-actions button:hover { border-color: var(--amber); color: var(--amber); }
 .compare-post-actions button.primary { background: var(--amber); color: #000; border: none; }
@@ -1415,26 +1600,21 @@ body::before {
   flex-direction: column;
   gap: 6px;
 }
-#compare-param-select {
+#compare-param-dropdown {
+  margin-bottom: 0;
+}
+#compare-param-dropdown .param-dropdown-trigger {
   font-family: var(--mono);
   font-size: 11px;
   padding: 8px 12px;
   background: rgba(255,255,255,0.04);
-  color: #fff;
-  border: 1px solid var(--amber);
-  width: 100%;
-  appearance: none;
-  -webkit-appearance: none;
-  border-radius: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
 }
-#compare-param-select:hover {
-  border-color: var(--amber);
-  color: var(--amber);
+#compare-param-dropdown .param-dropdown-list {
+  max-height: 300px;
+}
+#compare-param-dropdown .param-dropdown-option {
+  font-family: var(--mono);
+  font-size: 11px;
 }
 #compare-values-section {
   display: flex;
@@ -1478,7 +1658,25 @@ body::before {
   transition: opacity 0.15s;
   position: relative;
   overflow: hidden;
-  isolation: isolate;
+}
+.sim-text-back {
+  color: #fff;
+  position: relative;
+  z-index: 1;
+}
+.sim-text-front {
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  clip-path: inset(0 100% 0 0);
+  z-index: 2;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  font-weight: 500;
 }
 #compare-simulate-btn:hover { opacity: 0.85; }
 #compare-simulate-btn.simulating { cursor: wait; }
@@ -1490,6 +1688,7 @@ body::before {
   padding: 8px;
   min-height: 0;
   overflow: hidden;
+  transition: opacity 0.15s linear;
 }
 .compare-cell {
   position: relative;
@@ -1520,13 +1719,30 @@ body::before {
   font-size: 9px;
   letter-spacing: 1px;
   color: rgba(255,255,255,0.4);
+  text-align: center;
 }
+.compare-cell-retry {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--amber);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.compare-cell-retry:hover { opacity: 0.7; }
 /* removed .compare-cell.clickable — synced zoom replaces click-to-focus */
 #compare-side-by-side {
   flex: 1;
   display: flex;
   gap: 0;
   min-height: 0;
+  transition: opacity 0.15s linear;
 }
 .sbs-panel {
   flex: 1;
@@ -1534,32 +1750,23 @@ body::before {
   flex-direction: column;
   min-width: 0;
 }
-.sbs-dropdown {
+.sbs-custom-dropdown {
+  position: relative;
+  min-width: 120px;
+  max-width: 250px;
+}
+.sbs-custom-dropdown .param-dropdown-trigger {
   font-family: var(--mono);
   font-size: 11px;
   padding: 8px 12px;
   background: rgba(255,255,255,0.04);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.15);
-  width: auto;
-  min-width: 120px;
-  max-width: 250px;
-  appearance: none;
-  -webkit-appearance: none;
-  border-radius: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  cursor: pointer;
 }
-.sbs-dropdown:hover {
-  border-color: var(--amber);
-  color: var(--amber);
+.sbs-custom-dropdown .param-dropdown-list {
+  max-height: 240px;
 }
-.sbs-dropdown option {
-  background: #111;
-  color: #fff;
-  padding: 6px 10px;
+.sbs-custom-dropdown .param-dropdown-option {
+  font-family: var(--mono);
+  font-size: 11px;
 }
 .sbs-panel-actions {
   position: absolute;
@@ -2001,6 +2208,7 @@ body::before {
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer;
 }
 
 .preview-group:last-child {
@@ -2008,7 +2216,6 @@ body::before {
 }
 
 .preview-group-label {
-  cursor: pointer;
   font-size: 13px;
   margin-bottom: 8px;
   display: flex;
@@ -2017,7 +2224,7 @@ body::before {
   transition: color 0.1s ease;
 }
 
-.preview-group-label:hover .preview-group-name {
+.preview-group:hover .preview-group-name {
   color: var(--amber);
 }
 
@@ -2819,6 +3026,9 @@ body::before {
     <div id="tree-panel">
       <div class="tree-section-label">Recent</div>
       <div id="sessions-list"></div>
+      <div id="completed-sessions-divider" class="tree-divider" style="display:none"></div>
+      <div id="completed-sessions-label" class="tree-section-label" style="display:none">Completed</div>
+      <div id="completed-sessions-list"></div>
       <div class="tree-divider"></div>
       <div class="tree-section-label">Volumes</div>
       <div id="tree-volumes"></div>
@@ -2834,6 +3044,10 @@ body::before {
           <div id="quick-start-name" style="font-family: var(--mono); font-size: 13px; color: var(--amber); transition: color 0.1s ease;"></div>
           <div id="quick-start-detail" style="font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-top: 2px;"></div>
         </div>
+      </div>
+      <div id="completed-start" style="display:none">
+        <div style="font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; margin-top: 20px;">Recently Completed</div>
+        <div id="completed-start-list"></div>
       </div>
       <div id="preview-section">
         <div id="preview-count"></div>
@@ -3024,7 +3238,13 @@ body::before {
         <div id="compare-grid"></div>
         <div id="compare-side-by-side" style="display:none">
           <div class="sbs-panel">
-            <select class="sbs-dropdown" id="sbs-dropdown-left"></select>
+            <div class="sbs-custom-dropdown" id="sbs-dropdown-left">
+              <div class="param-dropdown-trigger" id="sbs-trigger-left">
+                <span class="param-dropdown-value" id="sbs-value-left"></span>
+                <span class="param-dropdown-chevron">&#9662;</span>
+              </div>
+              <div class="param-dropdown-list" id="sbs-list-left"></div>
+            </div>
             <div class="sbs-photo-container">
               <img class="sbs-photo" id="sbs-photo-left" src="" alt="">
               <div class="sbs-panel-actions" id="sbs-actions-left"></div>
@@ -3032,7 +3252,13 @@ body::before {
           </div>
           <div class="sbs-divider"></div>
           <div class="sbs-panel">
-            <select class="sbs-dropdown" id="sbs-dropdown-right"></select>
+            <div class="sbs-custom-dropdown" id="sbs-dropdown-right">
+              <div class="param-dropdown-trigger" id="sbs-trigger-right">
+                <span class="param-dropdown-value" id="sbs-value-right"></span>
+                <span class="param-dropdown-chevron">&#9662;</span>
+              </div>
+              <div class="param-dropdown-list" id="sbs-list-right"></div>
+            </div>
             <div class="sbs-photo-container">
               <img class="sbs-photo" id="sbs-photo-right" src="" alt="">
               <div class="sbs-panel-actions" id="sbs-actions-right"></div>
@@ -3045,13 +3271,15 @@ body::before {
     <!-- Right: recipe params (always visible) -->
     <div id="recipe-right-panel">
       <div id="recipe-drawer-top">
-        <div class="param-group-label" style="margin-top:0">RECIPE</div>
-        <div id="recipe-active-dropdown" class="param-dropdown" style="margin-bottom:0">
-          <div id="recipe-active-trigger" class="param-dropdown-trigger">
-            <span id="recipe-active-label" class="param-dropdown-value">As Shot</span>
-            <span class="param-dropdown-chevron">&#9662;</span>
+        <div id="recipe-label-row" style="display:flex;align-items:center;gap:12px">
+          <div class="param-group-label" style="margin:0;flex-shrink:0">RECIPE</div>
+          <div id="recipe-active-dropdown" class="param-dropdown" style="margin-bottom:0;flex:1">
+            <div id="recipe-active-trigger" class="param-dropdown-trigger">
+              <span id="recipe-active-label" class="param-dropdown-value">As Shot</span>
+              <span class="param-dropdown-chevron">&#9662;</span>
+            </div>
+            <div id="recipe-active-list" class="param-dropdown-list"></div>
           </div>
-          <div id="recipe-active-list" class="param-dropdown-list"></div>
         </div>
         <div id="recipe-compare-row" style="display:none">
           <button id="recipe-compare-btn">VARIANT TEST</button>
@@ -3076,17 +3304,22 @@ body::before {
         </div>
         <div id="compare-param-section">
           <label style="font-size:10px;color:var(--text-dim);letter-spacing:0.5px;font-family:var(--mono)">PARAMETER</label>
-          <select id="compare-param-select"></select>
+          <div id="compare-param-dropdown" class="param-dropdown">
+            <div id="compare-param-trigger" class="param-dropdown-trigger">
+              <span id="compare-param-value" class="param-dropdown-value"></span>
+              <span class="param-dropdown-chevron">&#9662;</span>
+            </div>
+            <div id="compare-param-list" class="param-dropdown-list"></div>
+          </div>
         </div>
         <div id="compare-values-section"></div>
         <div id="compare-actions">
           <div id="compare-sim-row">
             <button id="compare-simulate-btn">SIMULATE</button>
-            <button id="compare-cancel-btn" style="display:none">STOP</button>
+            <button id="compare-cancel-btn">CANCEL</button>
           </div>
           <div id="compare-post-actions" class="compare-post-actions">
-            <button id="compare-sbs-btn"><svg viewBox="0 0 20 14" width="16" height="12" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;margin-right:4px"><rect x="1" y="1" width="8" height="12" rx="1"/><rect x="11" y="1" width="8" height="12" rx="1"/></svg>COMPARE</button>
-            <button id="compare-sbs-back-btn" style="display:none!important">BACK TO GRID</button>
+            <button id="compare-sbs-btn"><svg viewBox="0 0 20 14" width="16" height="11" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-right:4px"><rect x="1" y="1" width="8" height="12" rx="1"/><rect x="11" y="1" width="8" height="12" rx="1"/></svg>COMPARE</button>
           </div>
         </div>
       </div>
@@ -3138,6 +3371,7 @@ body::before {
       <span id="photo-picker-title">Select Photos</span>
       <span id="photo-picker-selected-count">0 / 9 selected</span>
       <button class="recipe-action-btn primary" id="photo-picker-confirm">LOAD SELECTED</button>
+      <button class="recipe-action-btn primary" id="photo-picker-shuffle-confirm">SHUFFLE SELECTED</button>
       <button class="recipe-action-btn" id="photo-picker-cancel">CANCEL</button>
     </div>
     <div id="photo-picker-scroll"><div id="photo-picker-grid"></div></div>
@@ -3152,6 +3386,21 @@ body::before {
     <span id="library-count"></span>
   </div>
   <div id="library-grid"></div>
+</div>
+
+<!-- ── New Recipe Widget ── -->
+<div id="new-recipe-widget">
+  <div id="new-recipe-widget-inner">
+    <div id="new-recipe-widget-header">
+      <label>Recipe Name</label>
+      <input type="text" id="new-recipe-name-input" placeholder="e.g. Warm Street" autocomplete="off" spellcheck="false">
+    </div>
+    <div id="new-recipe-widget-body"></div>
+    <div id="new-recipe-widget-footer">
+      <button id="nrw-cancel-btn">CANCEL</button>
+      <button id="nrw-save-btn">SAVE</button>
+    </div>
+  </div>
 </div>
 
 <!-- SVG templates for grease pencil marks -->
@@ -3629,6 +3878,7 @@ body::before {
       if (data.photoCount > 0) {
         rightPanelEmpty.style.display = 'none';
         document.getElementById('quick-start').style.display = 'none';
+        document.getElementById('completed-start').style.display = 'none';
         previewSection.classList.add('visible');
 
         // Check if subfolders have photos
@@ -3690,21 +3940,6 @@ body::before {
             countEl.textContent = group.photoCount + ' photo' + (group.photoCount === 1 ? '' : 's');
             labelEl.appendChild(countEl);
 
-            if (!group.isCurrentDir) {
-              labelEl.addEventListener('click', () => {
-                selectNode(group.path);
-                const treeRow = document.querySelector('.tree-node-row[data-path="' + CSS.escape(group.path) + '"]');
-                if (treeRow) {
-                  const chevron = treeRow.querySelector('.tree-chevron');
-                  const childrenEl = treeRow.nextElementSibling;
-                  if (chevron && childrenEl && !treeState[group.path]?.expanded) {
-                    const depth = Math.round(parseInt(treeRow.style.paddingLeft) / 16) + 1;
-                    toggleNode(group.path, chevron, childrenEl, depth);
-                  }
-                }
-              });
-            }
-
             groupEl.appendChild(labelEl);
 
             const thumbsEl = document.createElement('div');
@@ -3720,6 +3955,22 @@ body::before {
             }
 
             groupEl.appendChild(thumbsEl);
+
+            if (!group.isCurrentDir) {
+              groupEl.addEventListener('click', () => {
+                selectNode(group.path);
+                const treeRow = document.querySelector('.tree-node-row[data-path="' + CSS.escape(group.path) + '"]');
+                if (treeRow) {
+                  const chevron = treeRow.querySelector('.tree-chevron');
+                  const childrenEl = treeRow.nextElementSibling;
+                  if (chevron && childrenEl && !treeState[group.path]?.expanded) {
+                    const depth = Math.round(parseInt(treeRow.style.paddingLeft) / 16) + 1;
+                    toggleNode(group.path, chevron, childrenEl, depth);
+                  }
+                }
+              });
+            }
+
             previewGrid.appendChild(groupEl);
           }
 
@@ -3768,7 +4019,73 @@ body::before {
     rightPanelEmpty.style.display = '';
     rightPanelEmpty.textContent = msg || 'Browse folders on the left to preview photos';
     document.getElementById('quick-start').style.display = 'none';
+    document.getElementById('completed-start').style.display = 'none';
     selectedPhotoCount = 0;
+  }
+
+  function isSessionCompleted(s) {
+    const total = s.fileCount || 0;
+    const rated = s.ratedCount || 0;
+    return s.accessible !== false && total > 0 && rated >= total;
+  }
+
+  function buildSessionRow(s, onDelete, onResume) {
+    const row = document.createElement('div');
+    row.className = 'session-row' + (s.accessible === false ? ' dimmed' : '');
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'session-name';
+    nameEl.textContent = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+    row.appendChild(nameEl);
+
+    if (s.accessible === false) {
+      const disc = document.createElement('div');
+      disc.className = 'session-disconnected-label';
+      disc.textContent = 'disconnected';
+      row.appendChild(disc);
+    } else {
+      const total = s.fileCount || 0;
+      const rated = s.ratedCount || 0;
+      const detail = document.createElement('div');
+      detail.className = 'session-detail';
+      detail.textContent = isSessionCompleted(s)
+        ? total + ' photo' + (total === 1 ? '' : 's') + ', all rated'
+        : rated + ' of ' + total + ' rated';
+      row.appendChild(detail);
+    }
+
+    const delBtn = document.createElement('span');
+    delBtn.className = 'session-delete';
+    delBtn.textContent = '×';
+    delBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await onDelete(s);
+    });
+    row.appendChild(delBtn);
+
+    if (s.accessible !== false) {
+      row.addEventListener('click', () => onResume(s));
+    }
+
+    return row;
+  }
+
+  function buildCompletedCard(s, onResume) {
+    const card = document.createElement('div');
+    card.style.cssText = 'cursor:pointer;margin-bottom:8px;transition:color 0.1s ease;';
+    const cardName = document.createElement('div');
+    cardName.style.cssText = 'font-family:var(--mono);font-size:13px;color:var(--amber);transition:color 0.1s ease;';
+    cardName.textContent = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+    card.appendChild(cardName);
+    const cardDetail = document.createElement('div');
+    cardDetail.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:2px;';
+    const total = s.fileCount || 0;
+    cardDetail.textContent = total + ' photo' + (total === 1 ? '' : 's') + ', all rated';
+    card.appendChild(cardDetail);
+    card.addEventListener('click', () => onResume(s));
+    card.addEventListener('mouseenter', () => { cardName.style.color = '#d4664a'; });
+    card.addEventListener('mouseleave', () => { cardName.style.color = 'var(--amber)'; });
+    return card;
   }
 
   async function loadSessions() {
@@ -3776,20 +4093,39 @@ body::before {
       const sessions = await fetch('/api/sessions').then(r => r.json());
       sessionsList.innerHTML = '';
 
+      const completedListEl = document.getElementById('completed-sessions-list');
+      const completedDivider = document.getElementById('completed-sessions-divider');
+      const completedLabel = document.getElementById('completed-sessions-label');
+      completedListEl.innerHTML = '';
+
       const quickStart = document.getElementById('quick-start');
       const quickStartCard = document.getElementById('quick-start-card');
       const quickStartName = document.getElementById('quick-start-name');
       const quickStartDetail = document.getElementById('quick-start-detail');
+      const completedStart = document.getElementById('completed-start');
+      const completedStartList = document.getElementById('completed-start-list');
+      completedStartList.innerHTML = '';
 
       if (!sessions || sessions.length === 0) {
         quickStart.style.display = 'none';
+        completedStart.style.display = 'none';
+        completedDivider.style.display = 'none';
+        completedLabel.style.display = 'none';
         return;
       }
 
-      // Populate quick-start with most recent accessible session
-      const recentAccessible = sessions.find(s => s.accessible !== false);
-      if (recentAccessible && !selectedPath) {
-        const qs = recentAccessible;
+      const inProgress = sessions.filter(s => !isSessionCompleted(s));
+      const completed = sessions.filter(s => isSessionCompleted(s));
+
+      async function handleDelete(s) {
+        await fetch('/api/session/' + s.id, { method: 'DELETE' });
+        loadSessions();
+      }
+
+      // Populate quick-start with most recent accessible IN-PROGRESS session
+      const recentInProgress = inProgress.find(s => s.accessible !== false);
+      if (recentInProgress && !selectedPath) {
+        const qs = recentInProgress;
         const qsFolderName = qs.name || qs.dir.split('/').filter(Boolean).pop() || qs.dir;
         quickStartName.textContent = qsFolderName;
         const qsTotal = qs.fileCount || 0;
@@ -3804,45 +4140,34 @@ body::before {
         quickStart.style.display = 'none';
       }
 
-      for (const s of sessions) {
-        const row = document.createElement('div');
-        row.className = 'session-row' + (s.accessible === false ? ' dimmed' : '');
+      // Left panel: in-progress sessions under "Recent"
+      for (const s of inProgress) {
+        sessionsList.appendChild(buildSessionRow(s, handleDelete, resumeSession));
+      }
 
-        const name = document.createElement('div');
-        name.className = 'session-name';
-        const folderName = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
-        name.textContent = folderName;
-        row.appendChild(name);
-
-        if (s.accessible === false) {
-          const disc = document.createElement('div');
-          disc.className = 'session-disconnected-label';
-          disc.textContent = 'disconnected';
-          row.appendChild(disc);
-        } else {
-          const reviewed = s.ratedCount || 0;
-          const total = s.fileCount || 0;
-          const detail = document.createElement('div');
-          detail.className = 'session-detail';
-          detail.textContent = reviewed + ' of ' + total + ' rated';
-          row.appendChild(detail);
+      // Left panel: completed sessions under "Completed"
+      if (completed.length > 0) {
+        completedDivider.style.display = '';
+        completedLabel.style.display = '';
+        for (const s of completed) {
+          completedListEl.appendChild(buildSessionRow(s, handleDelete, resumeSession));
         }
+      } else {
+        completedDivider.style.display = 'none';
+        completedLabel.style.display = 'none';
+      }
 
-        const delBtn = document.createElement('span');
-        delBtn.className = 'session-delete';
-        delBtn.textContent = '×';
-        delBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          await fetch('/api/session/' + s.id, { method: 'DELETE' });
-          loadSessions();
-        });
-        row.appendChild(delBtn);
-
-        if (s.accessible !== false) {
-          row.addEventListener('click', () => resumeSession(s));
+      // Right panel: completed session cards
+      if (completed.length > 0) {
+        completedStart.style.display = '';
+        if (!recentInProgress && !selectedPath) {
+          rightPanelEmpty.style.display = 'none';
         }
-
-        sessionsList.appendChild(row);
+        for (const cs of completed.slice(0, 6)) {
+          completedStartList.appendChild(buildCompletedCard(cs, resumeSession));
+        }
+      } else {
+        completedStart.style.display = 'none';
       }
     } catch (e) {}
   }
@@ -4867,6 +5192,24 @@ body::before {
 
   let compareZoomLevel = 1;
 
+  function attachCellTagTooltip(el, text) {
+    el.removeAttribute('title');
+    el.addEventListener('mouseenter', function() {
+      let tip = this.querySelector('.cell-tag-tip');
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.className = 'cell-tag-tip';
+        this.appendChild(tip);
+      }
+      tip.textContent = text;
+      tip.style.display = 'block';
+    });
+    el.addEventListener('mouseleave', function() {
+      const tip = this.querySelector('.cell-tag-tip');
+      if (tip) tip.style.display = 'none';
+    });
+  }
+
   function enterCompareMode(baseline) {
     recipeState.mode = 'compare';
     recipeState.compareRendered = new Set();
@@ -4919,17 +5262,18 @@ body::before {
     document.getElementById('compare-values-section').style.display = '';
     document.getElementById('compare-actions').style.display = '';
     document.getElementById('compare-post-actions').style.display = 'none';
-    document.getElementById('compare-cancel-btn').style.display = 'none';
+    document.getElementById('compare-cancel-btn').textContent = 'CANCEL';
     // Reset side-by-side state
     document.getElementById('compare-side-by-side').style.display = 'none';
     document.getElementById('compare-grid').style.display = '';
     document.getElementById('compare-sbs-btn').style.display = '';
-    document.getElementById('compare-sbs-back-btn').style.display = 'none';
     initCompareMode();
   }
 
   function initCompareMode() {
-    const paramSelect = document.getElementById('compare-param-select');
+    const paramTrigger = document.getElementById('compare-param-trigger');
+    const paramValueEl = document.getElementById('compare-param-value');
+    const paramList = document.getElementById('compare-param-list');
     const valuesSection = document.getElementById('compare-values-section');
     const grid = document.getElementById('compare-grid');
     const compareBtn = document.getElementById('compare-simulate-btn');
@@ -4940,17 +5284,56 @@ body::before {
     compareZoomLevel = 1;
     postActions.style.display = 'none';
 
-    paramSelect.innerHTML = '';
+    paramList.innerHTML = '';
     const allParams = [];
+    let _cmpSelIdx = 0;
+    const _cmpOpts = [];
     for (const group of PARAM_DEFS) {
       for (const p of group.params) {
         allParams.push(p);
-        const opt = document.createElement('option');
-        opt.value = p.key;
-        opt.textContent = p.label;
-        paramSelect.appendChild(opt);
+        _cmpOpts.push({ key: p.key, label: p.label });
+        const item = document.createElement('div');
+        item.className = 'param-dropdown-option' + (_cmpOpts.length === 1 ? ' selected' : '');
+        item.dataset.value = p.key;
+        item.textContent = p.label;
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          _cmpSelIdx = _cmpOpts.findIndex(o => o.key === p.key);
+          paramValueEl.textContent = p.label;
+          paramList.querySelectorAll('.param-dropdown-option').forEach(el => el.classList.remove('selected'));
+          item.classList.add('selected');
+          paramList.style.display = 'none';
+          window._compareSelectedParam = p.key;
+          renderValues();
+        });
+        paramList.appendChild(item);
       }
     }
+    if (_cmpOpts.length > 0) {
+      paramValueEl.textContent = _cmpOpts[0].label;
+      window._compareSelectedParam = _cmpOpts[0].key;
+    }
+    paramTrigger.onclick = (e) => {
+      e.stopPropagation();
+      closeAllDropdowns();
+      paramList.style.display = 'block';
+    };
+    // Expose a select-like interface for _compareParamSelect consumers
+    window._compareParamSelect = {
+      get selectedIndex() { return _cmpSelIdx; },
+      set selectedIndex(idx) {
+        if (idx >= 0 && idx < _cmpOpts.length) {
+          _cmpSelIdx = idx;
+          paramValueEl.textContent = _cmpOpts[idx].label;
+          window._compareSelectedParam = _cmpOpts[idx].key;
+          paramList.querySelectorAll('.param-dropdown-option').forEach((el, i) => {
+            el.classList.toggle('selected', i === idx);
+          });
+        }
+      },
+      get value() { return _cmpOpts[_cmpSelIdx] ? _cmpOpts[_cmpSelIdx].key : ''; },
+      get options() { return _cmpOpts; }
+    };
 
     let selectedValues = new Set();
 
@@ -4980,7 +5363,6 @@ body::before {
           compareBtn.style.opacity = '0.6';
         }
         compareBtn.style.display = '';
-        cancelBtn.style.display = 'none';
       } else {
         compareBtn.textContent = 'SIMULATE';
         compareBtn.disabled = true;
@@ -4988,7 +5370,6 @@ body::before {
         compareBtn.style.background = 'transparent';
         compareBtn.style.color = 'var(--text-dim)';
         compareBtn.style.opacity = '0.5';
-        cancelBtn.style.display = 'none';
       }
     }
 
@@ -5065,25 +5446,25 @@ body::before {
         }
         // Per-cell action buttons for rendered, current-value, exif-match, and standard-match cells
         if (isCurrentVal || isRendered || isExifMatch || isStandardMatch) {
-          const actionsDiv = document.createElement('div');
-          actionsDiv.className = 'compare-cell-actions';
+          const overlay = document.createElement('div');
+          overlay.className = 'compare-cell-overlay';
           // Camera icon for as-shot value, sliders icon for standard value
           if (isExifMatch && !(isStandardMatch && isExifMatch)) {
             const camIcon = document.createElement('span');
             camIcon.className = 'cell-action-camera-icon';
-            camIcon.title = 'As Shot';
+            attachCellTagTooltip(camIcon, 'As Shot');
             camIcon.innerHTML = '<svg viewBox="0 0 24 20" width="20" height="16" fill="none" stroke="var(--amber)" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M8 5l1.5-3h5L16 5"/></svg>';
-            actionsDiv.appendChild(camIcon);
+            overlay.appendChild(camIcon);
           } else if (isStandardMatch) {
             const camIcon = document.createElement('span');
             camIcon.className = 'cell-action-camera-icon';
-            camIcon.title = 'Standard';
+            attachCellTagTooltip(camIcon, 'Standard');
             camIcon.innerHTML = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="var(--amber)" stroke-width="1.5"><line x1="3" y1="5" x2="17" y2="5"/><circle cx="7" cy="5" r="2"/><line x1="3" y1="15" x2="17" y2="15"/><circle cx="13" cy="15" r="2"/></svg>';
-            actionsDiv.appendChild(camIcon);
+            overlay.appendChild(camIcon);
           }
           const actBtn = document.createElement('button');
           actBtn.className = 'cell-action-btn';
-          actBtn.textContent = '⋮';
+          actBtn.textContent = '●●●';
           actBtn.title = 'Apply variant settings';
           const actMenu = document.createElement('div');
           actMenu.className = 'cell-action-menu';
@@ -5127,15 +5508,15 @@ body::before {
             grid.querySelectorAll('.cell-action-menu').forEach(m => { if (m !== actMenu) m.style.display = 'none'; });
             actMenu.style.display = actMenu.style.display === 'none' ? 'block' : 'none';
           });
-          actionsDiv.appendChild(actBtn);
-          actionsDiv.appendChild(actMenu);
-          cell.appendChild(actionsDiv);
+          overlay.appendChild(actBtn);
+          overlay.appendChild(actMenu);
+          cell.appendChild(overlay);
         }
         // Synced zoom: click toggles zoom on ALL cells
         {
           cell.addEventListener('click', (e) => {
             // Don't zoom if clicking action button area
-            if (e.target.closest('.compare-cell-actions')) return;
+            if (e.target.closest('.compare-cell-actions') || e.target.closest('.compare-cell-overlay')) return;
             const rect = cell.getBoundingClientRect();
             const pctX = ((e.clientX - rect.left) / rect.width * 100);
             const pctY = ((e.clientY - rect.top) / rect.height * 100);
@@ -5181,7 +5562,7 @@ body::before {
       recipeState.compareSelectedFavorite = null;
       compareZoomLevel = 1;
       postActions.style.display = 'none';
-      const key = paramSelect.value;
+      const key = window._compareSelectedParam || (_cmpOpts[0] && _cmpOpts[0].key) || '';
       const paramDef = allParams.find(p => p.key === key);
       if (!paramDef) return;
 
@@ -5226,9 +5607,7 @@ body::before {
 
     // Expose renderValues for next-param button
     window._compareRenderValues = renderValues;
-    window._compareParamSelect = paramSelect;
 
-    paramSelect.addEventListener('change', renderValues);
     renderValues();
   }
 
@@ -5288,6 +5667,7 @@ body::before {
   function restoreRightPanel() {
     const hasBaseline = recipeLoadedDir && recipeState.exifBaseline;
     const rightPanel = document.getElementById('recipe-right-panel');
+    rightPanel.classList.remove('sbs-condensed');
     const activeLabel = document.getElementById('recipe-active-label');
     if (!hasBaseline) {
       rightPanel.classList.add('disabled');
@@ -5900,10 +6280,119 @@ body::before {
     newCard.className = 'library-card-new';
     newCard.innerHTML = '<span>+ NEW RECIPE</span>';
     newCard.addEventListener('click', () => {
-      createNewRecipeLocal();
-      hideLibrary();
+      showNewRecipeWidget();
     });
     grid.appendChild(newCard);
+  }
+
+  // ── New Recipe Widget ──
+
+  function showNewRecipeWidget() {
+    const widget = document.getElementById('new-recipe-widget');
+    const nameInput = document.getElementById('new-recipe-name-input');
+    const body = document.getElementById('new-recipe-widget-body');
+
+    nameInput.value = '';
+    body.innerHTML = '';
+
+    // Build param form from PARAM_DEFS
+    const tempParams = { ...RECIPE_DEFAULTS };
+
+    for (const group of PARAM_DEFS) {
+      if (group.group) {
+        const lbl = document.createElement('div');
+        lbl.className = 'nrw-group-label';
+        lbl.textContent = group.group;
+        body.appendChild(lbl);
+      }
+      for (const p of group.params) {
+        const row = document.createElement('div');
+        row.className = 'nrw-param-row';
+
+        const label = document.createElement('span');
+        label.className = 'nrw-param-label';
+        label.textContent = p.label;
+        row.appendChild(label);
+
+        if (p.type === 'dropdown') {
+          const sel = document.createElement('select');
+          sel.dataset.key = p.key;
+          for (const opt of p.options) {
+            const o = document.createElement('option');
+            o.value = opt;
+            o.textContent = opt;
+            if (opt === String(RECIPE_DEFAULTS[p.key])) o.selected = true;
+            sel.appendChild(o);
+          }
+          sel.addEventListener('change', () => { tempParams[p.key] = sel.value; });
+          row.appendChild(sel);
+        } else if (p.type === 'slider') {
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.dataset.key = p.key;
+          input.min = p.min;
+          input.max = p.max;
+          input.step = 1;
+          input.value = RECIPE_DEFAULTS[p.key];
+          input.addEventListener('input', () => {
+            let v = parseInt(input.value, 10);
+            if (isNaN(v)) v = 0;
+            if (v < p.min) v = p.min;
+            if (v > p.max) v = p.max;
+            tempParams[p.key] = v;
+          });
+          row.appendChild(input);
+        }
+
+        body.appendChild(row);
+      }
+    }
+
+    widget.classList.add('visible');
+    setTimeout(() => nameInput.focus(), 50);
+
+    // Wire buttons (remove old listeners by replacing nodes)
+    const saveBtn = document.getElementById('nrw-save-btn');
+    const cancelBtn = document.getElementById('nrw-cancel-btn');
+    const newSave = saveBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSave, saveBtn);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+    newCancel.addEventListener('click', () => {
+      widget.classList.remove('visible');
+    });
+
+    newSave.addEventListener('click', async () => {
+      const title = nameInput.value.trim() || 'Untitled Recipe';
+      // Read final values from form controls
+      body.querySelectorAll('select').forEach(sel => {
+        tempParams[sel.dataset.key] = sel.value;
+      });
+      body.querySelectorAll('input[type="number"]').forEach(inp => {
+        let v = parseInt(inp.value, 10);
+        if (isNaN(v)) v = 0;
+        tempParams[inp.dataset.key] = v;
+      });
+
+      const payload = { title, params: tempParams };
+      try {
+        const res = await fetch('/api/recipe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(r => r.json());
+        await loadRecipes();
+        widget.classList.remove('visible');
+        renderLibrary();
+        if (res.id) {
+          selectRecipe(res.id);
+        }
+        showToast('Recipe saved');
+      } catch (e) {
+        showToast('Save failed: ' + e.message);
+      }
+    });
   }
 
   function showToast(msg) {
@@ -5959,7 +6448,21 @@ body::before {
     const keys = ['filmSimulation','grainEffect','grainSize','colorChromeEffect','colorChromeFXBlue','whiteBalance','wbShiftR','wbShiftB','dynamicRange','highlightTone','shadowTone','color','sharpness','noiseReduction','clarity'];
     for (const [id, recipe] of Object.entries(recipeState.recipes)) {
       if (!recipe.params) continue;
-      const match = keys.every(k => String(params[k] ?? '') === String(recipe.params[k] ?? ''));
+      const match = keys.every(k => {
+        // Use RECIPE_DEFAULTS as fallback for missing values on either side
+        const a = params[k] ?? RECIPE_DEFAULTS[k] ?? '';
+        const b = recipe.params[k] ?? RECIPE_DEFAULTS[k] ?? '';
+        // Normalize: compare as strings, trimmed and case-insensitive for string values
+        const sa = String(a).trim();
+        const sb = String(b).trim();
+        if (sa === sb) return true;
+        // Numeric comparison — handles "200" vs 200, "-1" vs -1
+        const na = Number(sa), nb = Number(sb);
+        if (!isNaN(na) && !isNaN(nb) && na === nb) return true;
+        // Case-insensitive for string params (film sim, grain, effects, WB)
+        if (sa.toLowerCase() === sb.toLowerCase()) return true;
+        return false;
+      });
       if (match) return recipe;
     }
     return null;
@@ -6207,6 +6710,12 @@ body::before {
     if (activeList) activeList.style.display = 'none';
     const compareDropdown = document.getElementById('recipe-compare-dropdown');
     if (compareDropdown) compareDropdown.style.display = 'none';
+    const cmpParamList = document.getElementById('compare-param-list');
+    if (cmpParamList) cmpParamList.style.display = 'none';
+    const sbsListLeft = document.getElementById('sbs-list-left');
+    if (sbsListLeft) sbsListLeft.style.display = 'none';
+    const sbsListRight = document.getElementById('sbs-list-right');
+    if (sbsListRight) sbsListRight.style.display = 'none';
   }
 
   function showParamTip(icon, text) {
@@ -7356,21 +7865,6 @@ body::before {
           countEl.textContent = group.photoCount + ' photo' + (group.photoCount === 1 ? '' : 's');
           labelEl.appendChild(countEl);
 
-          if (!group.isCurrentDir) {
-            labelEl.addEventListener('click', () => {
-              selectRecipeNode(group.path);
-              const treeRow = document.getElementById('recipe-left-tree').querySelector('.tree-node-row[data-path="' + CSS.escape(group.path) + '"]');
-              if (treeRow) {
-                const chevron = treeRow.querySelector('.tree-chevron');
-                const childrenEl = treeRow.nextElementSibling;
-                if (chevron && childrenEl) {
-                  const depth = Math.round(parseInt(treeRow.style.paddingLeft) / 16) + 1;
-                  if (typeof toggleRecipeNode === 'function') toggleRecipeNode(group.path, chevron, childrenEl, depth);
-                }
-              }
-            });
-          }
-
           groupEl.appendChild(labelEl);
 
           const thumbsEl = document.createElement('div');
@@ -7386,6 +7880,22 @@ body::before {
           }
 
           groupEl.appendChild(thumbsEl);
+
+          if (!group.isCurrentDir) {
+            groupEl.addEventListener('click', () => {
+              selectRecipeNode(group.path);
+              const treeRow = document.getElementById('recipe-left-tree').querySelector('.tree-node-row[data-path="' + CSS.escape(group.path) + '"]');
+              if (treeRow) {
+                const chevron = treeRow.querySelector('.tree-chevron');
+                const childrenEl = treeRow.nextElementSibling;
+                if (chevron && childrenEl) {
+                  const depth = Math.round(parseInt(treeRow.style.paddingLeft) / 16) + 1;
+                  if (typeof toggleRecipeNode === 'function') toggleRecipeNode(group.path, chevron, childrenEl, depth);
+                }
+              }
+            });
+          }
+
           centerPreview.appendChild(groupEl);
         }
       } else {
@@ -7446,6 +7956,96 @@ body::before {
       centerPreview.appendChild(card);
     }
 
+    async function buildRecipeSessionCard(s) {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'preview-group';
+      groupEl.style.cursor = 'pointer';
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'preview-group-label';
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'preview-group-name';
+      nameEl.textContent = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+      labelEl.appendChild(nameEl);
+
+      const countEl = document.createElement('span');
+      countEl.className = 'preview-group-count';
+      const total = s.fileCount || 0;
+      const rated = s.ratedCount || 0;
+      countEl.textContent = isSessionCompleted(s)
+        ? total + ' photo' + (total === 1 ? '' : 's') + ', all rated'
+        : total + ' photo' + (total === 1 ? '' : 's') + ', ' + rated + ' rated';
+      labelEl.appendChild(countEl);
+
+      groupEl.appendChild(labelEl);
+
+      const thumbsEl = document.createElement('div');
+      thumbsEl.className = 'preview-group-thumbs';
+
+      try {
+        let likedDir = s.dir + '/Liked/HIF';
+        let browseData = await fetch('/api/browse?dir=' + encodeURIComponent(likedDir)).then(r => r.json());
+        if (!browseData.previewFiles || browseData.previewFiles.length === 0) {
+          likedDir = s.dir + '/Liked/JPG';
+          browseData = await fetch('/api/browse?dir=' + encodeURIComponent(likedDir)).then(r => r.json());
+        }
+        if (browseData.previewFiles && browseData.previewFiles.length > 0) {
+          const dirB64 = btoa(unescape(encodeURIComponent(likedDir)));
+          for (const f of browseData.previewFiles.slice(0, 6)) {
+            const img = document.createElement('img');
+            img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(f);
+            img.alt = '';
+            img.onerror = function() { this.remove(); };
+            thumbsEl.appendChild(img);
+          }
+        } else {
+          const rootData = await fetch('/api/browse?dir=' + encodeURIComponent(s.dir)).then(r => r.json());
+          if (rootData.previewFiles && rootData.previewFiles.length > 0) {
+            const dirB64 = btoa(unescape(encodeURIComponent(s.dir)));
+            for (const f of rootData.previewFiles.slice(0, 6)) {
+              const img = document.createElement('img');
+              img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(f);
+              img.alt = '';
+              img.onerror = function() { this.remove(); };
+              thumbsEl.appendChild(img);
+            }
+          }
+        }
+      } catch (e) {}
+
+      groupEl.appendChild(thumbsEl);
+
+      groupEl.addEventListener('click', async () => {
+        if (s.dir === recipeLoadedDir) {
+          collapseRecipeLeftPanel();
+          return;
+        }
+        try {
+          const res = await fetch('/api/recipe-load', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dir: s.dir })
+          }).then(r => r.json());
+          if (res.ok) {
+            recipeLoadedDir = s.dir;
+            collapseRecipeLeftPanel();
+            recipeState.lastLoadedDir = null;
+            recipeState.gridPhotos = [];
+            centerPreview.style.display = 'none';
+            document.getElementById('recipe-collage').style.display = '';
+            document.getElementById('recipe-filmstrip-container').style.display = '';
+            const gridP = loadRecipeGrid();
+            loadRecipeFilmstrip();
+            await gridP;
+            if (recipeState.gridPhotos.length > 0) loadBatchExif();
+          }
+        } catch (e) {}
+      });
+
+      return groupEl;
+    }
+
     try {
       const sessions = await fetch('/api/sessions').then(r => r.json());
       centerPreview.innerHTML = '';
@@ -7454,98 +8054,31 @@ body::before {
       const accessible = sessions.filter(s => s.accessible !== false);
       if (accessible.length === 0) return;
 
-      const heading = document.createElement('div');
-      heading.style.cssText = 'font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:16px';
-      heading.textContent = 'Resume';
-      centerPreview.appendChild(heading);
+      const inProgress = accessible.filter(s => !isSessionCompleted(s));
+      const completed = accessible.filter(s => isSessionCompleted(s));
 
-      for (const s of accessible.slice(0, 6)) {
-        const groupEl = document.createElement('div');
-        groupEl.className = 'preview-group';
-        groupEl.style.cursor = 'pointer';
+      // Resume section (in-progress sessions)
+      if (inProgress.length > 0) {
+        const heading = document.createElement('div');
+        heading.style.cssText = 'font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:16px';
+        heading.textContent = 'Resume';
+        centerPreview.appendChild(heading);
 
-        const labelEl = document.createElement('div');
-        labelEl.className = 'preview-group-label';
+        for (const s of inProgress.slice(0, 6)) {
+          centerPreview.appendChild(await buildRecipeSessionCard(s));
+        }
+      }
 
-        const nameEl = document.createElement('span');
-        nameEl.className = 'preview-group-name';
-        nameEl.textContent = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
-        labelEl.appendChild(nameEl);
+      // Recently Completed section
+      if (completed.length > 0) {
+        const completedHeading = document.createElement('div');
+        completedHeading.style.cssText = 'font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:16px' + (inProgress.length > 0 ? ';margin-top:24px' : '');
+        completedHeading.textContent = 'Recently Completed';
+        centerPreview.appendChild(completedHeading);
 
-        const countEl = document.createElement('span');
-        countEl.className = 'preview-group-count';
-        countEl.textContent = (s.fileCount || 0) + ' photo' + ((s.fileCount || 0) === 1 ? '' : 's');
-        labelEl.appendChild(countEl);
-
-        groupEl.appendChild(labelEl);
-
-        // Thumbnail strip from session
-        const thumbsEl = document.createElement('div');
-        thumbsEl.className = 'preview-group-thumbs';
-
-        // Fetch preview files for this session's HIF dir
-        try {
-          let likedDir = s.dir + '/Liked/HIF';
-          let browseData = await fetch('/api/browse?dir=' + encodeURIComponent(likedDir)).then(r => r.json());
-          if (!browseData.previewFiles || browseData.previewFiles.length === 0) {
-            likedDir = s.dir + '/Liked/JPG';
-            browseData = await fetch('/api/browse?dir=' + encodeURIComponent(likedDir)).then(r => r.json());
-          }
-          if (browseData.previewFiles && browseData.previewFiles.length > 0) {
-            const dirB64 = btoa(unescape(encodeURIComponent(likedDir)));
-            for (const f of browseData.previewFiles.slice(0, 6)) {
-              const img = document.createElement('img');
-              img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(f);
-              img.alt = '';
-              img.onerror = function() { this.remove(); };
-              thumbsEl.appendChild(img);
-            }
-          } else {
-            const rootData = await fetch('/api/browse?dir=' + encodeURIComponent(s.dir)).then(r => r.json());
-            if (rootData.previewFiles && rootData.previewFiles.length > 0) {
-              const dirB64 = btoa(unescape(encodeURIComponent(s.dir)));
-              for (const f of rootData.previewFiles.slice(0, 6)) {
-                const img = document.createElement('img');
-                img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(f);
-                img.alt = '';
-                img.onerror = function() { this.remove(); };
-                thumbsEl.appendChild(img);
-              }
-            }
-          }
-        } catch (e) {}
-
-        groupEl.appendChild(thumbsEl);
-
-        // Click to load session
-        groupEl.addEventListener('click', async () => {
-          if (s.dir === recipeLoadedDir) {
-            collapseRecipeLeftPanel();
-            return;
-          }
-          try {
-            const res = await fetch('/api/recipe-load', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ dir: s.dir })
-            }).then(r => r.json());
-            if (res.ok) {
-              recipeLoadedDir = s.dir;
-              collapseRecipeLeftPanel();
-              recipeState.lastLoadedDir = null;
-              recipeState.gridPhotos = [];
-              centerPreview.style.display = 'none';
-              document.getElementById('recipe-collage').style.display = '';
-              document.getElementById('recipe-filmstrip-container').style.display = '';
-              const gridP = loadRecipeGrid();
-              loadRecipeFilmstrip();
-              await gridP;
-              if (recipeState.gridPhotos.length > 0) loadBatchExif();
-            }
-          } catch (e) {}
-        });
-
-        centerPreview.appendChild(groupEl);
+        for (const s of completed.slice(0, 6)) {
+          centerPreview.appendChild(await buildRecipeSessionCard(s));
+        }
       }
     } catch (e) {}
   }
@@ -7716,18 +8249,28 @@ body::before {
     // If side-by-side is showing, go back to grid first
     const sbs = document.getElementById('compare-side-by-side');
     if (sbs && sbs.style.display !== 'none') {
-      sbs.style.display = 'none';
-      document.getElementById('compare-grid').style.display = '';
-      document.getElementById('compare-sbs-btn').style.display = '';
-      document.getElementById('compare-sbs-back-btn').style.display = 'none';
+      sbs.style.opacity = '0';
+      setTimeout(() => {
+        sbs.style.display = 'none';
+        const grid = document.getElementById('compare-grid');
+        grid.style.display = '';
+        grid.style.opacity = '0';
+        requestAnimationFrame(() => { grid.style.opacity = '1'; });
+        document.getElementById('compare-sbs-btn').style.display = '';
+        document.getElementById('recipe-right-panel').classList.remove('sbs-condensed');
+      }, 150);
       return;
     }
     enterFocusMode(recipeState.focusIndex || 0);
   });
 
-  // Cancel/Stop button — cancel in-progress simulation
+  // Cancel/Stop button — cancel simulation if running, otherwise exit compare mode
   document.getElementById('compare-cancel-btn').addEventListener('click', () => {
-    recipeState.compareSimCancelled = true;
+    if (recipeState._compareSimulating) {
+      recipeState.compareSimCancelled = true;
+    } else {
+      enterFocusMode(recipeState.focusIndex || 0);
+    }
   });
 
   // Side-by-side comparison
@@ -7748,19 +8291,26 @@ body::before {
     return '/api/preview-image/' + btoa(unescape(encodeURIComponent(outputPath.substring(0, outputPath.lastIndexOf('/'))))) + '/' + encodeURIComponent(outputPath.substring(outputPath.lastIndexOf('/') + 1)) + '?t=' + Date.now();
   }
 
+  // Track current SBS dropdown selected values
+  window._sbsSelectedLeft = '';
+  window._sbsSelectedRight = '';
+
   function populateSbsDropdowns() {
     const paramKey = recipeState.compareParam;
     const currentVal = String(recipeState.currentParams[paramKey] || '');
     const rendered = recipeState.compareRendered ? [...recipeState.compareRendered] : [];
-    const leftSel = document.getElementById('sbs-dropdown-left');
-    const rightSel = document.getElementById('sbs-dropdown-right');
-    leftSel.innerHTML = '';
-    rightSel.innerHTML = '';
+    const leftList = document.getElementById('sbs-list-left');
+    const rightList = document.getElementById('sbs-list-right');
+    const leftValueEl = document.getElementById('sbs-value-left');
+    const rightValueEl = document.getElementById('sbs-value-right');
+    const leftTrigger = document.getElementById('sbs-trigger-left');
+    const rightTrigger = document.getElementById('sbs-trigger-right');
+    leftList.innerHTML = '';
+    rightList.innerHTML = '';
 
     // Build options: all parameter values, mark as-shot with suffix
     const options = [];
     const asShotVal = recipeState.exifBaseline ? String(recipeState.exifBaseline[paramKey] || '') : '';
-    // Current value first
     options.push({ value: currentVal, label: currentVal + (currentVal === asShotVal ? ' (As Shot)' : '') });
     for (const rv of rendered) {
       if (rv !== currentVal) {
@@ -7768,28 +8318,58 @@ body::before {
       }
     }
 
-    options.forEach(opt => {
-      const o1 = document.createElement('option');
-      o1.value = opt.value;
-      o1.textContent = opt.label;
-      leftSel.appendChild(o1);
-      const o2 = document.createElement('option');
-      o2.value = opt.value;
-      o2.textContent = opt.label;
-      rightSel.appendChild(o2);
-    });
+    function buildSbsList(listEl, valueEl, side) {
+      options.forEach(opt => {
+        const item = document.createElement('div');
+        item.className = 'param-dropdown-option' + (opt.value === window['_sbsSelected' + side.charAt(0).toUpperCase() + side.slice(1)] ? ' selected' : '');
+        item.dataset.value = opt.value;
+        item.textContent = opt.label;
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window['_sbsSelected' + side.charAt(0).toUpperCase() + side.slice(1)] = opt.value;
+          valueEl.textContent = opt.label;
+          listEl.querySelectorAll('.param-dropdown-option').forEach(el => el.classList.remove('selected'));
+          item.classList.add('selected');
+          listEl.style.display = 'none';
+          document.getElementById('sbs-photo-' + side).src = getSbsImageUrl(opt.value);
+          updateSbsPanelActions(side, opt.value);
+          resetSbsZoom();
+        });
+        listEl.appendChild(item);
+      });
+    }
 
     // Defaults: left = current value, right = first rendered that isn't current
-    leftSel.value = currentVal;
+    window._sbsSelectedLeft = currentVal;
     const firstOther = rendered.find(rv => rv !== currentVal);
-    rightSel.value = firstOther || currentVal;
+    window._sbsSelectedRight = firstOther || currentVal;
+
+    buildSbsList(leftList, leftValueEl, 'left');
+    buildSbsList(rightList, rightValueEl, 'right');
+
+    // Set trigger display text
+    const leftOpt = options.find(o => o.value === window._sbsSelectedLeft);
+    leftValueEl.textContent = leftOpt ? leftOpt.label : currentVal;
+    const rightOpt = options.find(o => o.value === window._sbsSelectedRight);
+    rightValueEl.textContent = rightOpt ? rightOpt.label : (firstOther || currentVal);
+
+    // Mark selected items
+    leftList.querySelectorAll('.param-dropdown-option').forEach(el => {
+      el.classList.toggle('selected', el.dataset.value === window._sbsSelectedLeft);
+    });
+    rightList.querySelectorAll('.param-dropdown-option').forEach(el => {
+      el.classList.toggle('selected', el.dataset.value === window._sbsSelectedRight);
+    });
+
+    // Wire trigger clicks
+    leftTrigger.onclick = (e) => { e.stopPropagation(); closeAllDropdowns(); leftList.style.display = 'block'; };
+    rightTrigger.onclick = (e) => { e.stopPropagation(); closeAllDropdowns(); rightList.style.display = 'block'; };
 
     // Update images
-    document.getElementById('sbs-photo-left').src = getSbsImageUrl(leftSel.value);
-    document.getElementById('sbs-photo-right').src = getSbsImageUrl(rightSel.value);
-    // Populate action menus on each SBS panel
-    updateSbsPanelActions('left', leftSel.value);
-    updateSbsPanelActions('right', rightSel.value);
+    document.getElementById('sbs-photo-left').src = getSbsImageUrl(window._sbsSelectedLeft);
+    document.getElementById('sbs-photo-right').src = getSbsImageUrl(window._sbsSelectedRight);
+    updateSbsPanelActions('left', window._sbsSelectedLeft);
+    updateSbsPanelActions('right', window._sbsSelectedRight);
   }
 
   function updateSbsPanelActions(side, value) {
@@ -7802,20 +8382,20 @@ body::before {
     if (isExifMatch && !(isStandardMatch && isExifMatch)) {
       const camIcon = document.createElement('span');
       camIcon.className = 'cell-action-camera-icon';
-      camIcon.title = 'As Shot';
+      attachCellTagTooltip(camIcon, 'As Shot');
       camIcon.innerHTML = '<svg viewBox="0 0 24 20" width="20" height="16" fill="none" stroke="var(--amber)" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M8 5l1.5-3h5L16 5"/></svg>';
       container.appendChild(camIcon);
     } else if (isStandardMatch) {
       const camIcon = document.createElement('span');
       camIcon.className = 'cell-action-camera-icon';
-      camIcon.title = 'Standard';
+      attachCellTagTooltip(camIcon, 'Standard');
       camIcon.innerHTML = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="var(--amber)" stroke-width="1.5"><line x1="3" y1="5" x2="17" y2="5"/><circle cx="7" cy="5" r="2"/><line x1="3" y1="15" x2="17" y2="15"/><circle cx="13" cy="15" r="2"/></svg>';
       container.appendChild(camIcon);
     }
     // Action dots button with menu
     const actBtn = document.createElement('button');
     actBtn.className = 'cell-action-btn';
-    actBtn.textContent = '⋮';
+    actBtn.textContent = '●●●';
     actBtn.title = 'Apply variant settings';
     const actMenu = document.createElement('div');
     actMenu.className = 'cell-action-menu';
@@ -7866,17 +8446,6 @@ body::before {
     });
   }
 
-  document.getElementById('sbs-dropdown-left').addEventListener('change', function() {
-    document.getElementById('sbs-photo-left').src = getSbsImageUrl(this.value);
-    updateSbsPanelActions('left', this.value);
-    resetSbsZoom();
-  });
-  document.getElementById('sbs-dropdown-right').addEventListener('change', function() {
-    document.getElementById('sbs-photo-right').src = getSbsImageUrl(this.value);
-    updateSbsPanelActions('right', this.value);
-    resetSbsZoom();
-  });
-
   // Synced zoom on side-by-side photos
   document.querySelectorAll('.sbs-photo-container').forEach(container => {
     container.addEventListener('click', (e) => {
@@ -7913,21 +8482,97 @@ body::before {
   });
 
   document.getElementById('compare-sbs-btn').addEventListener('click', () => {
-    document.getElementById('compare-grid').style.display = 'none';
-    document.getElementById('compare-side-by-side').style.display = 'flex';
-    document.getElementById('compare-sbs-btn').style.display = 'none';
-    document.getElementById('compare-sbs-back-btn').style.display = '';
-    resetSbsZoom();
-    populateSbsDropdowns();
+    const grid = document.getElementById('compare-grid');
+    const sbs = document.getElementById('compare-side-by-side');
+    grid.style.opacity = '0';
+    setTimeout(() => {
+      grid.style.display = 'none';
+      sbs.style.display = 'flex';
+      sbs.style.opacity = '0';
+      requestAnimationFrame(() => { sbs.style.opacity = '1'; });
+      document.getElementById('compare-sbs-btn').style.display = 'none';
+      document.getElementById('recipe-right-panel').classList.add('sbs-condensed');
+      resetSbsZoom();
+      populateSbsDropdowns();
+    }, 150);
   });
 
-  document.getElementById('compare-sbs-back-btn').addEventListener('click', () => {
-    document.getElementById('compare-side-by-side').style.display = 'none';
-    document.getElementById('compare-grid').style.display = '';
-    document.getElementById('compare-sbs-btn').style.display = '';
-    document.getElementById('compare-sbs-back-btn').style.display = 'none';
-    resetSbsZoom();
-  });
+  // Per-cell retry function for failed compare simulations
+  async function retryCompareCell(cell, val, paramKey) {
+    const pendingEl = cell.querySelector('.compare-cell-pending');
+    if (pendingEl) { pendingEl.textContent = 'RETRYING...'; pendingEl.style.color = 'rgba(255,255,255,0.4)'; const retryBtn = pendingEl.querySelector('.compare-cell-retry'); if (retryBtn) retryBtn.remove(); }
+    const grid = document.getElementById('compare-grid');
+    const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
+    if (!photo) { if (pendingEl) { pendingEl.textContent = 'FAILED'; pendingEl.style.color = 'var(--amber)'; appendRetryBtn(pendingEl, cell, val, paramKey); } return; }
+    const stem = photo.file.replace(/\.[^.]+$/, '');
+    const rafPath = recipeLoadedDir + '/Liked/RAF/' + stem + '.RAF';
+    const safeVal = String(val).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const outputPath = recipeLoadedDir + '/Liked/RAF/.sim-cache/' + stem + '_cmp_' + paramKey + '_' + safeVal + '.jpg';
+    const params = { ...recipeState.currentParams, [paramKey]: val };
+    try {
+      const listRes = await fetch('/api/camera/list').then(r => r.json());
+      if (!listRes.cameras || listRes.cameras.length === 0) { showToast('No camera connected'); if (pendingEl) { pendingEl.textContent = 'FAILED'; pendingEl.style.color = 'var(--amber)'; appendRetryBtn(pendingEl, cell, val, paramKey); } return; }
+      await fetch('/api/camera/connect', { method: 'POST' });
+      await fetch('/api/camera/upload-raf', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ path: rafPath }) }).then(r => r.json());
+      const profileRes = await fetch('/api/camera/profile').then(r => r.json());
+      await fetch('/api/camera/profile', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ data: profileRes.data, params }) }).then(r => r.json());
+      await fetch('/api/camera/convert', { method: 'POST' }).then(r => r.json());
+      const resultRes = await fetch('/api/camera/wait-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ outputPath, timeout: 10000 }) }).then(r => r.json());
+      try { await fetch('/api/camera/disconnect', { method: 'POST' }); } catch(e2) {}
+      if (resultRes.ok) {
+        recipeState.compareRendered.add(String(val));
+        const img = cell.querySelector('img');
+        if (img) {
+          img.src = '/api/preview-image/' + btoa(unescape(encodeURIComponent(outputPath.substring(0, outputPath.lastIndexOf('/'))))) + '/' + encodeURIComponent(outputPath.substring(outputPath.lastIndexOf('/') + 1)) + '?t=' + Date.now();
+          img.style.filter = 'none';
+        }
+        if (pendingEl) pendingEl.remove();
+        if (!cell.querySelector('.compare-cell-overlay')) {
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'compare-cell-overlay';
+          const actBtn = document.createElement('button');
+          actBtn.className = 'cell-action-btn';
+          actBtn.textContent = '⋮';
+          actBtn.title = 'Apply variant settings';
+          const actMenu = document.createElement('div');
+          actMenu.className = 'cell-action-menu';
+          actMenu.style.display = 'none';
+          const applyReturn = document.createElement('div');
+          applyReturn.className = 'cell-action-item';
+          applyReturn.textContent = 'APPLY & RETURN';
+          applyReturn.addEventListener('click', (ev) => { ev.stopPropagation(); recipeState.currentParams[paramKey] = isNaN(val) ? val : Number(val); recipeState.cleanParams = { ...recipeState.currentParams }; recipeState.dirty = false; renderParams(); enterFocusMode(recipeState.focusIndex || 0); });
+          const applyNext = document.createElement('div');
+          applyNext.className = 'cell-action-item';
+          applyNext.textContent = 'APPLY & NEXT PARAMETER';
+          applyNext.addEventListener('click', (ev) => { ev.stopPropagation(); recipeState.currentParams[paramKey] = isNaN(val) ? val : Number(val); recipeState.cleanParams = { ...recipeState.currentParams }; recipeState.dirty = false; renderParams(); const ps = window._compareParamSelect; if (ps) { const idx2 = ps.selectedIndex; ps.selectedIndex = idx2 < ps.options.length - 1 ? idx2 + 1 : 0; if (window._compareRenderValues) window._compareRenderValues(); } });
+          actMenu.appendChild(applyReturn);
+          actMenu.appendChild(applyNext);
+          actBtn.addEventListener('click', (ev) => { ev.stopPropagation(); grid.querySelectorAll('.cell-action-menu').forEach(m => { if (m !== actMenu) m.style.display = 'none'; }); actMenu.style.display = actMenu.style.display === 'none' ? 'block' : 'none'; });
+          actionsDiv.appendChild(actBtn);
+          actionsDiv.appendChild(actMenu);
+          cell.appendChild(actionsDiv);
+        }
+        if (window._compareCheckAllSimulated) window._compareCheckAllSimulated();
+        if (window._compareUpdateSimBtn) window._compareUpdateSimBtn();
+      } else {
+        if (pendingEl) { pendingEl.textContent = 'FAILED'; pendingEl.style.color = 'var(--amber)'; appendRetryBtn(pendingEl, cell, val, paramKey); }
+      }
+    } catch(e) {
+      console.error('Compare retry failed for ' + val, e);
+      try { await fetch('/api/camera/disconnect', { method: 'POST' }); } catch(e2) {}
+      if (pendingEl) { pendingEl.textContent = 'FAILED'; pendingEl.style.color = 'var(--amber)'; appendRetryBtn(pendingEl, cell, val, paramKey); }
+    }
+  }
+
+  function appendRetryBtn(pendingEl, cell, val, paramKey) {
+    const existing = pendingEl.querySelector('.compare-cell-retry');
+    if (existing) existing.remove();
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'compare-cell-retry';
+    retryBtn.textContent = 'RETRY';
+    retryBtn.addEventListener('click', (ev) => { ev.stopPropagation(); retryCompareCell(cell, val, paramKey); });
+    pendingEl.appendChild(retryBtn);
+  }
 
   document.getElementById('compare-simulate-btn').addEventListener('click', async () => {
     const btn = document.getElementById('compare-simulate-btn');
@@ -7947,6 +8592,7 @@ body::before {
     if (toSimulate.length === 0) return;
     if (recipeState._compareSimulating) return;
     recipeState._compareSimulating = true;
+    document.getElementById('compare-cancel-btn').textContent = 'STOP';
     btn.classList.add('simulating');
     const total = toSimulate.length;
 
@@ -7955,12 +8601,12 @@ body::before {
       const remaining = total - done;
       const text = 'Simulating ' + done + '/' + total + (remaining > 0 ? ' (~' + remaining + 's)' : '');
       btn.style.background = 'linear-gradient(to right, var(--amber) ' + pct + '%, rgba(255,255,255,0.04) ' + pct + '%)';
-      btn.innerHTML = '<span style="position:relative;mix-blend-mode:difference;color:#fff">' + text + '</span>';
+      btn.innerHTML = '<span class="sim-text-back">' + text + '</span><span class="sim-text-front" style="clip-path:inset(0 ' + (100 - pct) + '% 0 0)">' + text + '</span>';
     }
     setSimProgress(0, total);
 
     const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
-    if (!photo) { recipeState._compareSimulating = false; btn.classList.remove('simulating'); btn.textContent = 'SIMULATE (0)'; btn.style.background = ''; btn.style.color = ''; return; }
+    if (!photo) { recipeState._compareSimulating = false; btn.classList.remove('simulating'); btn.textContent = 'SIMULATE (0)'; btn.style.background = ''; btn.style.color = ''; document.getElementById('compare-cancel-btn').textContent = 'CANCEL'; return; }
 
     try {
       const listRes = await fetch('/api/camera/list').then(r => r.json());
@@ -7970,6 +8616,7 @@ body::before {
         btn.textContent = 'SIMULATE (' + total + ')';
         btn.style.background = '';
         btn.style.color = '';
+        document.getElementById('compare-cancel-btn').textContent = 'CANCEL';
         return;
       }
       await fetch('/api/camera/connect', { method: 'POST' });
@@ -7979,6 +8626,7 @@ body::before {
       btn.textContent = 'SIMULATE (' + total + ')';
       btn.style.background = '';
       btn.style.color = '';
+      document.getElementById('compare-cancel-btn').textContent = 'CANCEL';
       return;
     }
 
@@ -7986,11 +8634,9 @@ body::before {
     const rafPath = recipeLoadedDir + '/Liked/RAF/' + stem + '.RAF';
     let completed = 0;
 
-    // Show STOP button, set up cancellation
+    // Set up cancellation
     recipeState.compareSimCancelled = false;
     const cancelBtn = document.getElementById('compare-cancel-btn');
-    cancelBtn.style.display = '';
-    cancelBtn.textContent = 'STOP';
 
     for (let i = 0; i < toSimulate.length; i++) {
       if (recipeState.compareSimCancelled) break;
@@ -8019,12 +8665,12 @@ body::before {
             const pendingEl = cell.querySelector('.compare-cell-pending');
             if (pendingEl) pendingEl.remove();
             // Add action buttons to newly rendered cell
-            if (!cell.querySelector('.compare-cell-actions')) {
+            if (!cell.querySelector('.compare-cell-overlay')) {
               const actionsDiv = document.createElement('div');
-              actionsDiv.className = 'compare-cell-actions';
+              actionsDiv.className = 'compare-cell-overlay';
               const actBtn = document.createElement('button');
               actBtn.className = 'cell-action-btn';
-              actBtn.textContent = '⋮';
+              actBtn.textContent = '●●●';
               actBtn.title = 'Apply variant settings';
               const actMenu = document.createElement('div');
               actMenu.className = 'cell-action-menu';
@@ -8072,7 +8718,7 @@ body::before {
           const cell = grid.children[gridIdx];
           if (cell) {
             const pendingEl = cell.querySelector('.compare-cell-pending');
-            if (pendingEl) { pendingEl.textContent = 'FAILED'; pendingEl.style.color = 'var(--amber)'; }
+            if (pendingEl) { pendingEl.textContent = 'FAILED'; pendingEl.style.color = 'var(--amber)'; appendRetryBtn(pendingEl, cell, val, paramKey); }
           }
         }
       } catch(e) {
@@ -8080,7 +8726,7 @@ body::before {
         const cell = grid.children[gridIdx];
         if (cell) {
           const pendingEl = cell.querySelector('.compare-cell-pending');
-          if (pendingEl) { pendingEl.textContent = 'FAILED'; pendingEl.style.color = 'var(--amber)'; }
+          if (pendingEl) { pendingEl.textContent = 'FAILED'; pendingEl.style.color = 'var(--amber)'; appendRetryBtn(pendingEl, cell, val, paramKey); }
         }
       }
       completed++;
@@ -8090,7 +8736,7 @@ body::before {
     try { await fetch('/api/camera/disconnect', { method: 'POST' }); } catch(e) {}
     recipeState._compareSimulating = false;
     btn.classList.remove('simulating');
-    cancelBtn.style.display = 'none';
+    cancelBtn.textContent = 'CANCEL';
     recipeState.compareSimCancelled = false;
     btn.style.background = '';
     btn.style.color = '';
@@ -8124,6 +8770,20 @@ body::before {
     const selectedCells = pickerGrid.querySelectorAll('.picker-cell.selected');
     const photos = Array.from(selectedCells).map(cell => ({ file: cell.dataset.file }));
     if (photos.length === 0) { closePhotoPicker(); return; }
+    resetSimulatedState();
+    recipeState.gridPhotos = photos;
+    recipeState.gridPhotos.forEach(p => recipeState.usedPhotos.add(p.file));
+    renderGrid();
+    closePhotoPicker();
+  });
+  document.getElementById('photo-picker-shuffle-confirm').addEventListener('click', () => {
+    const selectedCells = pickerGrid.querySelectorAll('.picker-cell.selected');
+    const photos = Array.from(selectedCells).map(cell => ({ file: cell.dataset.file }));
+    if (photos.length === 0) { closePhotoPicker(); return; }
+    for (let i = photos.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [photos[i], photos[j]] = [photos[j], photos[i]];
+    }
     resetSimulatedState();
     recipeState.gridPhotos = photos;
     recipeState.gridPhotos.forEach(p => recipeState.usedPhotos.add(p.file));
