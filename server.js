@@ -998,8 +998,39 @@ app.put('/api/recipe/:id', (req, res) => {
     return res.status(404).json({ error: 'Recipe not found' });
   }
   const recipe = data.recipes[id];
+  if (req.body.params !== undefined) {
+    if (!recipe.versions) recipe.versions = [];
+    recipe.versions.push({
+      version: recipe.versions.length + 1,
+      params: { ...recipe.params },
+      modified: recipe.modified
+    });
+    recipe.params = req.body.params;
+  }
   if (req.body.title !== undefined) recipe.title = req.body.title;
-  if (req.body.params !== undefined) recipe.params = req.body.params;
+  recipe.modified = new Date().toISOString();
+  saveRecipes(data);
+  res.json(recipe);
+});
+
+app.post('/api/recipe/:id/restore-version', (req, res) => {
+  const { id } = req.params;
+  const { version } = req.body;
+  const data = loadRecipes();
+  if (!data.recipes[id]) {
+    return res.status(404).json({ error: 'Recipe not found' });
+  }
+  const recipe = data.recipes[id];
+  if (!recipe.versions || !recipe.versions[version - 1]) {
+    return res.status(404).json({ error: 'Version not found' });
+  }
+  // Save current as new version before restoring
+  recipe.versions.push({
+    version: recipe.versions.length + 1,
+    params: { ...recipe.params },
+    modified: recipe.modified
+  });
+  recipe.params = { ...recipe.versions[version - 1].params };
   recipe.modified = new Date().toISOString();
   saveRecipes(data);
   res.json(recipe);

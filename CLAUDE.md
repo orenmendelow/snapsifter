@@ -67,17 +67,31 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 ## Open bugs / unresolved feedback (verbatim from Oren)
 
-- **S23-48**: Standard baseline — skeptical, needs re-verify with camera connected.
-- **S23-63b**: Audit all simulate/variant edge cases — partial/full sim, recipe load, photo switch, baseline switch.
-- **S23-80**: Per-photo param state — sidebar should save/restore params per photo. Switching photos changes sidebar.
-- **S23-81**: Clicking diff-badge photo should update right panel to that photo's as-shot params.
-- **S23-82**: Recipe versioning — updating recipe creates v1/v2 history. Previous shots preserved.
-- **S23-83**: Main view simulate progress bar — full progress treatment like variant test (clip-path dual-text, linear-gradient, "Simulating x/y (~Ns)").
-- **S23-84**: Variant test from collage still flashes white outline. Select-photo mode must persist until CANCEL.
-- **S23-85**: Variant test select-photo mode should disable all other actions (modal lockout).
-- **S23-86**: Tooltip in variant view extends past right screen edge — viewport clamping needed.
-- **S23-87**: SAVE should be a BUTTON next to the RECIPE dropdown, NOT inside the dropdown.
 - **No logo**: Favicon is aperture SVG. No app logo yet. Will rename app soon.
+
+### Session 24 changes (2026-05-12)
+
+**IMPLEMENTED:**
+- S23-63b audit: Found and fixed pre-sim params mismatch bug — `simulatedPhotos` now tracks `simParamsUsed` per photo. Variant test only uses pre-sim image if params match (excluding the compare parameter). `hasValidPreSim(photoFile, paramKey)` helper validates.
+- S23-80: Per-photo param state — `recipeState.perPhotoParams` stores per-photo `{currentParams, cleanParams}`. `enterFocusMode()` saves current photo's params and loads new photo's params on switch. Initialized from per-file EXIF data. Persisted to localStorage. Independent per-photo editing mode.
+- S23-81: Diff-badge click shows actual as-shot params — handled by S23-80 architecture. `enterFocusMode(idx)` loads that photo's individual EXIF-based params.
+- S23-83: Main view simulate progress bar — clip-path dual-text (`.sim-text-back`/`.sim-text-front`), `linear-gradient` fill, "Simulating x/y (~Ns)" countdown. Button stays visible with `.simulating` class during render.
+- S23-84: Variant select mode persistence — `enterVariantSelectMode(baseline)` function. CANCEL button (`#variant-select-cancel`) appears during selection. Select-photo mode persists until pick or cancel.
+- S23-85: Variant select lockout — shuffle/pick disabled with opacity 0.3 and pointer-events none. Compare button/chevron disabled. Filmstrip clicks guarded via `recipeState._variantSelectMode` flag.
+- S23-86: Tooltip viewport clamping — `attachCellTagTooltip` clamps left/right to 4px from viewport edges, flips below element if offscreen above.
+- S23-87: SAVE button next to dropdown — `#recipe-save-btn` in `#recipe-label-row` after RECIPE dropdown. Save options removed from dropdown list. Button visible when params changed, updates existing recipe or prompts for new name.
+- S23-82: Recipe versioning — PUT `/api/recipe/:id` pushes old params to `versions` array before overwriting. POST `/api/recipe/:id/restore-version` endpoint. SAVE button shows `SAVE v{N}`. Library cards show version count + HISTORY with RESTORE per version.
+- S23-48: Standard baseline verified with camera connected. D001=0x0001 confirms Provia. RECIPE_DEFAULTS maps correctly to camera settings.
+
+**ARCHITECTURAL:**
+- `recipeState.perPhotoParams` — object keyed by photo filename, stores `{currentParams, cleanParams}` per photo. Initialized from `perFileExif` in `loadBatchExif()`. Saved/restored in `enterFocusMode()`, `showRecipePreview()`, `enterCompareMode()`. Cleared in `resetSimulatedState()`. Persisted to localStorage.
+- `recipeState.simParamsUsed` — object keyed by photo filename, stores the full `currentParams` used when simulating. Used by `hasValidPreSim()` to validate pre-sim images in variant test.
+- `hasValidPreSim(photoFile, paramKey)` — checks if pre-sim was done with params matching current recipe (excluding the compare parameter).
+- `enterVariantSelectMode(baseline)` — shared function for both compare button and chevron dropdown. Manages CANCEL button, toolbar lockout, and click/escape handlers.
+- `#variant-select-cancel` — CANCEL button inside `#recipe-compare-row`, visible only during variant select mode.
+- `#recipe-save-btn` — SAVE button in `#recipe-label-row`, visible when params changed and mode is not compare. Shows `SAVE v{N}` for existing recipes with version history.
+- Recipe `versions` array — stored in `recipes.json` per recipe. Each version has `{version, params, modified}`. Created automatically on PUT when params change.
+- POST `/api/recipe/:id/restore-version` — restores a previous version, saving current state as new version first.
 
 ### Session 16 changes (2026-05-05)
 

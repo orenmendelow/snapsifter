@@ -335,6 +335,21 @@ body::before {
   display: none;
 }
 
+#recipe-save-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 6px 14px;
+  background: var(--amber);
+  color: #000;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+#recipe-save-btn:hover { opacity: 0.85; }
+
 /* Right panel: recipe params (always visible) */
 #recipe-right-panel-params {
   flex: 1;
@@ -1243,7 +1258,10 @@ body::before {
   transition: opacity 0.15s;
   flex: 1;
   text-align: center;
+  position: relative;
+  overflow: hidden;
 }
+#simulate-btn.simulating { cursor: wait; }
 #simulate-btn:hover { opacity: 0.85; }
 .sim-scope-chevron-btn {
   background: var(--amber);
@@ -1387,6 +1405,18 @@ body::before {
   background: rgba(255,255,255,0.08);
   color: #fff;
 }
+#variant-select-cancel {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 8px 12px;
+  background: none;
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  margin-left: 4px;
+}
+#variant-select-cancel:hover { color: var(--amber); border-color: var(--amber); }
 .compare-indicator {
   position: absolute;
   bottom: 8px;
@@ -3292,8 +3322,8 @@ body::before {
             </div>
             <div id="recipe-active-list" class="param-dropdown-list"></div>
           </div>
+          <button id="recipe-save-btn" style="display:none">SAVE</button>
         </div>
-        <button id="save-new-recipe-btn" style="display:none"></button>
         <div id="recipe-compare-row" style="display:flex">
           <button id="recipe-compare-btn">VARIANT TEST</button>
           <button id="recipe-compare-chevron">&#9662;</button>
@@ -3301,6 +3331,7 @@ body::before {
             <div class="param-dropdown-option" data-baseline="asshot">As Shot</div>
             <div class="param-dropdown-option" data-baseline="standard">Standard</div>
           </div>
+          <button id="variant-select-cancel" style="display:none">CANCEL</button>
         </div>
       </div>
       <div id="recipe-right-panel-params"></div>
@@ -5089,7 +5120,8 @@ body::before {
     savedCollageFocus: null,
     lastSimParams: null,
     cameraConnected: false,
-    compareSelectedFavorite: null
+    compareSelectedFavorite: null,
+    perPhotoParams: {}
   };
 
   let recipeTreeState = {};
@@ -5102,7 +5134,8 @@ body::before {
         currentParams: recipeState.currentParams,
         currentId: recipeState.currentId,
         currentTitle: recipeState.currentTitle,
-        dir: recipeLoadedDir
+        dir: recipeLoadedDir,
+        perPhotoParams: recipeState.perPhotoParams
       }));
     } catch (e) { /* storage full or unavailable */ }
   }
@@ -5116,6 +5149,7 @@ body::before {
       if (data.currentParams) recipeState.currentParams = data.currentParams;
       if (data.currentId) recipeState.currentId = data.currentId;
       if (data.currentTitle) recipeState.currentTitle = data.currentTitle;
+      if (data.perPhotoParams) recipeState.perPhotoParams = data.perPhotoParams;
       return true;
     } catch (e) { return false; }
   }
@@ -5276,8 +5310,13 @@ body::before {
       const rect = this.getBoundingClientRect();
       tip.style.bottom = '';
       tip.style.right = '';
-      tip.style.top = (rect.top - tip.offsetHeight - 4) + 'px';
-      tip.style.left = (rect.left + rect.width / 2 - tip.offsetWidth / 2) + 'px';
+      let tipTop = rect.top - tip.offsetHeight - 4;
+      let tipLeft = rect.left + rect.width / 2 - tip.offsetWidth / 2;
+      if (tipLeft + tip.offsetWidth > window.innerWidth - 4) tipLeft = window.innerWidth - tip.offsetWidth - 4;
+      if (tipLeft < 4) tipLeft = 4;
+      if (tipTop < 4) tipTop = rect.bottom + 4;
+      tip.style.top = tipTop + 'px';
+      tip.style.left = tipLeft + 'px';
     });
     el.addEventListener('mouseleave', function() {
       const tip = this.querySelector('.cell-tag-tip');
@@ -5286,6 +5325,16 @@ body::before {
   }
 
   function enterCompareMode(baseline) {
+    // Save current focus photo's params before entering compare
+    if (Object.keys(recipeState.perPhotoParams).length > 0) {
+      const curPhoto = recipeState.focusBrowse && recipeState.focusBrowsePhoto ? recipeState.focusBrowsePhoto.file : (recipeState.gridPhotos[recipeState.focusIndex] ? recipeState.gridPhotos[recipeState.focusIndex].file : null);
+      if (curPhoto) {
+        recipeState.perPhotoParams[curPhoto] = {
+          currentParams: { ...recipeState.currentParams },
+          cleanParams: recipeState.cleanParams ? { ...recipeState.cleanParams } : null
+        };
+      }
+    }
     recipeState.mode = 'compare';
     recipeState.compareRendered = new Set();
     recipeState.compareSelectedFavorite = null;
@@ -5414,7 +5463,7 @@ body::before {
       const currentVal = String(recipeState.currentParams[paramKey] || '');
       const exifVal = recipeState.exifBaseline ? String(recipeState.exifBaseline[paramKey] || '') : '';
       const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
-      const hasPreSim = photo && recipeState.simulatedPhotos[photo.file];
+      const hasPreSim = photo && hasValidPreSim(photo.file, paramKey);
       const cancelBtn = document.getElementById('compare-cancel-btn');
       let pending = 0;
       for (const v of selectedValues) {
@@ -5457,7 +5506,7 @@ body::before {
       const currentVal = String(recipeState.currentParams[paramKey] || '');
       const exifVal = recipeState.exifBaseline ? String(recipeState.exifBaseline[paramKey] || '') : '';
       const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
-      const hasPreSim = photo && recipeState.simulatedPhotos[photo.file];
+      const hasPreSim = photo && hasValidPreSim(photo.file, paramKey);
       const active = [...selectedValues];
       const allDone = active.every(v => {
         const sv = String(v);
@@ -5502,7 +5551,7 @@ body::before {
           const outputPath = recipeLoadedDir + '/Liked/RAF/.sim-cache/' + stem + '_cmp_' + paramKey + '_' + safeVal + '.jpg';
           img.src = '/api/preview-image/' + btoa(unescape(encodeURIComponent(outputPath.substring(0, outputPath.lastIndexOf('/'))))) + '/' + encodeURIComponent(outputPath.substring(outputPath.lastIndexOf('/') + 1)) + '?t=' + Date.now();
           img.style.filter = 'none';
-        } else if (isCurrentVal && recipeState.simulatedPhotos[photo.file]) {
+        } else if (isCurrentVal && hasValidPreSim(photo.file, paramKey)) {
           // Photo was pre-simulated with current recipe params — show simulated image
           const simPath = recipeState.simulatedPhotos[photo.file];
           const ts = recipeState.simTimestamps[photo.file] || '';
@@ -5748,6 +5797,21 @@ body::before {
             if (exif._dateTaken) p.dateTaken = exif._dateTaken;
           }
         });
+        // Initialize per-photo params from individual EXIF data
+        recipeState.perPhotoParams = {};
+        const recipeKeys = Object.keys(RECIPE_DEFAULTS);
+        recipeState.gridPhotos.forEach(p => {
+          const stem = p.file.replace(/\.[^.]+$/, '');
+          const exif = res.perFile[stem];
+          if (exif) {
+            const photoParams = { ...RECIPE_DEFAULTS };
+            recipeKeys.forEach(k => { if (exif[k] != null) photoParams[k] = exif[k]; });
+            recipeState.perPhotoParams[p.file] = {
+              currentParams: { ...photoParams },
+              cleanParams: { ...photoParams }
+            };
+          }
+        });
       }
 
       if (res.majority && Object.keys(res.majority).length > 0) {
@@ -5796,6 +5860,16 @@ body::before {
   }
 
   function showRecipePreview() {
+    // Save current focus photo's params before leaving focus mode
+    if (recipeState.mode === 'focus' && Object.keys(recipeState.perPhotoParams).length > 0) {
+      const curPhoto = recipeState.focusBrowse && recipeState.focusBrowsePhoto ? recipeState.focusBrowsePhoto.file : (recipeState.gridPhotos[recipeState.focusIndex] ? recipeState.gridPhotos[recipeState.focusIndex].file : null);
+      if (curPhoto) {
+        recipeState.perPhotoParams[curPhoto] = {
+          currentParams: { ...recipeState.currentParams },
+          cleanParams: recipeState.cleanParams ? { ...recipeState.cleanParams } : null
+        };
+      }
+    }
     // Slide gallery out before hiding focus
     const gallery = document.getElementById('focus-gallery');
     if (!gallery.classList.contains('hidden')) {
@@ -5839,6 +5913,9 @@ body::before {
     const wasBrowse = recipeState.focusBrowse;
     const isNowBrowse = !!(opts && opts.browse);
     const modeChanging = !wasFocus || (wasBrowse !== isNowBrowse);
+    // Capture previous focus state before overwriting
+    const prevFocusIndex = recipeState.focusIndex;
+    const prevBrowsePhoto = recipeState.focusBrowsePhoto;
     if (!wasFocus) {
       recipeState.focusHistory = [];
     }
@@ -5846,6 +5923,22 @@ body::before {
     recipeState.focusIndex = index;
     recipeState.focusBrowse = browse || false;
     recipeState.focusBrowsePhoto = browse ? (opts.photo || null) : null;
+    // Per-photo param save/restore
+    if (wasFocus && Object.keys(recipeState.perPhotoParams).length > 0) {
+      const prevPhoto = wasBrowse && prevBrowsePhoto ? prevBrowsePhoto.file : (recipeState.gridPhotos[prevFocusIndex] ? recipeState.gridPhotos[prevFocusIndex].file : null);
+      if (prevPhoto) {
+        recipeState.perPhotoParams[prevPhoto] = {
+          currentParams: { ...recipeState.currentParams },
+          cleanParams: recipeState.cleanParams ? { ...recipeState.cleanParams } : null
+        };
+      }
+    }
+    const newPhoto = isNowBrowse && recipeState.focusBrowsePhoto ? recipeState.focusBrowsePhoto.file : (recipeState.gridPhotos[index] ? recipeState.gridPhotos[index].file : null);
+    if (newPhoto && recipeState.perPhotoParams[newPhoto]) {
+      recipeState.currentParams = { ...recipeState.perPhotoParams[newPhoto].currentParams };
+      recipeState.cleanParams = recipeState.perPhotoParams[newPhoto].cleanParams ? { ...recipeState.perPhotoParams[newPhoto].cleanParams } : recipeState.cleanParams;
+      renderParams();
+    }
     restoreRightPanel();
     document.getElementById('recipe-center-preview').style.display = 'none';
     document.getElementById('recipe-collage').style.display = 'none';
@@ -5991,6 +6084,7 @@ body::before {
         wrapper.appendChild(label);
 
         wrapper.addEventListener('click', () => {
+          if (recipeState._variantSelectMode) return;
           enterFocusMode(0, { browse: true, photo });
         });
 
@@ -6130,9 +6224,24 @@ body::before {
       updateRecipeActiveDropdown();
       recipeState._updatingDropdown = false;
     }
-    // Standalone SAVE button removed — save options now in recipe dropdown
-    const saveNewBtn = document.getElementById('save-new-recipe-btn');
-    if (saveNewBtn) saveNewBtn.style.display = 'none';
+    const saveBtn = document.getElementById('recipe-save-btn');
+    if (saveBtn) {
+      const hasChanged = recipeState.cleanParams && Object.keys(recipeState.currentParams).some(
+        k => recipeState.currentParams[k] !== recipeState.cleanParams[k]
+      );
+      if (hasChanged && recipeState.mode !== 'compare') {
+        saveBtn.style.display = '';
+        if (recipeState.currentId && recipeState.recipes && recipeState.recipes[recipeState.currentId]) {
+          const r = recipeState.recipes[recipeState.currentId];
+          const vCount = (r.versions ? r.versions.length : 0) + 1;
+          saveBtn.textContent = 'SAVE v' + (vCount + 1);
+        } else {
+          saveBtn.textContent = 'SAVE';
+        }
+      } else {
+        saveBtn.style.display = 'none';
+      }
+    }
   }
 
   function markDirty() {
@@ -6158,28 +6267,48 @@ body::before {
     saveRecipeState();
   }
 
-  document.getElementById('save-new-recipe-btn').addEventListener('click', async () => {
-    const name = prompt('Recipe name:', 'New Recipe');
-    if (!name) return;
-    try {
-      const res = await fetch('/api/recipe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: name, params: recipeState.currentParams })
-      }).then(r => r.json());
-      if (res.id) {
-        recipeState.currentId = res.id;
-        recipeState.currentTitle = name;
+  document.getElementById('recipe-save-btn').addEventListener('click', async () => {
+    const hasChanged = recipeState.cleanParams && Object.keys(recipeState.currentParams).some(
+      k => recipeState.currentParams[k] !== recipeState.cleanParams[k]
+    );
+    if (!hasChanged) return;
+
+    if (recipeState.currentId && recipeState.recipes && recipeState.recipes[recipeState.currentId]) {
+      // Update existing recipe
+      try {
+        await fetch('/api/recipe/' + recipeState.currentId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ params: recipeState.currentParams })
+        });
         recipeState.cleanParams = { ...recipeState.currentParams };
         recipeState.dirty = false;
         await loadRecipes();
         checkParamsChanged();
         saveRecipeState();
-        showToast('Recipe saved');
-      }
-    } catch (e) {
-      console.error('Save new recipe failed', e);
-      showToast('Save failed');
+        showToast('Recipe updated');
+      } catch(e) { console.error('Update recipe failed', e); showToast('Update failed'); }
+    } else {
+      // Save as new recipe
+      const name = prompt('Recipe name:', 'New Recipe');
+      if (!name) return;
+      try {
+        const res = await fetch('/api/recipe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: name, params: recipeState.currentParams })
+        }).then(r => r.json());
+        if (res.id) {
+          recipeState.currentId = res.id;
+          recipeState.currentTitle = name;
+          recipeState.cleanParams = { ...recipeState.currentParams };
+          recipeState.dirty = false;
+          await loadRecipes();
+          checkParamsChanged();
+          saveRecipeState();
+          showToast('Recipe saved');
+        }
+      } catch(e) { console.error('Save new recipe failed', e); showToast('Save failed'); }
     }
   });
 
@@ -6289,6 +6418,54 @@ body::before {
         date.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       }
       card.appendChild(date);
+
+      if (r.versions && r.versions.length > 0) {
+        const versionRow = document.createElement('div');
+        versionRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:4px';
+        const versionInfo = document.createElement('span');
+        versionInfo.style.cssText = 'font-size:10px;color:var(--text-dim)';
+        versionInfo.textContent = 'v' + (r.versions.length + 1) + ' · ' + r.versions.length + ' previous';
+        versionRow.appendChild(versionInfo);
+        const histBtn = document.createElement('button');
+        histBtn.style.cssText = 'font-family:var(--mono);font-size:9px;padding:2px 6px;background:none;color:var(--text-dim);border:1px solid var(--text-dim);cursor:pointer';
+        histBtn.textContent = 'HISTORY';
+        const histPanel = document.createElement('div');
+        histPanel.style.cssText = 'display:none;margin-top:4px;border-top:1px solid rgba(255,255,255,0.1);padding-top:4px';
+        histBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          histPanel.style.display = histPanel.style.display === 'none' ? 'block' : 'none';
+        });
+        versionRow.appendChild(histBtn);
+        card.appendChild(versionRow);
+        r.versions.slice().reverse().forEach(ver => {
+          const vEntry = document.createElement('div');
+          vEntry.style.cssText = 'font-size:10px;padding:4px 8px;color:var(--text-dim);display:flex;justify-content:space-between;align-items:center';
+          vEntry.innerHTML = '<span>v' + ver.version + ' · ' + new Date(ver.modified).toLocaleDateString() + '</span>';
+          const restoreBtn = document.createElement('button');
+          restoreBtn.textContent = 'RESTORE';
+          restoreBtn.style.cssText = 'font-family:var(--mono);font-size:9px;padding:2px 6px;background:none;color:var(--amber);border:1px solid var(--amber);cursor:pointer';
+          restoreBtn.addEventListener('click', async (e2) => {
+            e2.stopPropagation();
+            if (!confirm('Restore v' + ver.version + '? Current settings will be saved as a new version.')) return;
+            try {
+              await fetch('/api/recipe/' + id + '/restore-version', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ version: ver.version })
+              });
+              await loadRecipes();
+              if (recipeState.currentId === id) {
+                selectRecipe(id);
+              }
+              renderLibrary();
+              showToast('Restored v' + ver.version);
+            } catch(e3) { showToast('Restore failed'); }
+          });
+          vEntry.appendChild(restoreBtn);
+          histPanel.appendChild(vEntry);
+        });
+        card.appendChild(histPanel);
+      }
 
       const actions = document.createElement('div');
       actions.className = 'library-card-actions';
@@ -6964,19 +7141,36 @@ body::before {
   async function simulateOnePhoto(photoIndex, skipToggle) {
     const simBtn = document.getElementById('simulate-btn');
     const progress = document.getElementById('simulate-progress');
-    simBtn.style.display = 'none';
+    simBtn.classList.add('simulating');
+    simBtn.disabled = true;
     recipeState.lastSimParams = { ...recipeState.currentParams };
+
+    function setMainSimProgress(done, total) {
+      const pct = Math.round((done / total) * 100);
+      const remaining = total - done;
+      const text = 'Simulating ' + done + '/' + total + (remaining > 0 ? ' (~' + remaining + 's)' : '');
+      simBtn.style.background = 'linear-gradient(to right, var(--amber) ' + pct + '%, rgba(255,255,255,0.04) ' + pct + '%)';
+      simBtn.innerHTML = '<span class="sim-text-back">' + text + '</span><span class="sim-text-front" style="clip-path:inset(0 ' + (100 - pct) + '% 0 0)">' + text + '</span>';
+    }
 
     try {
       const listRes = await fetch('/api/camera/list').then(r => r.json());
       if (!listRes.cameras || listRes.cameras.length === 0) {
         showToast('No camera connected');
+        simBtn.classList.remove('simulating');
+        simBtn.disabled = false;
+        simBtn.style.background = '';
+        simBtn.innerHTML = '<span class="sim-main-label">SIMULATE</span>';
         document.getElementById('sim-scope-toggle').style.display = '';
         checkParamsChanged();
         return;
       }
     } catch(e) {
       showToast('Camera check failed');
+      simBtn.classList.remove('simulating');
+      simBtn.disabled = false;
+      simBtn.style.background = '';
+      simBtn.innerHTML = '<span class="sim-main-label">SIMULATE</span>';
       document.getElementById('sim-scope-toggle').style.display = '';
       checkParamsChanged();
       return;
@@ -6986,14 +7180,17 @@ body::before {
     const targets = (photoIndex != null) ? [{ photo: photos[photoIndex], idx: photoIndex }]
       : photos.map((p, i) => ({ photo: p, idx: i }));
 
-    progress.textContent = 'Connecting...';
+    simBtn.innerHTML = '<span class="sim-text-back">Connecting...</span><span class="sim-text-front" style="clip-path:inset(0 100% 0 0)">Connecting...</span>';
     try {
       await fetch('/api/camera/connect', { method: 'POST' }).then(r => r.json());
     } catch(e) {
       showToast('Camera connection failed');
+      simBtn.classList.remove('simulating');
+      simBtn.disabled = false;
+      simBtn.style.background = '';
+      simBtn.innerHTML = '<span class="sim-main-label">SIMULATE</span>';
       document.getElementById('sim-scope-toggle').style.display = '';
       checkParamsChanged();
-      progress.textContent = '';
       return;
     }
 
@@ -7003,9 +7200,12 @@ body::before {
       const rafPath = recipeLoadedDir + '/Liked/RAF/' + stem + '.RAF';
       const outputPath = recipeLoadedDir + '/Liked/RAF/.sim-cache/' + stem + '_sim.jpg';
 
-      progress.textContent = targets.length === 1
-        ? 'Rendering...'
-        : 'Rendering ' + (t + 1) + ' / ' + targets.length + '...';
+      if (targets.length === 1) {
+        simBtn.style.background = 'linear-gradient(to right, var(--amber) 50%, rgba(255,255,255,0.04) 50%)';
+        simBtn.innerHTML = '<span class="sim-text-back">Rendering...</span><span class="sim-text-front" style="clip-path:inset(0 50% 0 0)">Rendering...</span>';
+      } else {
+        setMainSimProgress(t, targets.length);
+      }
 
       const cell = recipeGridEl.children[idx];
       let spinner = null;
@@ -7048,6 +7248,7 @@ body::before {
         if (resultRes.ok) {
           recipeState.simulatedPhotos[photo.file] = outputPath;
           recipeState.simTimestamps[photo.file] = Date.now();
+          recipeState.simParamsUsed[photo.file] = { ...recipeState.currentParams };
         }
       } catch(e) {
         console.error('Simulation failed for ' + stem, e);
@@ -7060,7 +7261,11 @@ body::before {
       await fetch('/api/camera/disconnect', { method: 'POST' });
     } catch(e) {}
 
-    progress.textContent = targets.length === 1 ? 'Rendered' : targets.length + ' rendered';
+    simBtn.classList.remove('simulating');
+    simBtn.disabled = false;
+    simBtn.style.background = '';
+    simBtn.style.color = '';
+    simBtn.innerHTML = '<span class="sim-main-label">SIMULATE</span>';
     document.getElementById('sim-scope-toggle').style.display = '';
     checkParamsChanged();
 
@@ -7235,71 +7440,6 @@ body::before {
         list.style.display = 'none';
       });
       list.appendChild(item);
-    }
-    // Divider + save options
-    const hasChanged = recipeState.cleanParams && Object.keys(recipeState.currentParams).some(
-      k => recipeState.currentParams[k] !== recipeState.cleanParams[k]
-    );
-    const noMatch = !findMatchingRecipe(recipeState.currentParams);
-    let addedDivider = false;
-    if (recipeState.mode !== 'compare') {
-      // Update existing recipe option
-      if (recipeState.currentId && hasChanged) {
-        if (!addedDivider) { const divider = document.createElement('div'); divider.style.cssText = 'border-top:1px solid rgba(255,255,255,0.1);margin:4px 0'; list.appendChild(divider); addedDivider = true; }
-        const updateItem = document.createElement('div');
-        updateItem.className = 'param-dropdown-option';
-        updateItem.style.color = 'var(--amber)';
-        const recipeName = (recipeState.recipes && recipeState.recipes[recipeState.currentId]) ? recipeState.recipes[recipeState.currentId].title : 'recipe';
-        updateItem.textContent = 'Update “' + recipeName + '”…';
-        updateItem.addEventListener('click', async () => {
-          list.style.display = 'none';
-          try {
-            await fetch('/api/recipe/' + recipeState.currentId, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ params: recipeState.currentParams })
-            });
-            recipeState.cleanParams = { ...recipeState.currentParams };
-            recipeState.dirty = false;
-            await loadRecipes();
-            checkParamsChanged();
-            saveRecipeState();
-            showToast('Recipe updated');
-          } catch(e) { console.error('Update recipe failed', e); showToast('Update failed'); }
-        });
-        list.appendChild(updateItem);
-      }
-      // Save as new recipe option (always available when changed and no exact match)
-      if (hasChanged && noMatch) {
-        if (!addedDivider) { const divider2 = document.createElement('div'); divider2.style.cssText = 'border-top:1px solid rgba(255,255,255,0.1);margin:4px 0'; list.appendChild(divider2); addedDivider = true; }
-        const saveItem = document.createElement('div');
-        saveItem.className = 'param-dropdown-option';
-        saveItem.style.color = 'var(--amber)';
-        saveItem.textContent = 'Save as new recipe…';
-        saveItem.addEventListener('click', async () => {
-          list.style.display = 'none';
-          const name = prompt('Recipe name:', 'New Recipe');
-          if (!name) return;
-          try {
-            const res = await fetch('/api/recipe', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ title: name, params: recipeState.currentParams })
-            }).then(r => r.json());
-            if (res.id) {
-              recipeState.currentId = res.id;
-              recipeState.currentTitle = name;
-              recipeState.cleanParams = { ...recipeState.currentParams };
-              recipeState.dirty = false;
-              await loadRecipes();
-              checkParamsChanged();
-              saveRecipeState();
-              showToast('Recipe saved');
-            }
-          } catch(e) { console.error('Save new recipe failed', e); showToast('Save failed'); }
-        });
-        list.appendChild(saveItem);
-      }
     }
   }
 
@@ -7672,7 +7812,15 @@ body::before {
   function resetSimulatedState() {
     recipeState.simulatedPhotos = {};
     recipeState.simTimestamps = {};
+    recipeState.simParamsUsed = {};
     recipeState.showSimulated = false;
+    recipeState.perPhotoParams = {};
+  }
+
+  function hasValidPreSim(photoFile, paramKey) {
+    if (!recipeState.simulatedPhotos[photoFile] || !recipeState.simParamsUsed[photoFile]) return false;
+    const simP = recipeState.simParamsUsed[photoFile];
+    return Object.keys(recipeState.currentParams).every(k => k === paramKey || simP[k] === recipeState.currentParams[k]);
   }
 
   async function replaceGridCell(idx) {
@@ -8503,6 +8651,69 @@ body::before {
 
   document.getElementById('recipe-shuffle-btn').addEventListener('click', shuffleGrid);
   document.getElementById('recipe-pick-btn').addEventListener('click', openPhotoPicker);
+  function enterVariantSelectMode(baseline) {
+    showToast('Select a photo for variant test');
+    const collage = document.getElementById('recipe-collage');
+    const cancelBtn = document.getElementById('variant-select-cancel');
+    const shuffleBtn = document.getElementById('recipe-shuffle-btn');
+    const pickBtn = document.getElementById('recipe-pick-btn');
+    const compareBtn = document.getElementById('recipe-compare-btn');
+    const chevron = document.getElementById('recipe-compare-chevron');
+
+    collage.classList.add('variant-select-mode');
+    cancelBtn.style.display = '';
+    // Disable other toolbar actions (S23-85)
+    shuffleBtn.disabled = true;
+    shuffleBtn.style.opacity = '0.3';
+    shuffleBtn.style.pointerEvents = 'none';
+    pickBtn.disabled = true;
+    pickBtn.style.opacity = '0.3';
+    pickBtn.style.pointerEvents = 'none';
+    compareBtn.disabled = true;
+    chevron.disabled = true;
+
+    recipeState._variantSelectMode = true;
+
+    const cleanup = () => {
+      collage.classList.remove('variant-select-mode');
+      cancelBtn.style.display = 'none';
+      shuffleBtn.disabled = false;
+      shuffleBtn.style.opacity = '';
+      shuffleBtn.style.pointerEvents = '';
+      pickBtn.disabled = false;
+      pickBtn.style.opacity = '';
+      pickBtn.style.pointerEvents = '';
+      compareBtn.disabled = false;
+      chevron.disabled = false;
+      recipeState._variantSelectMode = false;
+      collage.removeEventListener('click', selectHandler);
+      document.removeEventListener('keydown', escHandler);
+      cancelBtn.removeEventListener('click', cancelHandler);
+    };
+
+    const selectHandler = (e) => {
+      const cell = e.target.closest('.recipe-grid-cell');
+      if (!cell) return;
+      cleanup();
+      const idx = parseInt(cell.dataset.index);
+      if (!isNaN(idx)) {
+        recipeState.focusIndex = idx;
+        recipeState.mode = 'focus';
+        recipeState.focusBrowse = false;
+        recipeState.focusBrowsePhoto = null;
+        recipeState.focusHistory = [];
+        enterCompareMode(baseline);
+      }
+    };
+
+    const escHandler = (e) => { if (e.key === 'Escape') cleanup(); };
+    const cancelHandler = () => cleanup();
+
+    collage.addEventListener('click', selectHandler);
+    document.addEventListener('keydown', escHandler);
+    cancelBtn.addEventListener('click', cancelHandler);
+  }
+
   document.getElementById('recipe-compare-btn').addEventListener('click', () => {
     if (recipeState.mode === 'preview' || recipeState.mode === undefined) {
       if (!recipeState.gridPhotos || recipeState.gridPhotos.length === 0) return;
@@ -8515,31 +8726,7 @@ body::before {
         enterCompareMode();
         return;
       }
-      showToast('Select a photo for variant test');
-      const collage = document.getElementById('recipe-collage');
-      collage.classList.add('variant-select-mode');
-      const cleanup = () => {
-        collage.classList.remove('variant-select-mode');
-        collage.removeEventListener('click', handler);
-        document.removeEventListener('keydown', escHandler);
-      };
-      const handler = (e) => {
-        const cell = e.target.closest('.recipe-grid-cell');
-        if (!cell) return;
-        cleanup();
-        const idx = parseInt(cell.dataset.index);
-        if (!isNaN(idx)) {
-          recipeState.focusIndex = idx;
-          recipeState.mode = 'focus';
-          recipeState.focusBrowse = false;
-          recipeState.focusBrowsePhoto = null;
-          recipeState.focusHistory = [];
-          enterCompareMode();
-        }
-      };
-      const escHandler = (e) => { if (e.key === 'Escape') cleanup(); };
-      collage.addEventListener('click', handler);
-      document.addEventListener('keydown', escHandler);
+      enterVariantSelectMode();
       return;
     }
     enterCompareMode();
@@ -8565,31 +8752,7 @@ body::before {
         enterCompareMode(bl);
         return;
       }
-      showToast('Select a photo for variant test');
-      const collage = document.getElementById('recipe-collage');
-      collage.classList.add('variant-select-mode');
-      const cleanup2 = () => {
-        collage.classList.remove('variant-select-mode');
-        collage.removeEventListener('click', handler2);
-        document.removeEventListener('keydown', escHandler2);
-      };
-      const handler2 = (ev) => {
-        const cell = ev.target.closest('.recipe-grid-cell');
-        if (!cell) return;
-        cleanup2();
-        const idx = parseInt(cell.dataset.index);
-        if (!isNaN(idx)) {
-          recipeState.focusIndex = idx;
-          recipeState.mode = 'focus';
-          recipeState.focusBrowse = false;
-          recipeState.focusBrowsePhoto = null;
-          recipeState.focusHistory = [];
-          enterCompareMode(bl);
-        }
-      };
-      const escHandler2 = (ev) => { if (ev.key === 'Escape') cleanup2(); };
-      collage.addEventListener('click', handler2);
-      document.addEventListener('keydown', escHandler2);
+      enterVariantSelectMode(bl);
       return;
     }
     enterCompareMode(bl);
@@ -8958,7 +9121,7 @@ body::before {
     // Filter to only values that need simulation (not exif baseline val, not pre-simulated currentVal, not already rendered)
     const exifVal = recipeState.exifBaseline ? String(recipeState.exifBaseline[paramKey] || '') : '';
     const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
-    const hasPreSim = photo && recipeState.simulatedPhotos[photo.file];
+    const hasPreSim = photo && hasValidPreSim(photo.file, recipeState.compareParam);
     const toSimulate = allSelected.filter(v => {
       const sv = String(v);
       if (sv === exifVal) return false;

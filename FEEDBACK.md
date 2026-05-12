@@ -61,7 +61,7 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [x] **S23-45**: SBS view — good.
 - [x] **S23-46**: Recipe dropdown beside RECIPE — great.
 - [x] **S23-47**: Zoom — good.
-- [ ] **S23-48**: Standard baseline — skeptical, needs re-verify with camera.
+- [x] **S23-48**: Standard baseline — VERIFIED with camera connected. D001=0x0001 confirms Provia is Standard. RECIPE_DEFAULTS (Provia, all zeros) maps correctly to camera settings. d185 patching handles all defaults.
 - [x] **S23-49**: Dots — OK.
 - [x] **S23-50**: STOP immediate, clip-path dual-text progress, icons+dots in single dark overlay. Implemented R7. Oren has NOT verified.
 - [x] **S23-51**: Error handling — OK, believes retry is there.
@@ -86,7 +86,7 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [x] **S23-58b**: NEW RECIPE widget param-dropdown + range sliders — IMPLEMENTED. NOT VERIFIED.
 - [x] **S23-62**: Simulated image then launched variant test — IMPLEMENTED: renderGrid checks `simulatedPhotos[photo.file]` for currentVal cell, shows pre-sim image instead of original. Pending count, checkAllSimulated, and simulate handler all skip pre-simulated currentVal cells.
 - [x] **S23-63**: Simulate button on regular/focus view — IMPLEMENTED: button always visible when params changed. Orange outline + "Connect camera to simulate" when disconnected (matching variant test pattern). Chevron no longer shows alone.
-- [ ] **S23-63b**: Audit all simulate/variant edge cases: what happens when entering variant after partial simulation, after full simulation, after loading a recipe, after switching photos, after switching baseline. Document and fix all inconsistencies.
+- [x] **S23-63b**: Audit all simulate/variant edge cases — DONE: Found and fixed pre-sim params mismatch bug. `simParamsUsed` tracks per-photo sim params. `hasValidPreSim()` validates before showing pre-sim images. No bugs in baseline switching, re-entry reset, or photo switching.
 - [ ] **Progress bar**: Oren doesn't know what this refers to. Closing this item.
 - [ ] **No logo**: Will rename app and pick logo soon. Not actionable yet.
 
@@ -157,14 +157,18 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [x] **S23-77**: Chevron only before simulate — FIXED: sim-scope-toggle hidden on simulate click, restored on completion.
 - [x] **S23-78**: Save only after simulate — FIXED: apply handlers set cleanParams to exifBaseline so changes show as modified.
 - [x] **S23-79**: Variant test preserves working params — FIXED: enterCompareMode no longer resets currentParams to baseline.
-- [ ] **S23-80**: Per-photo param state — right sidebar should save/restore params per photo. Switching photos changes the sidebar. Switching back restores previous edits. NOT YET IMPLEMENTED — needs Oren's input on architecture.
-- [ ] **S23-81**: Clicking diff-badge photo should update right panel to show that photo's actual as-shot params.
-- [ ] **S23-82**: Recipe versioning — updating a recipe should create v1/v2 history. Previous shots under old version preserved.
-- [ ] **S23-83**: Simulate progress bar animation in main view — needs full progress bar treatment like variant test (clip-path dual-text, linear-gradient fill, "Simulating x/y (~Ns)" text).
-- [ ] **S23-84**: Variant test from collage still flashes white outline on collage. Select-photo mode must persist until user either picks a photo or clicks CANCEL. CANCEL button should appear next to VARIANT TEST button during selection mode.
-- [ ] **S23-85**: Variant test select-photo mode should disable all other actions (shuffle, pick, etc.) until decision is made. Modal-like lockout.
-- [ ] **S23-86**: Tooltip in variant view extends past right edge of screen. Bounding rect calculation for fixed tooltip needs viewport clamping.
-- [ ] **S23-87**: SAVE should be a BUTTON next to the RECIPE dropdown, NOT inside the dropdown. Inline button, not dropdown option.
+- [x] **S23-80**: Per-photo param state — IMPLEMENTED: `perPhotoParams` stores per-photo currentParams/cleanParams. `enterFocusMode()` saves/restores on photo switch. Initialized from per-file EXIF. Persisted to localStorage. Independent per-photo editing (Oren confirmed).
+- [x] **S23-81**: Clicking diff-badge photo shows actual as-shot params — IMPLEMENTED via S23-80. `enterFocusMode(idx)` loads that photo's individual EXIF-based params from `perPhotoParams`.
+- [x] **S23-82**: Recipe versioning — IMPLEMENTED: PUT `/api/recipe/:id` pushes old params to `versions` array before overwriting. POST `/api/recipe/:id/restore-version` restores a previous version (saves current first). SAVE button shows `SAVE v{N}`. Library cards show version count + HISTORY button with RESTORE per version.
+- [x] **S23-83**: Simulate progress bar in main view — IMPLEMENTED: clip-path dual-text (`.sim-text-back`/`.sim-text-front`), `linear-gradient` fill, "Simulating x/y (~Ns)" text. Button stays visible during sim with `.simulating` class.
+- [x] **S23-84**: Variant select mode persistence — IMPLEMENTED: `enterVariantSelectMode()` function with CANCEL button (`#variant-select-cancel`), select-photo mode persists until pick or cancel.
+- [x] **S23-85**: Variant select lockout — IMPLEMENTED: shuffle/pick buttons disabled with opacity 0.3 and pointer-events none. Compare button disabled. Filmstrip clicks guarded via `_variantSelectMode` flag.
+- [x] **S23-86**: Tooltip viewport clamping — FIXED: `attachCellTagTooltip` now clamps left/right to 4px from viewport edges, flips below element if above would go offscreen.
+- [x] **S23-87**: SAVE button next to dropdown — IMPLEMENTED: `#recipe-save-btn` in `#recipe-label-row` next to RECIPE dropdown. Save options removed from dropdown. Button shows when params changed, updates existing recipe or prompts for new name.
+
+## Session 24 — New Feedback
+
+- [ ] **S24-1**: Loading state should match pre-folder-loaded state in the right bar and have blank stand-in elements elsewhere (shimmering rectangles, skeleton placeholders). Right bar = disabled/blank like before folder is loaded. Center/collage area = skeleton grid cells. Filmstrip = skeleton thumbs.
 
 ## Older — Unresolved
 
