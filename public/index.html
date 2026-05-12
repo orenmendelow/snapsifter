@@ -1344,6 +1344,14 @@ body::before {
   color: var(--amber);
   border-color: var(--amber-dim);
 }
+#recipe-collage.variant-select-mode .recipe-grid-cell {
+  cursor: crosshair;
+  outline: 2px solid transparent;
+  transition: outline-color 0.15s;
+}
+#recipe-collage.variant-select-mode .recipe-grid-cell:hover {
+  outline-color: var(--amber);
+}
 #recipe-compare-chevron {
   background: none;
   color: var(--text-dim);
@@ -1882,7 +1890,7 @@ body::before {
   opacity: 0;
   transition: opacity 0.2s, transform 0.2s;
   pointer-events: none;
-  z-index: 200;
+  z-index: 300;
 }
 #recipe-toast.visible {
   opacity: 1;
@@ -3030,7 +3038,7 @@ body::before {
       <div id="completed-sessions-label" class="tree-section-label" style="display:none">Completed</div>
       <div id="completed-sessions-list"></div>
       <div class="tree-divider"></div>
-      <div class="tree-section-label">Volumes</div>
+      <div class="tree-section-label" id="tree-volumes-label" style="display:flex;align-items:center;gap:6px">Volumes<span id="tree-volumes-refresh" title="Refresh volumes" style="cursor:pointer;font-size:12px;opacity:0.5;transition:opacity 0.15s">&#x21bb;</span></div>
       <div id="tree-volumes"></div>
       <div class="tree-divider"></div>
       <div class="tree-section-label">Home</div>
@@ -3370,8 +3378,8 @@ body::before {
     <div id="photo-picker-header">
       <span id="photo-picker-title">Select Photos</span>
       <span id="photo-picker-selected-count">0 / 9 selected</span>
-      <button class="recipe-action-btn primary" id="photo-picker-confirm">LOAD SELECTED</button>
-      <button class="recipe-action-btn primary" id="photo-picker-shuffle-confirm">SHUFFLE SELECTED</button>
+      <button class="recipe-action-btn" id="photo-picker-confirm">LOAD SELECTED</button>
+      <button class="recipe-action-btn" id="photo-picker-shuffle-confirm">SHUFFLE SELECTED</button>
       <button class="recipe-action-btn" id="photo-picker-cancel">CANCEL</button>
     </div>
     <div id="photo-picker-scroll"><div id="photo-picker-grid"></div></div>
@@ -3703,6 +3711,32 @@ body::before {
     const homeDir = '/Users/' + (await getHomeUser());
     renderTreeRoot(treeHome, homeDir.split('/').pop(), homeDir, 1);
   }
+
+  // Cull volumes refresh button
+  document.getElementById('tree-volumes-refresh').addEventListener('mouseenter', function(){ this.style.opacity='1'; });
+  document.getElementById('tree-volumes-refresh').addEventListener('mouseleave', function(){ this.style.opacity='0.5'; });
+  document.getElementById('tree-volumes-refresh').addEventListener('click', async function(){
+    try {
+      const volumes = await fetch('/api/volumes').then(r => r.json());
+      treeVolumes.innerHTML = '';
+      for (const v of volumes) {
+        renderTreeRoot(treeVolumes, v.name, v.path, 1);
+      }
+    } catch(e) {}
+  });
+
+  // Auto-refresh volumes every 10s for both Cull and Recipe Lab
+  setInterval(async () => {
+    try {
+      const volumes = await fetch('/api/volumes').then(r => r.json());
+      const cullVol = document.getElementById('tree-volumes');
+      if (cullVol && cullVol.closest('#tree-panel')) {
+        cullVol.innerHTML = '';
+        for (const v of volumes) renderTreeRoot(cullVol, v.name, v.path, 1);
+      }
+    } catch(e) {}
+    if (typeof refreshRecipeVolumes === 'function') refreshRecipeVolumes();
+  }, 10000);
 
   async function getHomeUser() {
     // Get home dir from browse API default
@@ -5449,7 +5483,19 @@ body::before {
           const overlay = document.createElement('div');
           overlay.className = 'compare-cell-overlay';
           // Camera icon for as-shot value, sliders icon for standard value
-          if (isExifMatch && !(isStandardMatch && isExifMatch)) {
+          if (isExifMatch && isStandardMatch) {
+            // Both match — show icon based on baseline choice
+            const camIcon = document.createElement('span');
+            camIcon.className = 'cell-action-camera-icon';
+            if (recipeState.compareBaseline === 'standard') {
+              attachCellTagTooltip(camIcon, 'Standard');
+              camIcon.innerHTML = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="var(--amber)" stroke-width="1.5"><line x1="3" y1="5" x2="17" y2="5"/><circle cx="7" cy="5" r="2"/><line x1="3" y1="15" x2="17" y2="15"/><circle cx="13" cy="15" r="2"/></svg>';
+            } else {
+              attachCellTagTooltip(camIcon, 'As Shot');
+              camIcon.innerHTML = '<svg viewBox="0 0 24 20" width="20" height="16" fill="none" stroke="var(--amber)" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M8 5l1.5-3h5L16 5"/></svg>';
+            }
+            overlay.appendChild(camIcon);
+          } else if (isExifMatch) {
             const camIcon = document.createElement('span');
             camIcon.className = 'cell-action-camera-icon';
             attachCellTagTooltip(camIcon, 'As Shot');
@@ -5708,7 +5754,7 @@ body::before {
     document.getElementById('compare-view').style.display = 'none';
     document.getElementById('recipe-shuffle-btn').style.display = hasPhotos ? '' : 'none';
     document.getElementById('recipe-pick-btn').style.display = hasPhotos ? '' : 'none';
-    document.getElementById('recipe-compare-row').style.display = 'none';
+    document.getElementById('recipe-compare-row').style.display = hasPhotos ? 'flex' : 'none';
     document.getElementById('focus-back-btn').style.display = 'none';
     document.getElementById('recipe-filmstrip').querySelectorAll('.thumb-wrapper.active').forEach(w => w.classList.remove('active'));
   }
@@ -6315,33 +6361,63 @@ body::before {
         row.appendChild(label);
 
         if (p.type === 'dropdown') {
-          const sel = document.createElement('select');
-          sel.dataset.key = p.key;
+          const dd = document.createElement('div');
+          dd.className = 'param-dropdown';
+          dd.style.flex = '1';
+          dd.style.maxWidth = '200px';
+          const trigger = document.createElement('div');
+          trigger.className = 'param-dropdown-trigger';
+          trigger.textContent = String(RECIPE_DEFAULTS[p.key]);
+          trigger.dataset.key = p.key;
+          dd.appendChild(trigger);
+          const list = document.createElement('div');
+          list.className = 'param-dropdown-list';
+          list.style.display = 'none';
           for (const opt of p.options) {
-            const o = document.createElement('option');
-            o.value = opt;
-            o.textContent = opt;
-            if (opt === String(RECIPE_DEFAULTS[p.key])) o.selected = true;
-            sel.appendChild(o);
+            const optEl = document.createElement('div');
+            optEl.className = 'param-dropdown-option';
+            optEl.textContent = opt;
+            if (opt === String(RECIPE_DEFAULTS[p.key])) optEl.classList.add('selected');
+            optEl.addEventListener('click', (e) => {
+              e.stopPropagation();
+              tempParams[p.key] = opt;
+              trigger.textContent = opt;
+              list.querySelectorAll('.param-dropdown-option').forEach(o => o.classList.remove('selected'));
+              optEl.classList.add('selected');
+              list.style.display = 'none';
+            });
+            list.appendChild(optEl);
           }
-          sel.addEventListener('change', () => { tempParams[p.key] = sel.value; });
-          row.appendChild(sel);
-        } else if (p.type === 'slider') {
-          const input = document.createElement('input');
-          input.type = 'number';
-          input.dataset.key = p.key;
-          input.min = p.min;
-          input.max = p.max;
-          input.step = 1;
-          input.value = RECIPE_DEFAULTS[p.key];
-          input.addEventListener('input', () => {
-            let v = parseInt(input.value, 10);
-            if (isNaN(v)) v = 0;
-            if (v < p.min) v = p.min;
-            if (v > p.max) v = p.max;
-            tempParams[p.key] = v;
+          trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('#new-recipe-widget-body .param-dropdown-list').forEach(l => { if (l !== list) l.style.display = 'none'; });
+            list.style.display = list.style.display === 'none' ? 'block' : 'none';
           });
-          row.appendChild(input);
+          dd.appendChild(list);
+          row.appendChild(dd);
+        } else if (p.type === 'slider') {
+          const sliderWrap = document.createElement('div');
+          sliderWrap.style.cssText = 'display:flex;align-items:center;gap:8px;flex:1;max-width:200px';
+          const range = document.createElement('input');
+          range.type = 'range';
+          range.min = p.min;
+          range.max = p.max;
+          range.step = 1;
+          range.value = RECIPE_DEFAULTS[p.key];
+          range.dataset.key = p.key;
+          range.style.cssText = 'flex:1;accent-color:var(--amber)';
+          const valLabel = document.createElement('span');
+          valLabel.style.cssText = 'font-size:11px;color:var(--text);min-width:24px;text-align:right;font-family:var(--mono)';
+          valLabel.textContent = RECIPE_DEFAULTS[p.key];
+          range.addEventListener('input', () => {
+            let v = parseInt(range.value, 10);
+            if (isNaN(v)) v = 0;
+            tempParams[p.key] = v;
+            valLabel.textContent = v;
+          });
+          sliderWrap.appendChild(range);
+          sliderWrap.appendChild(valLabel);
+          row.appendChild(sliderWrap);
         }
 
         body.appendChild(row);
@@ -6755,6 +6831,11 @@ body::before {
   }
 
   document.addEventListener('click', () => { closeAllDropdowns(); });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.param-dropdown')) {
+      document.querySelectorAll('#new-recipe-widget-body .param-dropdown-list').forEach(l => l.style.display = 'none');
+    }
+  });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeAllDropdowns();
   });
@@ -7244,6 +7325,7 @@ body::before {
     recipeState.gridPhotos.forEach((photo, idx) => {
       const cell = document.createElement('div');
       cell.className = 'recipe-grid-cell';
+      cell.dataset.index = idx;
 
       const img = document.createElement('img');
       img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(photo.file);
@@ -7300,7 +7382,7 @@ body::before {
         const wasComparing = cellComparing;
         if (cellComparing) revertToSim();
         if (e.type === 'mouseup' || e.type === 'touchend') {
-          if (!wasComparing) enterFocusMode(idx);
+          if (!wasComparing && !document.getElementById('recipe-collage').classList.contains('variant-select-mode')) enterFocusMode(idx);
         }
       }
       function cellCompareLeave() {
@@ -8225,7 +8307,39 @@ body::before {
 
   document.getElementById('recipe-shuffle-btn').addEventListener('click', shuffleGrid);
   document.getElementById('recipe-pick-btn').addEventListener('click', openPhotoPicker);
-  document.getElementById('recipe-compare-btn').addEventListener('click', () => enterCompareMode());
+  document.getElementById('recipe-compare-btn').addEventListener('click', () => {
+    if (recipeState.mode === 'preview' || recipeState.mode === undefined) {
+      if (!recipeState.gridPhotos || recipeState.gridPhotos.length === 0) return;
+      if (recipeState.gridPhotos.length === 1) {
+        enterFocusMode(0);
+        enterCompareMode();
+        return;
+      }
+      showToast('Select a photo for variant test');
+      const collage = document.getElementById('recipe-collage');
+      collage.classList.add('variant-select-mode');
+      const cleanup = () => {
+        collage.classList.remove('variant-select-mode');
+        collage.removeEventListener('click', handler);
+        document.removeEventListener('keydown', escHandler);
+      };
+      const handler = (e) => {
+        const cell = e.target.closest('.recipe-grid-cell');
+        if (!cell) return;
+        cleanup();
+        const idx = parseInt(cell.dataset.index);
+        if (!isNaN(idx)) {
+          enterFocusMode(idx);
+          enterCompareMode();
+        }
+      };
+      const escHandler = (e) => { if (e.key === 'Escape') cleanup(); };
+      collage.addEventListener('click', handler);
+      document.addEventListener('keydown', escHandler);
+      return;
+    }
+    enterCompareMode();
+  });
   document.getElementById('recipe-compare-chevron').addEventListener('click', (e) => {
     e.stopPropagation();
     const dd = document.getElementById('recipe-compare-dropdown');
@@ -8236,6 +8350,36 @@ body::before {
     if (!opt) return;
     document.getElementById('recipe-compare-dropdown').style.display = 'none';
     const bl = opt.dataset.baseline;
+    if (recipeState.mode === 'preview' || recipeState.mode === undefined) {
+      if (!recipeState.gridPhotos || recipeState.gridPhotos.length === 0) return;
+      if (recipeState.gridPhotos.length === 1) {
+        enterFocusMode(0);
+        enterCompareMode(bl);
+        return;
+      }
+      showToast('Select a photo for variant test');
+      const collage = document.getElementById('recipe-collage');
+      collage.classList.add('variant-select-mode');
+      const cleanup2 = () => {
+        collage.classList.remove('variant-select-mode');
+        collage.removeEventListener('click', handler2);
+        document.removeEventListener('keydown', escHandler2);
+      };
+      const handler2 = (ev) => {
+        const cell = ev.target.closest('.recipe-grid-cell');
+        if (!cell) return;
+        cleanup2();
+        const idx = parseInt(cell.dataset.index);
+        if (!isNaN(idx)) {
+          enterFocusMode(idx);
+          enterCompareMode(bl);
+        }
+      };
+      const escHandler2 = (ev) => { if (ev.key === 'Escape') cleanup2(); };
+      collage.addEventListener('click', handler2);
+      document.addEventListener('keydown', escHandler2);
+      return;
+    }
     enterCompareMode(bl);
   });
   // Close compare dropdown on outside click
@@ -8801,6 +8945,7 @@ body::before {
     pickerGrid.innerHTML = '';
     pickerModal.classList.add('visible');
     pickerCountLabel.textContent = '0 / 9 selected';
+    document.getElementById('photo-picker-confirm').classList.remove('primary');
 
     try {
       const res = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=999').then(r => r.json());
@@ -8846,12 +8991,21 @@ body::before {
           }
           const count = pickerGrid.querySelectorAll('.picker-cell.selected').length;
           pickerCountLabel.textContent = count + ' / 9 selected';
+          const confirmBtn = document.getElementById('photo-picker-confirm');
+          if (count === 9) {
+            confirmBtn.classList.add('primary');
+          } else {
+            confirmBtn.classList.remove('primary');
+          }
         });
 
         pickerGrid.appendChild(cell);
       });
 
       pickerCountLabel.textContent = selectedCount + ' / 9 selected';
+      const confirmBtn = document.getElementById('photo-picker-confirm');
+      if (selectedCount === 9) confirmBtn.classList.add('primary');
+      else confirmBtn.classList.remove('primary');
     } catch(e) {
       showToast('Failed to load photos');
       closePhotoPicker();

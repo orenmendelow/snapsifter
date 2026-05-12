@@ -199,6 +199,14 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Recipe matching fix (server.js): `F0/Standard (Provia)`, `Nostalgic Neg`, `Classic Neg` added to `FUJI_FILM_SIM_MAP`. Parenthetical extraction fallback. `grainSize` defaults to `'Small'`. `findMatchingRecipe()` uses numeric + case-insensitive comparison with `RECIPE_DEFAULTS` fallback for missing keys.
 - NEW RECIPE: `#new-recipe-widget` overlay with name input + all 15 param controls from `PARAM_DEFS`. SAVE persists via POST /api/recipe.
 
+*Session 23h (S23-60, S23-61, S23-53b, S23-56b, S23-58b — Round 8):*
+- Cull volumes refresh: &#x21bb; button on Cull tree "Volumes" label + 10s auto-refresh interval for both Cull and Recipe Lab.
+- VARIANT TEST from collage view: button now shows in preview mode. Click from collage → toast "Select a photo" + crosshair cursor + amber outline hover on cells. Selecting a cell enters focus then compare. Escape cancels. Chevron dropdown also supports collage-mode selection.
+- Compare cell icon priority: when both `isExifMatch` and `isStandardMatch` are true, icon shown based on `recipeState.compareBaseline` (camera for as-shot, sliders for standard). `cell-action-camera-icon` gets `position: relative` for tooltip positioning.
+- SHUFFLE SELECTED: changed from `primary` to light button. LOAD SELECTED: `primary` class only when exactly 9 photos selected. Toast z-index bumped to 300 (above picker modal at 200).
+- NEW RECIPE widget: native `<select>` replaced with `param-dropdown` pattern (trigger + list + options). Native `<input type="number">` replaced with `<input type="range">` slider + value label. Document-level click handler closes NRW dropdowns.
+- Grid cells get `data-index` attribute for variant-select-mode click handling.
+
 **ARCHITECTURAL:**
 - `recipeState.compareBaseline` — 'asshot' | 'standard', set by baseline dropdown
 - `recipeState.compareRendered` — Set of value strings simulated, cleared on param change and re-entry

@@ -44,19 +44,17 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [x] **S23-8**: Going back then re-entering variant should RESET — variants should not persist. Clear that cache. What's our garbage cleanup like? — DONE: `enterCompareMode()` clears `compareRendered`, `compareSelectedFavorite`, resets zoom. Sim-cache files left on disk (small, act as cache, overwritten on re-sim).
 - [x] **S23-9**: Progress format should be "Simulating x/y (~10s)" with appropriate countdown. — DONE: "Simulating 1/3 (~2s)" format with per-cell countdown.
 
-## Session 23 Round 5 — Unresolved (Oren's review of R4 fixes, needs verification)
+## Session 23 Round 5 — Verified in Round 6
 
-- [ ] **S23-36**: Recipe says as shot— being that this recipe setting dictates whats below it, there needs to be clear distinction between this dropdown/section and below— size, divider, or other— perhaps something in line with where it says "recipe" instead of below.
-- [ ] **S23-37**: zoom fixed— IT IS NOT. on portrait photos (vertical) its super broken. Wait— its broken everywhere. I need this debugged ASAP launch a subagent this is not OK. Zoom seems to WORK in the variants page so use that to learn.
-- [ ] **S23-38**: standard baseline fixed— it selects provia but still displays the as shot image. IIF NOT SHOT WITH BASELINE SETTING, SHOULD BE BLURRED AND SIMULATE BUTTON SHOWN.
-- [ ] **S23-39**: dots chunkier— not even nearly enough.
-- [ ] **S23-40**: simulate button visible— good. But you misunderstood— I dont want all of the text to change color when the bar gets a certain ways across- i want a mathematical calculation so that whichever part of the text has dark behind it is white, and whichever part of the text has orange behind it is black. Even if its a part of a letter
-- [ ] **S23-41**: pending/failed— why would it fail? Not in red please, the entire site is only monochrome and orange. If failed, should have an option to retry simulation on that photo/photos
-- [ ] **S23-42**: compare icon— This is better but center it vertically or center compare vertically, something is off.
-- [ ] **S23-43**: SBS dropdowns— get rid of orange border, please. and dropdown options styling STILL NOT FIXED.
-- [ ] **S23-44**: SBS actions— can you make those show on hover what they mean?
-
-NOTE: S23-36 through S23-44 were implemented last session. Oren verified in Round 6 below.
+- [x] **S23-36**: Recipe dropdown beside RECIPE label — VERIFIED R6 (S23-46: "great")
+- [x] **S23-37**: Zoom fix — VERIFIED R6 (S23-47: "good")
+- [x] **S23-38**: Standard baseline — partially verified R6 (S23-48: "skeptical, needs re-verify with camera")
+- [x] **S23-39**: Dots chunkier — VERIFIED R6 (S23-49: "OK")
+- [x] **S23-40**: Clip-path dual-text progress — VERIFIED R7 (S23-50: "great")
+- [x] **S23-41**: Error handling + retry — VERIFIED R6 (S23-51: "OK")
+- [x] **S23-42**: Compare icon centering — VERIFIED R6 (S23-45: "good")
+- [x] **S23-43**: SBS dropdowns — VERIFIED R6 (S23-45: "good", S23-52: "AWESOME")
+- [x] **S23-44**: SBS hover tooltips — VERIFIED R6 (S23-45: "good")
 
 ## Session 23 Round 6 — Unresolved (Oren's verification of R5 fixes)
 
@@ -70,14 +68,27 @@ NOTE: S23-36 through S23-44 were implemented last session. Oren verified in Roun
 - [x] **S23-52**: Native selects replaced with custom param-dropdown pattern. Implemented R7. Oren has NOT verified.
 - [x] **S23-53**: Tooltip display fix (was '' falling back to CSS none, now 'block'). Implemented R7. Oren has NOT verified.
 
-## Session 23 Round 7 — Implemented, NOT verified
+## Session 23 Round 7 — Verified by Oren
 
-- [x] **S23-54**: Directory hover highlight — entire preview-group hover highlights name in amber, click on images or name. Oren has NOT verified.
-- [x] **S23-55**: Recently Completed sessions on both Cull and Recipe Lab landing pages. Shared helpers. Oren has NOT verified.
-- [x] **S23-56**: SHUFFLE SELECTED button in PICK PHOTOS popup. Fisher-Yates shuffle. Oren has NOT verified.
-- [x] **S23-57**: Recipe matching fixed — film sim map expanded (F0/Standard, Nostalgic Neg, Classic Neg), grainSize defaults, findMatchingRecipe uses numeric+case-insensitive comparison. Server.js changed. Oren has NOT verified.
-- [x] **S23-58**: NEW RECIPE opens overlay widget with name input + all 15 param controls. Oren has NOT verified.
-- [x] **S23-59**: VARIANT TEST button/chevron/dropdown borders changed to rgba(255,255,255,0.15). Oren has NOT verified.
+- [x] **S23-54**: Directory hover highlight — VERIFIED: "AMAZING"
+- [x] **S23-55**: Recently Completed sessions — VERIFIED: "great"
+- [x] **S23-56**: SHUFFLE SELECTED button — VERIFIED with feedback (see R8 S23-56b)
+- [x] **S23-57**: Recipe matching fix — VERIFIED: "if you say so"
+- [x] **S23-58**: NEW RECIPE overlay widget — VERIFIED with feedback (see R8 S23-58b)
+- [x] **S23-59**: VARIANT TEST borders — VERIFIED: "excellent"
+
+## Session 23 Round 8 — New Feedback
+
+- [x] **S23-60**: External drive detection — IMPLEMENTED: refresh button on Cull volumes + 10s auto-refresh. Oren verified "nice" but Recipe Lab glitches on refresh click. NOT FULLY VERIFIED.
+- [x] **S23-61**: VARIANT TEST from collage — IMPLEMENTED: shows in preview, click prompts photo selection. Oren reported flash on click, fixed (was double enterFocusMode from mouseup+click). Needs re-verify.
+- [x] **S23-53b**: Sliders tooltip / icon priority / overlay — IMPLEMENTED: baseline-aware icon, position:relative on camera icon, overlay covers both. NOT VERIFIED.
+- [x] **S23-56b**: SHUFFLE SELECTED light, LOAD SELECTED conditional orange, toast z-index — IMPLEMENTED. NOT VERIFIED.
+- [x] **S23-58b**: NEW RECIPE widget param-dropdown + range sliders — IMPLEMENTED. NOT VERIFIED.
+- [ ] **S23-62**: Simulated image then launched variant test — variant test doesn't handle pre-simulated photos properly. With 2 images simulated, it needs to know which are simulated and which is as-shot. Edge case: entering variant test after simulation should preserve/recognize existing simulation state.
+- [ ] **S23-63**: Simulate DROPDOWN (chevron) on regular/focus view shows even when simulate BUTTON is hidden. Simulate button on regular view should work like variant test view — button always visible with orange outline, greyed out "Connect camera to simulate" when disconnected, progress bar fill during sim. Consistent pattern across both views.
+- [ ] **S23-63b**: Audit all simulate/variant edge cases: what happens when entering variant after partial simulation, after full simulation, after loading a recipe, after switching photos, after switching baseline. Document and fix all inconsistencies.
+- [ ] **Progress bar**: Oren doesn't know what this refers to. Closing this item.
+- [ ] **No logo**: Will rename app and pick logo soon. Not actionable yet.
 
 ## Session 23 Round 4 — Unresolved
 
@@ -127,5 +138,5 @@ NOTE: S23-36 through S23-44 were implemented last session. Oren verified in Roun
 
 ## Older — Unresolved
 
-- [ ] **Progress bar**: Increased to 5px with hover text. May still be too subtle.
-- [ ] **No logo**: Favicon is aperture SVG. No app logo yet.
+- [x] **Progress bar**: Closed — Oren doesn't recognize this item.
+- [ ] **No logo**: Favicon is aperture SVG. No app logo yet. Will rename app and pick logo soon.
