@@ -67,10 +67,17 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 ## Open bugs / unresolved feedback (verbatim from Oren)
 
-- **Progress bar**: Increased to 5px with hover text. May still be too subtle.
-- **No logo**: Favicon is aperture SVG. No app logo yet.
-- **Film sim tooltip**: Gets cropped near edges (positioning issue). Doesn't fully disappear when mouse leaves.
-- **Oren has additional feedback** to deliver next session.
+- **S23-48**: Standard baseline — skeptical, needs re-verify with camera connected.
+- **S23-63b**: Audit all simulate/variant edge cases — partial/full sim, recipe load, photo switch, baseline switch.
+- **S23-80**: Per-photo param state — sidebar should save/restore params per photo. Switching photos changes sidebar.
+- **S23-81**: Clicking diff-badge photo should update right panel to that photo's as-shot params.
+- **S23-82**: Recipe versioning — updating recipe creates v1/v2 history. Previous shots preserved.
+- **S23-83**: Main view simulate progress bar — full progress treatment like variant test (clip-path dual-text, linear-gradient, "Simulating x/y (~Ns)").
+- **S23-84**: Variant test from collage still flashes white outline. Select-photo mode must persist until CANCEL.
+- **S23-85**: Variant test select-photo mode should disable all other actions (modal lockout).
+- **S23-86**: Tooltip in variant view extends past right screen edge — viewport clamping needed.
+- **S23-87**: SAVE should be a BUTTON next to the RECIPE dropdown, NOT inside the dropdown.
+- **No logo**: Favicon is aperture SVG. No app logo yet. Will rename app soon.
 
 ### Session 16 changes (2026-05-05)
 
@@ -206,6 +213,23 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - SHUFFLE SELECTED: changed from `primary` to light button. LOAD SELECTED: `primary` class only when exactly 9 photos selected. Toast z-index bumped to 300 (above picker modal at 200).
 - NEW RECIPE widget: native `<select>` replaced with `param-dropdown` pattern (trigger + list + options). Native `<input type="number">` replaced with `<input type="range">` slider + value label. Document-level click handler closes NRW dropdowns.
 - Grid cells get `data-index` attribute for variant-select-mode click handling.
+
+*Session 23i (S23-62 through S23-79 — Rounds 9-10):*
+- Pre-simulated photos in variant test: `renderGrid()` checks `simulatedPhotos[photo.file]` for currentVal cell, shows sim image instead of original. `updateSimulateButton()`, `checkAllSimulated()`, and simulate handler all skip pre-simulated currentVal cells.
+- Main view simulate button: orange outline style matching variant test pattern. Always visible when params changed. "Connect camera to simulate" when disconnected.
+- `.cell-action-menu` position changed to `position: fixed; z-index: 100` — fixes overflow:hidden clipping on compare cells.
+- `.cell-tag-tip` tooltips: `attachCellTagTooltip()` now uses `position: fixed` with bounding rect calculation for proper positioning.
+- `saveRecipeState()` / `restoreRecipeState()`: localStorage persistence for `currentParams`, `currentId`, `currentTitle`, `cleanParams`.
+- `renderGrid()` image logic reordered: isRendered first → isCurrentVal+pre-sim → isExifMatch||isCurrentVal (no blur) → pending (blur).
+- `enterCompareMode()` NO LONGER resets `currentParams` — preserves working recipe edits when entering variant test.
+- "Current" pencil icon: shown on cells matching working params that aren't as-shot or standard. `attachCellTagTooltip()` tooltip.
+- `checkParamsChanged()`: simulate button always visible when changed, orange outline, "Connect camera to simulate" when disconnected.
+- `updateRecipeActiveDropdown()`: shows "Modified (unsaved)" when params differ from any baseline. Has "Save as new recipe..." and "Update [name]..." dropdown options (NOTE: Oren wants these as a BUTTON next to dropdown, not inside it — S23-87, NOT YET DONE).
+- Variant-test-from-collage: set state directly (focusIndex, mode, etc.) instead of calling `enterFocusMode` — eliminates flash (but Oren reports white outline flash persists — S23-84).
+- `recipe-compare-row` always `display: flex` — variant test button always visible.
+- Apply handlers (4 locations): close menu first, try/catch, `cleanParams` set to `exifBaseline`.
+- `#sim-scope-toggle` chevron hidden during simulation, restored on completion.
+- `_compareRenderGrid()` called after simulation loop to refresh all cell states.
 
 **ARCHITECTURAL:**
 - `recipeState.compareBaseline` — 'asshot' | 'standard', set by baseline dropdown

@@ -84,8 +84,8 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [x] **S23-53b**: Sliders tooltip / icon priority / overlay — IMPLEMENTED: baseline-aware icon, position:relative on camera icon, overlay covers both. NOT VERIFIED.
 - [x] **S23-56b**: SHUFFLE SELECTED light, LOAD SELECTED conditional orange, toast z-index — IMPLEMENTED. NOT VERIFIED.
 - [x] **S23-58b**: NEW RECIPE widget param-dropdown + range sliders — IMPLEMENTED. NOT VERIFIED.
-- [ ] **S23-62**: Simulated image then launched variant test — variant test doesn't handle pre-simulated photos properly. With 2 images simulated, it needs to know which are simulated and which is as-shot. Edge case: entering variant test after simulation should preserve/recognize existing simulation state.
-- [ ] **S23-63**: Simulate DROPDOWN (chevron) on regular/focus view shows even when simulate BUTTON is hidden. Simulate button on regular view should work like variant test view — button always visible with orange outline, greyed out "Connect camera to simulate" when disconnected, progress bar fill during sim. Consistent pattern across both views.
+- [x] **S23-62**: Simulated image then launched variant test — IMPLEMENTED: renderGrid checks `simulatedPhotos[photo.file]` for currentVal cell, shows pre-sim image instead of original. Pending count, checkAllSimulated, and simulate handler all skip pre-simulated currentVal cells.
+- [x] **S23-63**: Simulate button on regular/focus view — IMPLEMENTED: button always visible when params changed. Orange outline + "Connect camera to simulate" when disconnected (matching variant test pattern). Chevron no longer shows alone.
 - [ ] **S23-63b**: Audit all simulate/variant edge cases: what happens when entering variant after partial simulation, after full simulation, after loading a recipe, after switching photos, after switching baseline. Document and fix all inconsistencies.
 - [ ] **Progress bar**: Oren doesn't know what this refers to. Closing this item.
 - [ ] **No logo**: Will rename app and pick logo soon. Not actionable yet.
@@ -135,6 +135,36 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [x] **R1-8c**: I clicked to render collage and it did the 9 photo collage instead of rendering the compare.. see the problem? — DONE: main simulate handler now bails if `recipeState.mode === 'compare'`.
 - [x] **Film sim tooltip cropping**: Gets cropped near edges — DONE: switched from `position: absolute` inside icon to `position: fixed` on `document.body`, with viewport boundary clamping and flip-below logic.
 - [x] **Film sim tooltip stale hover**: Doesn't fully disappear when mouse leaves — DONE: added `mouseleave` handler on the `?` icon that dismisses the popup immediately.
+
+## Session 23 Round 9 — New Feedback
+
+- [x] **S23-64**: 3-dot menu — FIXED R9b: menu items now close menu first, wrap in try/catch. Position fixed for visibility.
+- [x] **S23-65**: Variant blur for non-film-sim params — FIXED R9: currentVal cells always clear. Pre-sim cells show sim image.
+- [x] **S23-66**: Recipe dropdown + Save — FIXED R9b: "Save as new recipe..." and "Update [name]..." options in the RECIPE dropdown (inline). Standalone button removed.
+- [x] **S23-67**: Session persistence — IMPLEMENTED: localStorage save/restore for currentParams/currentId/currentTitle.
+- [x] **S23-68**: Save inline with RECIPE dropdown — FIXED R9b: save options appear as dropdown items with divider, not separate button.
+- [x] **S23-69**: Auto-detect matching recipe — WORKING via findMatchingRecipe().
+
+## Session 23 Round 10 — New Feedback
+
+- [x] **S23-70**: APPLY & RETURN / APPLY & NEXT buttons don't work — FIXED: menu closes first, try/catch wrapping, all 4 locations updated.
+- [x] **S23-71**: Flash on VARIANT TEST from collage — FIXED: set state directly instead of calling enterFocusMode. No visual transition.
+- [x] **S23-72**: VARIANT TEST button visibility inconsistent — FIXED: recipe-compare-row always display:flex. Never hidden.
+- [x] **S23-73**: As Shot tooltip cropped in variant — FIXED: attachCellTagTooltip uses position:fixed with bounding rect.
+- [x] **S23-74**: "Current" icon needed — IMPLEMENTED: pencil icon with "Current" tooltip when cell matches working params but not as-shot or standard.
+- [x] **S23-75**: PENDING after simulation — FIXED: _compareRenderGrid() called after sim loop to refresh all cell states.
+- [x] **S23-76**: Simulate button in main view — FIXED: orange outline style matching variant test pattern.
+- [x] **S23-77**: Chevron only before simulate — FIXED: sim-scope-toggle hidden on simulate click, restored on completion.
+- [x] **S23-78**: Save only after simulate — FIXED: apply handlers set cleanParams to exifBaseline so changes show as modified.
+- [x] **S23-79**: Variant test preserves working params — FIXED: enterCompareMode no longer resets currentParams to baseline.
+- [ ] **S23-80**: Per-photo param state — right sidebar should save/restore params per photo. Switching photos changes the sidebar. Switching back restores previous edits. NOT YET IMPLEMENTED — needs Oren's input on architecture.
+- [ ] **S23-81**: Clicking diff-badge photo should update right panel to show that photo's actual as-shot params.
+- [ ] **S23-82**: Recipe versioning — updating a recipe should create v1/v2 history. Previous shots under old version preserved.
+- [ ] **S23-83**: Simulate progress bar animation in main view — needs full progress bar treatment like variant test (clip-path dual-text, linear-gradient fill, "Simulating x/y (~Ns)" text).
+- [ ] **S23-84**: Variant test from collage still flashes white outline on collage. Select-photo mode must persist until user either picks a photo or clicks CANCEL. CANCEL button should appear next to VARIANT TEST button during selection mode.
+- [ ] **S23-85**: Variant test select-photo mode should disable all other actions (shuffle, pick, etc.) until decision is made. Modal-like lockout.
+- [ ] **S23-86**: Tooltip in variant view extends past right edge of screen. Bounding rect calculation for fixed tooltip needs viewport clamping.
+- [ ] **S23-87**: SAVE should be a BUTTON next to the RECIPE dropdown, NOT inside the dropdown. Inline button, not dropdown option.
 
 ## Older — Unresolved
 
