@@ -1201,6 +1201,63 @@ body::before {
   background: #141414;
   animation: cell-pulse 1.5s ease-in-out infinite;
 }
+.skel-filmstrip-thumb {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 3px;
+  background: #141414;
+  animation: cell-pulse 1.5s ease-in-out infinite;
+}
+.skel-param-group {
+  margin-bottom: 16px;
+}
+.skel-param-group-label {
+  height: 10px;
+  width: 40px;
+  border-radius: 2px;
+  background: #141414;
+  animation: cell-pulse 1.5s ease-in-out infinite;
+  margin-bottom: 12px;
+}
+.skel-param-row {
+  margin-bottom: 14px;
+}
+.skel-param-label {
+  height: 10px;
+  width: 90px;
+  border-radius: 2px;
+  background: #141414;
+  animation: cell-pulse 1.5s ease-in-out infinite;
+  margin-bottom: 6px;
+}
+.skel-param-control {
+  height: 34px;
+  width: 100%;
+  border-radius: 0;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: #0a0a0a;
+  animation: cell-pulse 1.5s ease-in-out infinite;
+}
+.skel-param-slider {
+  height: 8px;
+  width: 100%;
+  border-radius: 4px;
+  background: #141414;
+  animation: cell-pulse 1.5s ease-in-out infinite;
+  margin-top: 8px;
+}
+.skel-recipe-row {
+  height: 34px;
+  width: 100%;
+  border-radius: 0;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: #0a0a0a;
+  animation: cell-pulse 1.5s ease-in-out infinite;
+  margin-bottom: 12px;
+}
+#recipe-right-panel.disabled { pointer-events: none; }
+.skel-collage-cell { background: #0a0a0a; border-radius: 3px; animation: cell-pulse 1.5s ease-in-out infinite; min-height: 0; }
 #recipe-collage.stale .cell-swap { display: none; }
 .cell-diff-badge {
   position: absolute;
@@ -3324,7 +3381,7 @@ body::before {
           </div>
           <button id="recipe-save-btn" style="display:none">SAVE</button>
         </div>
-        <div id="recipe-compare-row" style="display:flex">
+        <div id="recipe-compare-row" style="display:none">
           <button id="recipe-compare-btn">VARIANT TEST</button>
           <button id="recipe-compare-chevron">&#9662;</button>
           <div id="recipe-compare-dropdown" style="display:none">
@@ -5109,6 +5166,7 @@ body::before {
     perFileExif: {},
     usedPhotos: new Set(),
     simulatedPhotos: {},
+    simParamsUsed: {},
     simTimestamps: {},
     showSimulated: false,
     mode: 'preview',
@@ -5246,15 +5304,17 @@ body::before {
     recipeEditor.style.display = 'flex';
     if (!recipeLoadedDir) {
       document.getElementById('recipe-filmstrip-container').style.display = 'none';
+      document.getElementById('recipe-right-panel').style.display = 'none';
     } else {
       collapseRecipeLeftPanel();
     }
 
-    await checkCameraStatus();
-    if (cameraCheckInterval) clearInterval(cameraCheckInterval);
-    cameraCheckInterval = setInterval(checkCameraStatus, 5000);
-
     initRecipeLeftTree();
+
+    checkCameraStatus().then(() => {
+      if (cameraCheckInterval) clearInterval(cameraCheckInterval);
+      cameraCheckInterval = setInterval(checkCameraStatus, 5000);
+    });
 
     if (!recipeEditorInitialized) {
       recipeEditorInitialized = true;
@@ -5436,8 +5496,9 @@ body::before {
     }
     paramTrigger.onclick = (e) => {
       e.stopPropagation();
+      const wasOpen = paramList.style.display === 'block';
       closeAllDropdowns();
-      paramList.style.display = 'block';
+      if (!wasOpen) paramList.style.display = 'block';
     };
     // Expose a select-like interface for _compareParamSelect consumers
     window._compareParamSelect = {
@@ -5838,6 +5899,21 @@ body::before {
     recipeEditor.style.display = 'none';
     if (recipeState.autoSaveTimer) clearTimeout(recipeState.autoSaveTimer);
     if (cameraCheckInterval) { clearInterval(cameraCheckInterval); cameraCheckInterval = null; }
+    if (recipeState._variantSelectMode) {
+      recipeState._variantSelectMode = false;
+      const cancelBtn = document.getElementById('variant-select-cancel');
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      document.getElementById('recipe-shuffle-btn').disabled = false;
+      document.getElementById('recipe-shuffle-btn').style.opacity = '';
+      document.getElementById('recipe-shuffle-btn').style.pointerEvents = '';
+      document.getElementById('recipe-pick-btn').disabled = false;
+      document.getElementById('recipe-pick-btn').style.opacity = '';
+      document.getElementById('recipe-pick-btn').style.pointerEvents = '';
+      const compareBtn = document.getElementById('recipe-compare-btn');
+      if (compareBtn) compareBtn.disabled = false;
+      const compareChevron = document.getElementById('recipe-compare-chevron');
+      if (compareChevron) compareChevron.disabled = false;
+    }
   }
 
   // ── Mode switching ──
@@ -5846,13 +5922,19 @@ body::before {
     const hasBaseline = recipeLoadedDir && recipeState.exifBaseline;
     const rightPanel = document.getElementById('recipe-right-panel');
     rightPanel.classList.remove('sbs-condensed');
-    const activeLabel = document.getElementById('recipe-active-label');
     if (!hasBaseline) {
-      rightPanel.classList.add('disabled');
-      if (activeLabel) activeLabel.textContent = 'Open a folder to start';
-    } else {
-      rightPanel.classList.remove('disabled');
+      recipeState.cleanParams = null;
+      if (!recipeLoadedDir) {
+        rightPanel.style.display = 'none';
+      } else {
+        rightPanel.style.display = '';
+        showRightPanelSkeleton();
+      }
+      document.getElementById('compare-right-controls').style.display = 'none';
+      return;
     }
+    rightPanel.style.display = '';
+    rightPanel.classList.remove('disabled');
     checkParamsChanged();
     document.getElementById('recipe-right-panel-params').style.display = '';
     document.getElementById('recipe-drawer-top').style.display = '';
@@ -5886,6 +5968,11 @@ body::before {
     } else {
       document.getElementById('recipe-collage').style.display = 'none';
       centerPreview.style.display = '';
+      if (!recipeLoadedDir) {
+        centerPreview.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;opacity:0.25"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7"/><path d="M16 3H8l-2 4h12l-2-4z"/><circle cx="12" cy="13" r="3"/></svg><div style="margin-top:12px;font-size:13px;color:var(--text-dim);letter-spacing:0.05em">Select a folder to get started</div></div>';
+      } else {
+        centerPreview.innerHTML = '';
+      }
     }
     // Delay hiding focus-view so gallery slide completes
     setTimeout(() => {
@@ -5896,7 +5983,7 @@ body::before {
     document.getElementById('compare-view').style.display = 'none';
     document.getElementById('recipe-shuffle-btn').style.display = hasPhotos ? '' : 'none';
     document.getElementById('recipe-pick-btn').style.display = hasPhotos ? '' : 'none';
-    document.getElementById('recipe-compare-row').style.display = 'flex';
+    document.getElementById('recipe-compare-row').style.display = hasPhotos ? 'flex' : 'none';
     document.getElementById('focus-back-btn').style.display = 'none';
     document.getElementById('recipe-filmstrip').querySelectorAll('.thumb-wrapper.active').forEach(w => w.classList.remove('active'));
   }
@@ -6057,15 +6144,25 @@ body::before {
   async function loadRecipeFilmstrip() {
     const strip = document.getElementById('recipe-filmstrip');
     const stripContainer = document.getElementById('recipe-filmstrip-container');
+    if (!recipeLoadedDir) {
+      strip.innerHTML = '';
+      stripContainer.style.display = 'none';
+      return;
+    }
     strip.innerHTML = '';
-    if (!recipeLoadedDir) { stripContainer.style.display = 'none'; return; }
     stripContainer.style.display = '';
+    for (let i = 0; i < 12; i++) {
+      const skel = document.createElement('div');
+      skel.className = 'skel-filmstrip-thumb';
+      strip.appendChild(skel);
+    }
 
     try {
       const gridRes = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=999').then(r => r.json());
       if (!gridRes.selected) return;
       recipeState.filmstripPhotos = gridRes.selected;
       const useDirB64 = btoa(unescape(encodeURIComponent(gridRes.hifDir || recipeLoadedDir + '/Liked/HIF/')));
+      strip.innerHTML = '';
 
       gridRes.selected.forEach(photo => {
         const wrapper = document.createElement('div');
@@ -6154,7 +6251,7 @@ body::before {
     const payload = { title: recipeState.currentTitle, params: recipeState.currentParams };
     let res;
     res = await fetch('/api/recipe/' + recipeState.currentId, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r => r.json());
-    recipeState.dirty = false;
+    if (res && (res.ok || res.id)) recipeState.dirty = false;
     // Also set as active
     if (recipeState.currentId) {
       await fetch('/api/recipes/active', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: recipeState.currentId }) });
@@ -6840,17 +6937,116 @@ body::before {
     return null;
   }
 
+  function showSkeletonCollage() {
+    const collageEl = document.getElementById('recipe-collage');
+    collageEl.style.display = '';
+    collageEl.innerHTML = '';
+    updateCollageLayout(9);
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'skel-collage-cell';
+      cell.style.animationDelay = (i * 0.1) + 's';
+      collageEl.appendChild(cell);
+    }
+  }
+
+  function showRightPanelSkeleton() {
+    const paramsPanel = document.getElementById('recipe-right-panel-params');
+    const drawerTop = document.getElementById('recipe-drawer-top');
+    const drawerActions = document.getElementById('recipe-drawer-actions');
+    if (drawerTop) drawerTop.style.display = 'none';
+    if (drawerActions) drawerActions.style.display = 'none';
+    paramsPanel.innerHTML = '';
+
+    // Skeleton for RECIPE dropdown row
+    var recipeRow = document.createElement('div');
+    recipeRow.className = 'skel-recipe-row';
+    paramsPanel.appendChild(recipeRow);
+
+    // Skeleton for VARIANT TEST row
+    var vtRow = document.createElement('div');
+    vtRow.className = 'skel-recipe-row';
+    paramsPanel.appendChild(vtRow);
+
+    // Skeleton param groups matching PARAM_DEFS structure
+    var groups = [
+      { label: true, dropdowns: 3 },
+      { label: true, dropdowns: 2, sliders: 1 },
+      { label: true, dropdowns: 1, sliders: 2 },
+      { label: true, sliders: 4 },
+      { label: true, sliders: 2 }
+    ];
+
+    groups.forEach(function(g) {
+      var group = document.createElement('div');
+      group.className = 'skel-param-group';
+
+      if (g.label) {
+        var lbl = document.createElement('div');
+        lbl.className = 'skel-param-group-label';
+        group.appendChild(lbl);
+      }
+
+      var dropCount = g.dropdowns || 0;
+      var sliderCount = g.sliders || 0;
+
+      for (var i = 0; i < dropCount; i++) {
+        var row = document.createElement('div');
+        row.className = 'skel-param-row';
+        var label = document.createElement('div');
+        label.className = 'skel-param-label';
+        label.style.width = (60 + Math.random() * 60) + 'px';
+        row.appendChild(label);
+        var ctrl = document.createElement('div');
+        ctrl.className = 'skel-param-control';
+        row.appendChild(ctrl);
+        group.appendChild(row);
+      }
+
+      for (var j = 0; j < sliderCount; j++) {
+        var srow = document.createElement('div');
+        srow.className = 'skel-param-row';
+        var slabel = document.createElement('div');
+        slabel.className = 'skel-param-label';
+        slabel.style.width = (60 + Math.random() * 60) + 'px';
+        srow.appendChild(slabel);
+        var slider = document.createElement('div');
+        slider.className = 'skel-param-slider';
+        srow.appendChild(slider);
+        group.appendChild(srow);
+      }
+
+      paramsPanel.appendChild(group);
+    });
+  }
+
   function renderParams() {
     recipeParamsPanel.innerHTML = '';
     const hasBaseline = recipeLoadedDir && recipeState.exifBaseline;
     const rightPanel = document.getElementById('recipe-right-panel');
-    const activeLabel = document.getElementById('recipe-active-label');
     if (!hasBaseline) {
       rightPanel.classList.add('disabled');
-      if (activeLabel) activeLabel.textContent = 'Open a folder to start';
-    } else {
-      rightPanel.classList.remove('disabled');
+      var drawerTopEl2 = document.getElementById('recipe-drawer-top');
+      if (drawerTopEl2) drawerTopEl2.style.display = '';
+      var drawerActionsEl = document.getElementById('recipe-drawer-actions');
+      if (drawerActionsEl) drawerActionsEl.style.display = 'none';
+      for (const group of PARAM_DEFS) {
+        if (group.group) {
+          const lbl = document.createElement('div');
+          lbl.className = 'param-group-label';
+          lbl.textContent = group.group;
+          recipeParamsPanel.appendChild(lbl);
+        }
+        for (const p of group.params) {
+          if (p.type === 'dropdown') renderDropdownParam(p);
+          else if (p.type === 'slider') renderSliderParam(p);
+        }
+      }
+      return;
     }
+    rightPanel.classList.remove('disabled');
+    var drawerTopEl = document.getElementById('recipe-drawer-top');
+    if (drawerTopEl) drawerTopEl.style.display = '';
     checkParamsChanged();
     for (const group of PARAM_DEFS) {
       if (group.group) {
@@ -6935,8 +7131,9 @@ body::before {
 
     trigger.addEventListener('click', (e) => {
       e.stopPropagation();
+      const wasOpen = list.style.display === 'block';
       closeAllDropdowns();
-      list.style.display = 'block';
+      if (!wasOpen) list.style.display = 'block';
     });
 
     recipeParamsPanel.appendChild(wrap);
@@ -7445,9 +7642,10 @@ body::before {
 
   document.getElementById('recipe-active-trigger').addEventListener('click', (e) => {
     e.stopPropagation();
-    closeAllDropdowns();
     const list = document.getElementById('recipe-active-list');
-    list.style.display = list.style.display === 'block' ? 'none' : 'block';
+    const wasOpen = list.style.display === 'block';
+    closeAllDropdowns();
+    if (!wasOpen) list.style.display = 'block';
   });
 
   // ── Focus photo: hold-to-compare + click-to-zoom ──
@@ -7600,6 +7798,9 @@ body::before {
       });
     } catch(e) {
       recipeGridEl.innerHTML = '';
+      document.getElementById('recipe-center-preview').style.display = '';
+      document.getElementById('recipe-shuffle-btn').style.display = 'none';
+      document.getElementById('recipe-pick-btn').style.display = 'none';
     }
   }
 
@@ -7964,11 +8165,20 @@ body::before {
                 collapseRecipeLeftPanel();
                 recipeState.lastLoadedDir = null;
                 recipeState.gridPhotos = [];
+                recipeState.exifBaseline = null;
+                recipeState.perPhotoParams = {};
+                recipeState.simulatedPhotos = {};
+                recipeState.simParamsUsed = {};
+                recipeState.cleanParams = null;
+                document.getElementById('recipe-right-panel').style.display = '';
+                showRightPanelSkeleton();
+                showSkeletonCollage();
+                document.getElementById('recipe-center-preview').style.display = 'none';
                 document.getElementById('recipe-filmstrip-container').style.display = '';
                 const gridP = loadRecipeGrid();
                 loadRecipeFilmstrip();
                 await gridP;
-                if (recipeState.gridPhotos.length > 0) loadBatchExif();
+                if (recipeState.gridPhotos.length > 0) await loadBatchExif();
               }
             } catch (e) {}
           });
@@ -8458,13 +8668,20 @@ body::before {
             collapseRecipeLeftPanel();
             recipeState.lastLoadedDir = null;
             recipeState.gridPhotos = [];
+            recipeState.exifBaseline = null;
+            recipeState.perPhotoParams = {};
+            recipeState.simulatedPhotos = {};
+            recipeState.simParamsUsed = {};
+            recipeState.cleanParams = null;
+            document.getElementById('recipe-right-panel').style.display = '';
+            showRightPanelSkeleton();
+            showSkeletonCollage();
             centerPreview.style.display = 'none';
-            document.getElementById('recipe-collage').style.display = '';
             document.getElementById('recipe-filmstrip-container').style.display = '';
             const gridP = loadRecipeGrid();
             loadRecipeFilmstrip();
             await gridP;
-            if (recipeState.gridPhotos.length > 0) loadBatchExif();
+            if (recipeState.gridPhotos.length > 0) await loadBatchExif();
           }
         } catch (e) {}
       });
@@ -8475,10 +8692,11 @@ body::before {
     try {
       const sessions = await fetch('/api/sessions').then(r => r.json());
       centerPreview.innerHTML = '';
-      if (!sessions || sessions.length === 0) return;
+      const emptyStateHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;opacity:0.25"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7"/><path d="M16 3H8l-2 4h12l-2-4z"/><circle cx="12" cy="13" r="3"/></svg><div style="margin-top:12px;font-size:13px;color:var(--text-dim);letter-spacing:0.05em">Select a folder to get started</div></div>';
+      if (!sessions || sessions.length === 0) { centerPreview.innerHTML = emptyStateHTML; return; }
 
       const accessible = sessions.filter(s => s.accessible !== false);
-      if (accessible.length === 0) return;
+      if (accessible.length === 0) { centerPreview.innerHTML = emptyStateHTML; return; }
 
       const inProgress = accessible.filter(s => !isSessionCompleted(s));
       const completed = accessible.filter(s => isSessionCompleted(s));
@@ -8627,6 +8845,7 @@ body::before {
 
   // Arrow keys in focus mode — cycle through collage or filmstrip photos
   document.addEventListener('keydown', (e) => {
+    if (recipeLightbox && recipeLightbox.classList.contains('visible')) return;
     if (recipeState.mode !== 'focus') return;
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
@@ -8702,6 +8921,11 @@ body::before {
         recipeState.focusBrowse = false;
         recipeState.focusBrowsePhoto = null;
         recipeState.focusHistory = [];
+        const ppPhoto2 = recipeState.gridPhotos[recipeState.focusIndex];
+        if (ppPhoto2 && recipeState.perPhotoParams[ppPhoto2.file]) {
+          recipeState.currentParams = { ...recipeState.perPhotoParams[ppPhoto2.file].currentParams };
+          recipeState.cleanParams = recipeState.perPhotoParams[ppPhoto2.file].cleanParams ? { ...recipeState.perPhotoParams[ppPhoto2.file].cleanParams } : recipeState.cleanParams;
+        }
         enterCompareMode(baseline);
       }
     };
@@ -8723,6 +8947,11 @@ body::before {
         recipeState.focusBrowse = false;
         recipeState.focusBrowsePhoto = null;
         recipeState.focusHistory = [];
+        const ppPhoto = recipeState.gridPhotos[0];
+        if (ppPhoto && recipeState.perPhotoParams[ppPhoto.file]) {
+          recipeState.currentParams = { ...recipeState.perPhotoParams[ppPhoto.file].currentParams };
+          recipeState.cleanParams = recipeState.perPhotoParams[ppPhoto.file].cleanParams ? { ...recipeState.perPhotoParams[ppPhoto.file].cleanParams } : recipeState.cleanParams;
+        }
         enterCompareMode();
         return;
       }
@@ -8749,6 +8978,11 @@ body::before {
         recipeState.focusBrowse = false;
         recipeState.focusBrowsePhoto = null;
         recipeState.focusHistory = [];
+        const ppPhoto = recipeState.gridPhotos[0];
+        if (ppPhoto && recipeState.perPhotoParams[ppPhoto.file]) {
+          recipeState.currentParams = { ...recipeState.perPhotoParams[ppPhoto.file].currentParams };
+          recipeState.cleanParams = recipeState.perPhotoParams[ppPhoto.file].cleanParams ? { ...recipeState.perPhotoParams[ppPhoto.file].cleanParams } : recipeState.cleanParams;
+        }
         enterCompareMode(bl);
         return;
       }
@@ -8860,7 +9094,8 @@ body::before {
 
     // Defaults: left = current value, right = first rendered that isn't current
     window._sbsSelectedLeft = currentVal;
-    const firstOther = rendered.find(rv => rv !== currentVal);
+    let firstOther = rendered.find(rv => rv !== currentVal);
+    if (!firstOther) firstOther = currentVal;
     window._sbsSelectedRight = firstOther || currentVal;
 
     buildSbsList(leftList, leftValueEl, 'left');
@@ -8881,8 +9116,8 @@ body::before {
     });
 
     // Wire trigger clicks
-    leftTrigger.onclick = (e) => { e.stopPropagation(); closeAllDropdowns(); leftList.style.display = 'block'; };
-    rightTrigger.onclick = (e) => { e.stopPropagation(); closeAllDropdowns(); rightList.style.display = 'block'; };
+    leftTrigger.onclick = (e) => { e.stopPropagation(); const wasOpen = leftList.style.display === 'block'; closeAllDropdowns(); if (!wasOpen) leftList.style.display = 'block'; };
+    rightTrigger.onclick = (e) => { e.stopPropagation(); const wasOpen = rightList.style.display === 'block'; closeAllDropdowns(); if (!wasOpen) rightList.style.display = 'block'; };
 
     // Update images
     document.getElementById('sbs-photo-left').src = getSbsImageUrl(window._sbsSelectedLeft);
@@ -9453,6 +9688,7 @@ body::before {
     activeToolTab = 'recipe';
     toolCullBtn.classList.remove('active');
     toolRecipeBtn.classList.add('active');
+    initLanding();
     showRecipeEditor();
   } else {
     initLanding();

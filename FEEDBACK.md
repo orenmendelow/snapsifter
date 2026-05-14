@@ -168,7 +168,7 @@ Verbatim from Oren. Check off when completed and visually verified.
 
 ## Session 24 — New Feedback
 
-- [ ] **S24-1**: Loading state should match pre-folder-loaded state in the right bar and have blank stand-in elements elsewhere (shimmering rectangles, skeleton placeholders). Right bar = disabled/blank like before folder is loaded. Center/collage area = skeleton grid cells. Filmstrip = skeleton thumbs.
+- [x] **S24-1**: Loading states reworked. No-folder state: right panel hidden, filmstrip hidden, center shows empty state ("Select a folder to get started" + camera icon). Skeletons (collage grid, filmstrip thumbs, right panel skeleton) only appear during active directory loading (between folder click and data arriving). Fixed root cause: `await checkCameraStatus()` (3s blocking) was running before UI rendered — now fires in background. Dropdown toggle bug fixed (wasOpen pattern). Tab persistence fixed (reload stays on tab, new visit defaults to Cull). VARIANT TEST hidden when no photos. SIMULATE hidden when no baseline.
 
 ## Older — Unresolved
 

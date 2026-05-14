@@ -69,6 +69,33 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 - **No logo**: Favicon is aperture SVG. No app logo yet. Will rename app soon.
 
+### Session 25 changes (2026-05-12 to 2026-05-14)
+
+**IMPLEMENTED:**
+- S24-1: Loading states reworked. Three distinct states:
+  1. **No folder loaded (empty state)**: Right panel hidden, filmstrip hidden, center shows camera icon + "Select a folder to get started". Clean, directive — attention goes to left panel directory browser.
+  2. **Loading a directory (skeleton state)**: Right panel shows `showRightPanelSkeleton()` (pulsing gray placeholder shapes matching param layout). Center shows `showSkeletonCollage()` (9 pulsing cells in 3x3 grid). Filmstrip shows 12 `.skel-filmstrip-thumb` placeholders. Brief flash only — replaced by real content when data arrives.
+  3. **Directory loaded**: Normal UI with real params, collage, filmstrip.
+- Root cause fix: `await checkCameraStatus()` (3+ second blocking call to `/api/camera/list`) was running before `showRecipePreview()`. Camera check now fires in background via `.then()` — UI renders instantly.
+- Dropdown toggle bug: All param/compare/SBS/recipe-active dropdowns now use `wasOpen` pattern — capture open state BEFORE `closeAllDropdowns()`, only reopen if `!wasOpen`.
+- Tab persistence: `localStorage('snapsifter-active-tool')` restored on reload. New visit defaults to Photo Cull, reload stays on current tab.
+- VARIANT TEST button hidden when no photos (`recipe-compare-row` starts `display:none`, shown by `showRecipePreview()` only when `hasPhotos`).
+- SIMULATE hidden when no baseline (`cleanParams = null` when `!hasBaseline`).
+- `recipeState.simParamsUsed` added to init (was missing, caused TypeError in `hasValidPreSim()`).
+- Variant select mode cleanup on tab switch (`hideRecipeEditor()` cancels mode).
+- Lightbox guard: focus mode arrow keys return early when lightbox visible.
+- `saveRecipe()` dirty flag only cleared on API success.
+- `loadRecipeGrid()` catch: restores center preview, hides shuffle/pick on failure.
+- `populateSbsDropdowns()`: `firstOther` falls back to `currentVal`.
+- Per-photo param loading in 3 compare-entry paths.
+
+**ARCHITECTURAL:**
+- `showSkeletonCollage()` — helper function, fills `#recipe-collage` with 9 `.skel-collage-cell` divs using `updateCollageLayout(9)`.
+- `showRightPanelSkeleton()` — fills `#recipe-right-panel-params` with skeleton shapes (2 recipe rows + 5 param groups). Used during directory loading only, NOT for empty state.
+- `#recipe-right-panel.style.display = 'none'` when no directory loaded. Restored to `''` in `restoreRightPanel()` when `hasBaseline` or in session click paths.
+- Session click paths (2 locations in left tree) now show `rightPanel`, call `showRightPanelSkeleton()` + `showSkeletonCollage()` + show filmstrip during loading.
+- `checkCameraStatus()` no longer awaited in `showRecipeEditor()` — fires as background `.then()`.
+
 ### Session 24 changes (2026-05-12)
 
 **IMPLEMENTED:**
