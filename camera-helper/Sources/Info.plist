@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
     <key>NSCameraUsageDescription</key>
-    <string>SnapSifter needs camera access to communicate with your Fujifilm camera for RAW processing.</string>
+    <string>drkrm needs camera access to communicate with your Fujifilm camera for RAW processing.</string>
 </dict>
 </plist>

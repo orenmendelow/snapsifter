@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" width="320" height="64">
+  <g transform="translate(32,33) scale(0.48)">
+    <polygon points="-20,-52 -10,-52 8,10 2,52 -4,52 -14,10" fill="#c45a30"/>
+    <polygon points="20,-52 10,-52 -8,10 -2,52 4,52 14,10" fill="#c45a30"/>
+    <line x1="0" y1="-40" x2="0" y2="52" stroke="#000000" stroke-width="3"/>
+    <circle cx="0" cy="-4" r="12" fill="#c45a30"/>
+    <circle cx="0" cy="-4" r="6" fill="#000000"/>
+  </g>
+  <text x="68" y="44" font-family="'IBM Plex Mono', monospace" font-weight="500" font-size="36" letter-spacing="4" fill="#c45a30">drkrm</text>
+</svg>

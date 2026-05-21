@@ -4,7 +4,22 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const { execSync, exec } = require('child_process');
+const { execSync, exec, execFile } = require('child_process');
+
+function resolveResourcePath(...segments) {
+  if (process.resourcesPath) {
+    return path.join(process.resourcesPath, ...segments);
+  }
+  return path.join(__dirname, ...segments);
+}
+
+const exiftoolBin = (() => {
+  const bundled = resolveResourcePath('exiftool', 'exiftool');
+  if (fs.existsSync(bundled)) return bundled;
+  const brew = '/opt/homebrew/bin/exiftool';
+  if (fs.existsSync(brew)) return brew;
+  return 'exiftool';
+})();
 const gridSelection = require('./lib/grid-selection');
 const d185 = require('./lib/d185-patch');
 
@@ -361,7 +376,7 @@ app.get('/api/browse', (req, res) => {
     const entries = fs.readdirSync(resolved, { withFileTypes: true });
     const folders = [];
 
-    const systemDirs = new Set(['Library', 'Applications', 'node_modules', 'usr', 'bin', 'sbin', 'etc', 'var', 'tmp', 'private']);
+    const systemDirs = new Set(['Library', 'Applications', 'node_modules', 'usr', 'bin', 'sbin', 'etc', 'var', 'tmp', 'private', 'Music', 'Movies', 'Mail', 'Podcasts']);
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       if (entry.name.startsWith('.')) continue;
@@ -1349,7 +1364,7 @@ function extractExifBatch(dir) {
   let rawOutput;
   try {
     rawOutput = execSync(
-      `exiftool -json -FocalLength -ISO -ExposureTime -FNumber -DateTimeOriginal -WhiteBalance "${dir}"/*.RAF`,
+      `${exiftoolBin} -json -FocalLength -ISO -ExposureTime -FNumber -DateTimeOriginal -WhiteBalance "${dir}"/*.RAF`,
       { stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 50 * 1024 * 1024 }
     );
   } catch (e) {
@@ -1379,7 +1394,7 @@ function extractExifBatchAsync(dir) {
   }
   if (exifBatchCache[dir] && exifBatchCache[dir].fileCount === fileCount) return;
   exec(
-    `exiftool -json -FocalLength -ISO -ExposureTime -FNumber -DateTimeOriginal -WhiteBalance "${dir}"/*.RAF`,
+    `${exiftoolBin} -json -FocalLength -ISO -ExposureTime -FNumber -DateTimeOriginal -WhiteBalance "${dir}"/*.RAF`,
     { maxBuffer: 50 * 1024 * 1024 },
     (err, stdout) => {
       const raw = stdout || (err && err.stdout ? err.stdout.toString() : '');
@@ -1937,7 +1952,7 @@ app.get('/api/recipe-exif-defaults', async (req, res) => {
       '-ColorChromeEffect', '-ColorChromeFXBlue',
       filePath
     ];
-    const stdout = execSync(`/opt/homebrew/bin/exiftool ${exiftoolArgs.map(a => JSON.stringify(a)).join(' ')}`, {
+    const stdout = execSync(`${exiftoolBin} ${exiftoolArgs.map(a => JSON.stringify(a)).join(' ')}`, {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -2002,7 +2017,7 @@ app.post('/api/batch-recipe-exif', express.json(), async (req, res) => {
       '-ShutterSpeed', '-ISO', '-Aperture', '-FocalLength', '-DateTimeOriginal',
       ...matchedPaths
     ];
-    const stdout = execSync(`/opt/homebrew/bin/exiftool ${exiftoolArgs.map(a => JSON.stringify(a)).join(' ')}`, {
+    const stdout = execSync(`${exiftoolBin} ${exiftoolArgs.map(a => JSON.stringify(a)).join(' ')}`, {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 30000
@@ -2693,10 +2708,23 @@ app.post('/api/camera/scan-presets', async (req, res) => {
   }
 });
 
-const PORT = parseInt(process.env.PORT, 10) || 4000;
-app.listen(PORT, () => {
-  console.log(`drkrm running at http://localhost:${PORT}`);
-  if (!activeDir) {
-    console.log('No directory loaded — use the web UI to select a folder');
-  }
-});
+function startServer(port = 0) {
+  return new Promise((resolve, reject) => {
+    const srv = app.listen(port, () => {
+      const actualPort = srv.address().port;
+      console.log(`drkrm running at http://localhost:${actualPort}`);
+      if (!activeDir) {
+        console.log('No directory loaded — use the web UI to select a folder');
+      }
+      resolve({ server: srv, port: actualPort });
+    });
+    srv.on('error', reject);
+  });
+}
+
+if (require.main === module) {
+  const PORT = parseInt(process.env.PORT, 10) || 4000;
+  startServer(PORT);
+}
+
+module.exports = { startServer, app };

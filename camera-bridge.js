@@ -2,7 +2,9 @@ const { spawn } = require('child_process');
 const path = require('path');
 const readline = require('readline');
 
-const HELPER_PATH = path.join(__dirname, 'camera-helper', '.build', 'debug', 'camera-helper');
+const HELPER_PATH = process.resourcesPath
+  ? path.join(process.resourcesPath, 'camera-helper')
+  : path.join(__dirname, 'camera-helper', '.build', 'debug', 'camera-helper');
 
 class CameraBridge {
   constructor() {

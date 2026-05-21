@@ -67,7 +67,31 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 ## Open bugs / unresolved feedback (verbatim from Oren)
 
-- All FEEDBACK.md items resolved. No open bugs.
+- Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
+- Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
+
+### Session 28 changes (2026-05-21)
+
+**Phase 1 — Electron Packaging + Logo:**
+- Favicon: `public/logo-v4d.svg` (was inline data URI aperture icon).
+- Logo SVG rebuilt with proper mask-based subtraction (was dark shape hack). `#0a0a0a` background, rounded corners, amber clothespin with real transparent gap/spring hole.
+- App icon: `build/icon.icns` generated via rsvg-convert from logo SVG. All sizes 16-1024.
+- Oren rejected wordmark logo in header — wants text-only "drkrm" in both landing and recipe shell headers.
+- UI visibility: "Select a folder" opacity 0.25→0.5, `.tree-section-label` color text-dim→text, `.session-row.dimmed` opacity 0.3→0.5, `.session-delete` color text-dim→text.
+- Electron packaging:
+  - `electron-main.js` — main process, starts Express on random port, BrowserWindow with `titleBarStyle: 'hiddenInset'`, black bg.
+  - `server.js` refactored: `startServer()` export, `resolveResourcePath()` for bundled tool paths, `exiftoolBin` resolution chain (bundled → homebrew → PATH), `require.main` guard.
+  - `camera-bridge.js` — conditional Swift helper path (`process.resourcesPath` vs dev).
+  - `package.json` — Electron 35 + electron-builder 26 + @electron/notarize. Build config: asar disabled, arm64 DMG target, extraResources for camera-helper.
+  - `build/entitlements.mac.plist` — JIT, camera, file access entitlements.
+  - `scripts/build-helper.sh` — Swift release build + codesign (ad-hoc or Developer ID).
+  - `scripts/resign-app.sh` — post-build re-sign all components with consistent ad-hoc identity (fixes electron-builder team ID mismatch).
+  - `scripts/notarize.js` — afterSign hook, skips when env vars not set.
+  - `camera-helper/Sources/Info.plist` — SnapSifter → drkrm in NSCameraUsageDescription.
+- Directory browser: Music, Movies, Mail, Podcasts added to systemDirs filter.
+- Header drag regions: `-webkit-app-region: drag` on both headers for Electron window dragging.
+- App size: ~249MB installed (Electron baseline). DMG at `dist/drkrm-1.0.0-beta-arm64.dmg`.
+- Build: `npm run build:helper && npm run build` → DMG. No Apple Developer enrollment needed — right-click > Open bypasses Gatekeeper.
 
 ### Session 27 changes (2026-05-19 to 2026-05-21)
 
