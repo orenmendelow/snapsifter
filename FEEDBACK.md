@@ -1,4 +1,4 @@
-# SnapSifter — Open Feedback
+# drkrm — Open Feedback
 
 Verbatim from Oren. Check off when completed and visually verified.
 
@@ -173,4 +173,4 @@ Verbatim from Oren. Check off when completed and visually verified.
 ## Older — Unresolved
 
 - [x] **Progress bar**: Closed — Oren doesn't recognize this item.
-- [ ] **No logo**: Favicon is aperture SVG. No app logo yet. Will rename app and pick logo soon.
+- [x] **No logo**: Logo selected — clothespin (darkroom print clip), V4d variant. SVG at `public/logo-v4d.svg`. Needs integration as favicon and app icon.

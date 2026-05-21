@@ -1,15 +1,17 @@
 {
-  "name": "photo-culler",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "drkrm",
+  "version": "1.0.0-beta",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": ["fujifilm", "film-simulation", "recipe", "photo-culling", "raw", "x-series"],
+  "author": "Mendelow LLC <mendelowllc@gmail.com>",
+  "license": "UNLICENSED",
+  "private": true,
+  "description": "Photo culling and Fujifilm film simulation recipe tool for macOS",
   "dependencies": {
     "exifr": "^7.1.3",
     "express": "^5.2.1",

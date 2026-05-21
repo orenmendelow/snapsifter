@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <clipPath id="round">
+      <rect x="0" y="0" width="128" height="128" rx="24"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#round)">
+    <rect width="128" height="128" fill="#0a0a0a"/>
+    <g transform="translate(64,66)">
+      <!-- V4d: Legs cross at spring, diverge below. Dark cutout separates throughout -->
+      <!-- Top: handles splay out. Bottom: jaws converge to a point -->
+      <!-- Left leg: handle top-left, crosses center, jaw bottom-right converging -->
+      <polygon points="-20,-52 -10,-52 8,10 2,52 -4,52 -14,10" fill="#c45a30"/>
+      <!-- Right leg: handle top-right, crosses center, jaw bottom-left converging -->
+      <polygon points="20,-52 10,-52 -8,10 -2,52 4,52 14,10" fill="#c45a30"/>
+      <!-- Dark cutout line to separate the two legs where they overlap -->
+      <line x1="0" y1="-40" x2="0" y2="52" stroke="#0a0a0a" stroke-width="3"/>
+      <!-- Spring circle at crossing point -->
+      <circle cx="0" cy="-4" r="12" fill="#c45a30"/>
+      <circle cx="0" cy="-4" r="6" fill="#0a0a0a"/>
+    </g>
+  </g>
+</svg>

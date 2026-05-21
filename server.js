@@ -9,21 +9,25 @@ const gridSelection = require('./lib/grid-selection');
 const d185 = require('./lib/d185-patch');
 
 // ── State directory & sessions ──
-const stateDir = path.join(os.homedir(), '.snapsifter');
+const stateDir = path.join(os.homedir(), '.drkrm');
 const oldSafelightDir = path.join(os.homedir(), '.safelight');
 const oldLatentDir = path.join(os.homedir(), '.latent');
 const oldShotsifterDir = path.join(os.homedir(), '.shotsifter');
+const oldSnapsifterDir = path.join(os.homedir(), '.snapsifter');
 
-// Migrate ~/.safelight/ → ~/.latent/ → ~/.shotsifter/ → ~/.snapsifter/
-if (fs.existsSync(oldShotsifterDir) && !fs.existsSync(stateDir)) {
+// Migrate ~/.safelight/ → ~/.latent/ → ~/.shotsifter/ → ~/.snapsifter/ → ~/.drkrm/
+if (fs.existsSync(oldSnapsifterDir) && !fs.existsSync(stateDir)) {
+  fs.renameSync(oldSnapsifterDir, stateDir);
+  console.log('Migrated ~/.snapsifter/ → ~/.drkrm/');
+} else if (fs.existsSync(oldShotsifterDir) && !fs.existsSync(oldSnapsifterDir) && !fs.existsSync(stateDir)) {
   fs.renameSync(oldShotsifterDir, stateDir);
-  console.log('Migrated ~/.shotsifter/ → ~/.snapsifter/');
-} else if (fs.existsSync(oldSafelightDir) && !fs.existsSync(oldLatentDir) && !fs.existsSync(oldShotsifterDir) && !fs.existsSync(stateDir)) {
+  console.log('Migrated ~/.shotsifter/ → ~/.drkrm/');
+} else if (fs.existsSync(oldSafelightDir) && !fs.existsSync(oldLatentDir) && !fs.existsSync(oldShotsifterDir) && !fs.existsSync(oldSnapsifterDir) && !fs.existsSync(stateDir)) {
   fs.renameSync(oldSafelightDir, stateDir);
-  console.log('Migrated ~/.safelight/ → ~/.snapsifter/');
-} else if (fs.existsSync(oldLatentDir) && !fs.existsSync(oldShotsifterDir) && !fs.existsSync(stateDir)) {
+  console.log('Migrated ~/.safelight/ → ~/.drkrm/');
+} else if (fs.existsSync(oldLatentDir) && !fs.existsSync(oldShotsifterDir) && !fs.existsSync(oldSnapsifterDir) && !fs.existsSync(stateDir)) {
   fs.renameSync(oldLatentDir, stateDir);
-  console.log('Migrated ~/.latent/ → ~/.snapsifter/');
+  console.log('Migrated ~/.latent/ → ~/.drkrm/');
 }
 
 const sessionsFile = path.join(stateDir, 'sessions.json');
@@ -234,12 +238,25 @@ function requireActiveDir(req, res, next) {
   if (!activeDir) {
     return res.status(400).json({ error: 'No directory loaded. POST /api/load first.' });
   }
+  if (!fs.existsSync(activeDir)) {
+    activeDir = null;
+    files = [];
+    ratings = {};
+    cacheDir = null;
+    thumbCacheDir = null;
+    ratingsFile = null;
+    return res.status(410).json({ error: 'Directory no longer accessible', ejected: true });
+  }
   next();
 }
 
 function requireRecipeDir(req, res, next) {
   if (!recipeDir) {
     return res.status(400).json({ error: 'No recipe directory loaded. POST /api/recipe-load first.' });
+  }
+  if (!fs.existsSync(recipeDir)) {
+    recipeDir = null;
+    return res.status(410).json({ error: 'Recipe directory no longer accessible', ejected: true });
   }
   next();
 }
@@ -1168,7 +1185,7 @@ app.post('/api/recipe/:id/fp1', requireRecipeDir, (req, res) => {
   // Create staging folder with symlinks to grid RAFs
   let stagingDir = null;
   if (gridFiles && Array.isArray(gridFiles) && gridFiles.length > 0) {
-    stagingDir = path.join(recipeDir, 'SnapSifter Preview');
+    stagingDir = path.join(recipeDir, 'drkrm Preview');
     fs.mkdirSync(stagingDir, { recursive: true });
 
     // Clear existing contents
@@ -1217,7 +1234,7 @@ app.post('/api/scan-outputs', requireRecipeDir, (req, res) => {
     return res.status(400).json({ error: 'stems array required' });
   }
 
-  const previewDir = path.join(recipeDir, 'SnapSifter Preview');
+  const previewDir = path.join(recipeDir, 'drkrm Preview');
   const rafDir = path.join(recipeDir, 'Liked', 'RAF');
 
   const found = [];
@@ -1226,7 +1243,7 @@ app.post('/api/scan-outputs', requireRecipeDir, (req, res) => {
   for (const stem of stems) {
     let located = false;
 
-    // Search order: SnapSifter Preview/, Liked/RAF/, root
+    // Search order: drkrm Preview/, Liked/RAF/, root
     const locations = [
       { dir: previewDir, label: 'preview' },
       { dir: rafDir, label: 'raf' },
@@ -1267,7 +1284,7 @@ app.post('/api/scan-outputs', requireRecipeDir, (req, res) => {
 app.get('/api/preview-output-image/:stem', requireRecipeDir, (req, res) => {
   const { stem } = req.params;
 
-  const previewDir = path.join(recipeDir, 'SnapSifter Preview');
+  const previewDir = path.join(recipeDir, 'drkrm Preview');
   const rafDir = path.join(recipeDir, 'Liked', 'RAF');
 
   // Search for the output HIF/HEIF in order: preview, raf, root
@@ -1294,8 +1311,8 @@ app.get('/api/preview-output-image/:stem', requireRecipeDir, (req, res) => {
     return res.status(404).send('Output not found for stem: ' + stem);
   }
 
-  // Cache to SnapSifter Preview/.cache/
-  const outputCacheDir = path.join(recipeDir, 'SnapSifter Preview', '.cache');
+  // Cache to drkrm Preview/.cache/
+  const outputCacheDir = path.join(recipeDir, 'drkrm Preview', '.cache');
   fs.mkdirSync(outputCacheDir, { recursive: true });
 
   const pathHash = crypto.createHash('md5').update(srcPath).digest('hex').slice(0, 12);
@@ -2678,7 +2695,7 @@ app.post('/api/camera/scan-presets', async (req, res) => {
 
 const PORT = parseInt(process.env.PORT, 10) || 4000;
 app.listen(PORT, () => {
-  console.log(`SnapSifter running at http://localhost:${PORT}`);
+  console.log(`drkrm running at http://localhost:${PORT}`);
   if (!activeDir) {
     console.log('No directory loaded — use the web UI to select a folder');
   }

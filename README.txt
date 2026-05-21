@@ -1,5 +1,5 @@
-SnapSifter
-Local photo culling tool for HEIF/JPG from camera SD cards and drives.
+drkrm
+Photo culling and Fujifilm film simulation recipe tool for macOS.
 
 HOW TO RUN
   Double-click launch.command (or run `node server.js` in terminal)

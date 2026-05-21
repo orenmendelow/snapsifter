@@ -1,4 +1,4 @@
-# SnapSifter
+# drkrm
 
 Local web app for quickly scrubbing through photos (HEIF/HIF and JPG/JPEG) from an external SSD. Rate photos with keyboard shortcuts, filter by rating, then sort into folders by rating and filetype.
 
@@ -8,7 +8,7 @@ Local web app for quickly scrubbing through photos (HEIF/HIF and JPG/JPEG) from 
 node server.js
 ```
 
-Opens on port 4000. No arguments needed — the web UI provides a folder browser to select a photo directory at runtime. Auto-resumes the last loaded directory on startup (state saved to `~/.snapsifter/sessions.json`).
+Opens on port 4000. No arguments needed — the web UI provides a folder browser to select a photo directory at runtime. Auto-resumes the last loaded directory on startup (state saved to `~/.drkrm/sessions.json`).
 
 ## Architecture
 
@@ -23,7 +23,7 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - **Supported extensions**: .HIF, .HEIF, .JPG, .JPEG (all case insensitive). RAF and other RAW files are carried along during sort (matched by filename stem) but not displayed.
 - **Zoom**: Click to zoom in (3x max), click again to zoom out. Mouse position controls pan via transform-origin (no translate). Moving mouse across viewport maps to moving across zoomed image.
 - **Sort**: Moves rated files into `Liked/`, `Maybe/`, `Ditch/` subfolders, each with filetype subfolders (`HIF/`, `JPG/`, `RAF/`). All files sharing a stem are moved together (RAW+JPG pairs). Unsort reverses the operation.
-- **Sessions**: Persisted in `~/.snapsifter/sessions.json`. Resume lands on first unrated photo.
+- **Sessions**: Persisted in `~/.drkrm/sessions.json`. Resume lands on first unrated photo.
 
 ## Files
 
@@ -39,7 +39,7 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - `test-raf/` — Test RAF files and conversion outputs (gitignored). Contains DSCF6740.RAF and rendered JPEGs from 6 film sims.
 - `launch.command` — Double-click launcher for distribution. Checks for Node.js, runs npm install, starts server, opens browser.
 - `README.txt` — Minimal usage instructions for distribution.
-- `~/.snapsifter/sessions.json` — Persists sessions (id, dir, name, lastOpened, lastPosition, fileCount, ratedCount).
+- `~/.drkrm/sessions.json` — Persists sessions (id, dir, name, lastOpened, lastPosition, fileCount, ratedCount).
 - `ratings.json` — Written into each photo directory. Keyed by filename stem.
 
 ## API endpoints
@@ -67,7 +67,29 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 ## Open bugs / unresolved feedback (verbatim from Oren)
 
-- **No logo**: Favicon is aperture SVG. No app logo yet. Will rename app soon.
+- All FEEDBACK.md items resolved. No open bugs.
+
+### Session 27 changes (2026-05-19 to 2026-05-21)
+
+**Phase 0 — Pre-Launch Prep:**
+- Renamed app from SnapSifter to **drkrm**. State dir migrated `~/.snapsifter/` → `~/.drkrm/`. localStorage keys migrated `snapsifter-*` → `drkrm-*`. All code/docs updated.
+- Market research completed — see PRD.md, LAUNCH.md, SOFTWARE-RENDERING.md.
+- Business plan: $49 one-time (Pro), free Photo Cull, $79 lifetime. LemonSqueezy/Paddle as MoR.
+- package.json updated: name "drkrm", version "1.0.0-beta", author "Mendelow LLC".
+- Test artifacts deleted: ptp-test.py, test-ptp*.js, webusb-test.html (8 files).
+- 5 starter recipes already present in ~/.drkrm/recipes.json.
+- Fresh install verified: clean npm install, 0 vulnerabilities, server starts, all endpoints respond.
+- Error state hardening:
+  - Camera disconnect mid-simulation: early loop break + toast (detect PTP/connection errors, TypeError from fetch)
+  - SSD eject: server middleware detects missing directory (fs.existsSync), resets state, returns 410. Frontend catches 410 in viewer entry and sort handler, shows alert, returns to landing.
+- Performance audit (3059-photo Iceland directory on SSD):
+  - Directory load: 60ms. Browse: 140ms. Files list: 98KB JSON.
+  - HIF thumbnail cold: ~400-520ms (sips). Warm: 30ms.
+  - Full image cold: 500ms. Warm: 30ms.
+  - Grid-select: 30ms. Batch EXIF (9 RAFs): 230ms.
+  - Node memory: ~99MB RSS with 3059 files loaded.
+  - Only bottleneck: cold-cache sips conversion. Mitigated by lazy-loading + cache.
+- Logo selected: clothespin (darkroom print clip reference), V4d variant. SVG at `public/logo-v4d.svg`. Needs integration as favicon/app icon + wordmark version.
 
 ### Session 25 changes (2026-05-12 to 2026-05-14)
 
@@ -78,7 +100,7 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
   3. **Directory loaded**: Normal UI with real params, collage, filmstrip.
 - Root cause fix: `await checkCameraStatus()` (3+ second blocking call to `/api/camera/list`) was running before `showRecipePreview()`. Camera check now fires in background via `.then()` — UI renders instantly.
 - Dropdown toggle bug: All param/compare/SBS/recipe-active dropdowns now use `wasOpen` pattern — capture open state BEFORE `closeAllDropdowns()`, only reopen if `!wasOpen`.
-- Tab persistence: `localStorage('snapsifter-active-tool')` restored on reload. New visit defaults to Photo Cull, reload stays on current tab.
+- Tab persistence: `localStorage('drkrm-active-tool')` restored on reload. New visit defaults to Photo Cull, reload stays on current tab.
 - VARIANT TEST button hidden when no photos (`recipe-compare-row` starts `display:none`, shown by `showRecipePreview()` only when `hasPhotos`).
 - SIMULATE hidden when no baseline (`cleanParams = null` when `!hasBaseline`).
 - `recipeState.simParamsUsed` added to init (was missing, caused TypeError in `hasValidPreSim()`).
@@ -366,7 +388,7 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 **IMPLEMENTED:**
 - Camera preset import: `POST /api/camera/scan-presets` endpoint scans all 7 Custom preset slots (D18E-D1A5) via PTP. Reads D18C (active slot), switches to each slot, reads D18D (name) + all recipe properties, translates to recipe-compatible params, restores original slot. Skips empty slots.
 - "IMPORT FROM CAMERA" button in Cookbook — scans camera, saves non-duplicate presets as recipes, shows import count toast.
-- Global recipe storage: recipes moved from `{recipeDir}/recipes.json` to `~/.snapsifter/recipes.json`. Recipe CRUD no longer requires a loaded directory. One-time migration copies existing per-dir recipes to global on first load.
+- Global recipe storage: recipes moved from `{recipeDir}/recipes.json` to `~/.drkrm/recipes.json`. Recipe CRUD no longer requires a loaded directory. One-time migration copies existing per-dir recipes to global on first load.
 - `requireRecipeDir` removed from recipe CRUD endpoints (GET/POST/PUT/DELETE recipes). Kept on FP1, scan-outputs, preview-output-image.
 
 **ARCHITECTURAL:**
@@ -615,25 +637,42 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 **APP vs WEBSITE:**
 - Oren is confused about whether this is being packaged as a macOS app or a web app like Photopea. This needs to be clear in documentation and UX. (Answer: macOS app via Electron or native Swift, per CLAUDE.md Distribution section. Currently runs as local web server for development.)
 
-## Distribution
+## Distribution & Business
 
-Currently: Distributed as a zip (`SnapSifter.zip` on Desktop). Contains launch.command for double-click start. macOS only (requires sips). Brother (Eytan) testing — needs `xattr -cr ~/Downloads/SnapSifter` after download to bypass Gatekeeper.
+### Current
+Distributed as zip with launch.command for double-click start. macOS only (requires sips). Brother testing — needs `xattr -cr ~/Downloads/drkrm` after download to bypass Gatekeeper.
 
-**Future: macOS app bundle for commercial distribution.** Two packaging options under consideration:
+### Commercial Distribution (planned)
+- **Format**: Signed DMG, direct download from website
+- **Signing**: Apple Developer ID certificate ($99/yr), Hardened Runtime, `com.apple.security.device.camera` entitlement, notarized via `notarytool` + stapled
+- **Payment/Licensing**: LemonSqueezy or Paddle as Merchant of Record (handles tax compliance, refunds, key generation, ~5-8% fee)
+- **License validation**: Key checked at startup, stored in `~/.drkrm/license.json`
+- **No Mac App Store initially** — sandboxing likely blocks PTP/USB camera access
+
+### Packaging Options
 - **Electron** — wraps existing web UI + Node server, bundles Swift helper in `Contents/Resources/`. Familiar stack, faster to ship.
 - **Native Swift app with WKWebView** — Swift helper becomes the app itself, embeds web UI. Smaller footprint, proper macOS citizen.
 
-Either way requires:
-- Apple Developer Program ($99/yr) for Developer ID certificate
-- Hardened runtime enabled
-- `com.apple.security.device.camera` entitlement
-- `NSCameraUsageDescription` in Info.plist
-- Notarization via `notarytool` + stapling
-- No App Store or sandbox required
+### Pricing
+- **Photo Cull**: FREE (acquisition funnel)
+- **drkrm Pro** (Cull + Recipe Lab): $49 one-time
+- **Lifetime updates**: $79 (upsell anchor)
+- **Major version upgrades**: $29 upgrade / $49 new customer
+
+### Trial Mode
+14-day full-featured trial. After expiry, Photo Cull continues free, Recipe Lab locks behind license key.
+
+### Market Context (May 2026 research)
+- ~2-3M active Fuji X-series owners globally. 740K cameras shipped in 2024 (+75% YoY).
+- Zero VC-funded competitors. All Fuji recipe tools are bootstrapped iOS apps.
+- No macOS desktop tool combines recipe management + rendering + culling.
+- X RAW Studio universally despised UX. FujiXWeekly (10M pageviews/yr) is read-only reference.
+- SOM: 10K-45K users in years 1-3 at $49 = $490K-$2.2M cumulative.
+- Full report: see PRD.md and LAUNCH.md in this directory.
 
 ## Recipe Editor — Film Simulation Workflow
 
-New mode in SnapSifter for dialing in Fujifilm film simulation recipes and batch-applying them to liked RAFs via X RAW Studio.
+New mode in drkrm for dialing in Fujifilm film simulation recipes and batch-applying them to liked RAFs via X RAW Studio.
 
 ### Camera
 - Model: X100VI
@@ -642,7 +681,7 @@ New mode in SnapSifter for dialing in Fujifilm film simulation recipes and batch
 
 ### Architecture
 
-**SnapSifter owns**: recipe editing UI, recipe storage, FP1 export, diverse grid selection, grid display with before/after toggle, recipe card view, swap/shuffle grid photos.
+**drkrm owns**: recipe editing UI, recipe storage, FP1 export, diverse grid selection, grid display with before/after toggle, recipe card view, swap/shuffle grid photos.
 
 **Simulation / rendering**: Camera hardware does the actual RAF→JPEG conversion via direct PTP over USB.
 
@@ -773,7 +812,7 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 
 ### API endpoints (new)
 
-- `POST /api/recipe-load` `{dir}` — set Recipe Lab's directory (independent from Photo Cull), persists to `~/.snapsifter/recipe-session.json`
+- `POST /api/recipe-load` `{dir}` — set Recipe Lab's directory (independent from Photo Cull), persists to `~/.drkrm/recipe-session.json`
 - `GET /api/recipe-status` — returns `{loaded, dir}` for Recipe Lab
 - `GET /api/recipes` — list saved recipes (requires `recipeDir`)
 - `POST /api/recipe` `{title, params}` — create recipe draft
@@ -796,7 +835,7 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 ### UI screens
 
 **Recipe Lab** (persistent shell, entered from landing "Recipe Lab" tab):
-- Top: `#recipe-shell-topbar` — "SnapSifter" title, recipe title (click-to-edit), camera status, SAVE button, LIBRARY button, Photo Cull / Recipe Lab tabs
+- Top: `#recipe-shell-topbar` — "drkrm" title, recipe title (click-to-edit), camera status, SAVE button, LIBRARY button, Photo Cull / Recipe Lab tabs
 - Left: `#recipe-left-panel` (280px) — directory tree browser with folder info + Load button
 - Right: `#recipe-right-panel-params` (380px) — always-visible recipe params (dropdowns + sliders, grouped by Film/Color/White Balance/Tone/Detail)
 - Center: `#recipe-center` — mode-dependent content area with toolbar
@@ -824,7 +863,7 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 ### Recipe Lab server state
 
 - `recipeDir` — independent from Photo Cull's `activeDir`, set via `POST /api/recipe-load`
-- Persisted to `~/.snapsifter/recipe-session.json`
+- Persisted to `~/.drkrm/recipe-session.json`
 - Recipe CRUD endpoints use `requireRecipeDir` middleware (not `requireActiveDir`)
 - `recipes.json` stored in `recipeDir` (not `activeDir`)
 
@@ -895,7 +934,7 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - Recipe Lab is now a persistent shell layout modeled after X RAW Studio:
   ```
   #recipe-editor (fixed, flex column, full viewport)
-    #recipe-shell-topbar (SnapSifter title + recipe meta + Photo Cull / Recipe Lab tabs)
+    #recipe-shell-topbar (drkrm title + recipe meta + Photo Cull / Recipe Lab tabs)
     #recipe-shell-body (flex row)
       #recipe-left-panel (280px, directory tree + folder info + Load button)
       #recipe-center (flex: 1, mode-dependent: collage / focus / compare)
@@ -915,7 +954,7 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 
 ### Workflow (user perspective — session 12 shell)
 
-1. Sort photos in SnapSifter Photo Cull → Liked/HIF/ and Liked/RAF/ have the keepers
+1. Sort photos in drkrm Photo Cull → Liked/HIF/ and Liked/RAF/ have the keepers
 2. Click "Recipe Lab" tab → persistent shell opens (left tree, center collage, right params, bottom filmstrip)
 3. Browse directories in left panel → Load a folder with Liked/ subfolders
 4. Recipe Preview: collage of 1-9 diverse photos from Liked/HIF/ fills center
@@ -967,7 +1006,7 @@ XML format for X RAW Studio. Saved to `~/Library/Application Support/com.fujifil
 - **Duplicate event listeners cause toggle double-fire**: Two agents adding click handlers to the same element = two toggles per click = no visible change. Always grep for existing handlers before adding new ones.
 - **Params must be always-visible, not a drawer**: Session 12 moved params from slide-out drawer to persistent 380px right panel. Never hide params behind a toggle.
 - **Recipe editor is a persistent shell**: `#recipe-editor` contains topbar + 3-column body + filmstrip. `recipeEditor.style.display = 'flex'` to show. No `#recipe-main` exists anymore.
-- **Don't auto-enter recipe editor on reload**: Reload should show landing page. `localStorage('snapsifter-active-tool')` only switches the landing tab, never calls `showRecipeEditor()`.
+- **Don't auto-enter recipe editor on reload**: Reload should show landing page. `localStorage('drkrm-active-tool')` only switches the landing tab, never calls `showRecipeEditor()`.
 - **d185 patching happens server-side**: `POST /api/camera/profile` accepts `{data, params}`. The server patches the base64 profile using NativeIdx field map before writing to camera. Frontend does NOT do binary patching.
 - **Recipe tree is inside the shell**: No `#recipe-tree-panel` in landing page anymore. The tree lives in `#recipe-left-panel` inside `#recipe-editor`. `initRecipeLeftTree()` initializes it.
 
