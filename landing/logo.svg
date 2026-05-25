@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <clipPath id="round">
+      <rect x="0" y="0" width="128" height="128" rx="24"/>
+    </clipPath>
+    <mask id="cutouts" maskContentUnits="userSpaceOnUse">
+      <rect x="-64" y="-66" width="128" height="132" fill="white"/>
+      <!-- Gap line between legs -->
+      <rect x="-1.5" y="-40" width="3" height="92" fill="black"/>
+      <!-- Spring hole -->
+      <circle cx="0" cy="-4" r="6" fill="black"/>
+    </mask>
+  </defs>
+  <g clip-path="url(#round)">
+    <rect width="128" height="128" fill="#0a0a0a"/>
+    <g transform="translate(64,66)" mask="url(#cutouts)">
+      <!-- Left leg -->
+      <polygon points="-20,-52 -10,-52 8,10 2,52 -4,52 -14,10" fill="#c45a30"/>
+      <!-- Right leg -->
+      <polygon points="20,-52 10,-52 -8,10 -2,52 4,52 14,10" fill="#c45a30"/>
+      <!-- Spring ring -->
+      <circle cx="0" cy="-4" r="12" fill="#c45a30"/>
+    </g>
+  </g>
+</svg>

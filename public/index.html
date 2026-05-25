@@ -8184,39 +8184,7 @@ body::before {
           detail.className = 'session-detail';
           detail.textContent = (s.ratedCount || 0) + ' of ' + (s.fileCount || 0) + ' rated';
           row.appendChild(detail);
-          row.addEventListener('click', async () => {
-            if (s.dir === recipeLoadedDir) {
-              collapseRecipeLeftPanel();
-              return;
-            }
-            try {
-              const res = await fetch('/api/recipe-load', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ dir: s.dir })
-              }).then(r => r.json());
-              if (res.ok) {
-                recipeLoadedDir = s.dir;
-                collapseRecipeLeftPanel();
-                recipeState.lastLoadedDir = null;
-                recipeState.gridPhotos = [];
-                recipeState.exifBaseline = null;
-                recipeState.perPhotoParams = {};
-                recipeState.simulatedPhotos = {};
-                recipeState.simParamsUsed = {};
-                recipeState.cleanParams = null;
-                document.getElementById('recipe-right-panel').style.display = '';
-                showRightPanelSkeleton();
-                showSkeletonCollage();
-                document.getElementById('recipe-center-preview').style.display = 'none';
-                document.getElementById('recipe-filmstrip-container').style.display = '';
-                const gridP = loadRecipeGrid();
-                loadRecipeFilmstrip();
-                await gridP;
-                if (recipeState.gridPhotos.length > 0) await loadBatchExif();
-              }
-            } catch (e) {}
-          });
+          row.addEventListener('click', () => loadRecipeDirectory(s.dir));
           sessionsList.appendChild(row);
         }
       }
@@ -8441,29 +8409,8 @@ body::before {
       const rafData = await fetch('/api/raf-count?dir=' + encodeURIComponent(rafDir)).then(r => r.json());
       if (rafData.count > 0) {
         recipeSelectedPath = baseDir;
-        recipeFolderInfo.classList.add('visible');
-        const folderName = baseDir.split('/').filter(Boolean).pop();
-        recipeFolderName.textContent = folderName;
-        recipeFolderDetail.textContent = rafData.count + ' RAF files in Liked/RAF/';
-        recipeLoadBtn.textContent = 'Load';
-        recipeLoadBtn.style.display = '';
-
-        // Fetch HIF preview thumbnails
-        const hifDir = baseDir + '/Liked/HIF';
-        try {
-          const browseData = await fetch('/api/browse?dir=' + encodeURIComponent(hifDir)).then(r => r.json());
-          if (browseData.previewFiles && browseData.previewFiles.length > 0) {
-            const dirB64 = btoa(unescape(encodeURIComponent(hifDir)));
-            const previews = browseData.previewFiles.slice(0, 8);
-            for (const f of previews) {
-              const img = document.createElement('img');
-              img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(f);
-              img.alt = '';
-              img.onerror = function() { this.remove(); };
-              thumbsContainer.appendChild(img);
-            }
-          }
-        } catch (e) {}
+        loadRecipeDirectory(baseDir);
+        recipeFolderInfo.classList.remove('visible');
       } else {
         recipeSelectedPath = nodePath;
         recipeFolderInfo.classList.add('visible');
@@ -8762,9 +8709,9 @@ body::before {
     } catch (e) {}
   }
 
-  recipeLoadBtn.addEventListener('click', async () => {
-    if (!recipeSelectedPath) return;
-    if (recipeSelectedPath === recipeLoadedDir) {
+  async function loadRecipeDirectory(dir) {
+    if (!dir) return;
+    if (dir === recipeLoadedDir) {
       collapseRecipeLeftPanel();
       return;
     }
@@ -8772,15 +8719,44 @@ body::before {
       const res = await fetch('/api/recipe-load', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dir: recipeSelectedPath })
+        body: JSON.stringify({ dir: dir })
       }).then(r => r.json());
       if (res.ok) {
-        recipeLoadedDir = recipeSelectedPath;
+        recipeLoadedDir = dir;
         collapseRecipeLeftPanel();
-        showRecipeEditor();
+        recipeState.lastLoadedDir = null;
+        recipeState.gridPhotos = [];
+        recipeState.exifBaseline = null;
+        recipeState.perPhotoParams = {};
+        recipeState.simulatedPhotos = {};
+        recipeState.simParamsUsed = {};
+        recipeState.cleanParams = null;
+        document.getElementById('recipe-right-panel').style.display = '';
+        showRightPanelSkeleton();
+        showSkeletonCollage();
+        document.getElementById('recipe-center-preview').style.display = 'none';
+        document.getElementById('recipe-filmstrip-container').style.display = '';
+        recipeState.mode = 'preview';
+        showRecipePreview();
+        const recipesP = loadRecipes();
+        const gridP = loadRecipeGrid();
+        loadRecipeFilmstrip();
+        await recipesP;
+        await gridP;
+        if (recipeState.gridPhotos.length > 0) await loadBatchExif();
+        if (recipeLoadedDir && recipeState.gridPhotos.length > 0 && !recipeState.currentId) {
+          recipeState.currentTitle = 'As Shot';
+          if (restoreRecipeState()) {
+            renderParams();
+            if (typeof updateRecipeActiveDropdown === 'function') updateRecipeActiveDropdown();
+            checkParamsChanged();
+          }
+        }
       }
     } catch (e) {}
-  });
+  }
+
+  recipeLoadBtn.addEventListener('click', () => loadRecipeDirectory(recipeSelectedPath));
 
   // ── Event bindings ──
 

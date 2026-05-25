@@ -69,6 +69,27 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
+- **CRITICAL: Recipe Lab browse/load/resume flow is broken.** Session 29 attempted to make tree clicks auto-load directories with RAFs (skip the "Load" button step) and extracted `loadRecipeDirectory()` as a shared function for both tree clicks and session clicks. The refactor broke the entire flow — browsing, loading, and center view rendering are all broken. Must be reverted or properly fixed. The session click handler, `selectRecipeNode`, `loadRecipeDirectory`, and `showRecipeEditor` all interact and the current state is inconsistent.
+
+### Session 29 changes (2026-05-23 to 2026-05-25)
+
+**Landing page (Phase 1):**
+- `landing/index.html` — static landing page for drkrm.app. Single HTML file, dark theme (#000 bg, #c45a30 amber), IBM Plex Mono + Playfair Display (Google Fonts).
+- `landing/logo.svg` — copy of logo-v4d.svg for landing page favicon.
+- Structure: sticky nav with "Download Free" button → hero (badge + headline + MacBook mockup + X100VI SVG illustration) → 4-step sequential feature flow (Photo Cull → Recipe Lab → Variant Test → SBS Compare) → stats section → inline pricing row (Free | $49 | $79) → final CTA → standard footer.
+- Interactive elements: keyboard rating demo (clickable filmstrip + key-caps, real keyboard support when scrolled into view), film sim tab switcher (6 sims with label updates).
+- Scroll-triggered reveal animations (IntersectionObserver, staggered delays, translateY + opacity).
+- X100VI camera SVG illustration (inline, darkroom aesthetic, grip texture, amber accent detail).
+- Responsive down to 480px (mobile nav hides links, flow steps stack vertically).
+- Served via `npx http-server -c-1 -p 4001` from `landing/` directory.
+- Placeholder gradients in all photo slots — waiting for Oren's photos (needs: 5 filmstrip photos, 1 photo rendered through 6+ film sims, app screenshot for laptop frame).
+- Design decisions documented: Linear/Raycast-inspired dark aesthetic, scroll reveals + interactive demos, sequential workflow presentation, sticky nav CTA, no section boxes, no decorative elements.
+
+**Recipe Lab directory loading refactor (BROKEN):**
+- Extracted `loadRecipeDirectory(dir)` as shared function (was duplicated in session click handler and Load button handler).
+- Changed `selectRecipeNode` to auto-call `loadRecipeDirectory` when a folder has RAFs (previously showed "Load" button and required a second click).
+- Replaced session click handler's inline load logic with `loadRecipeDirectory(s.dir)`.
+- **This refactor broke the browse/load/resume flow.** Oren reports: clicking X100VI directory should load the session but instead shows it in bottom-left; after clicking Load the filmstrip fills but center view shows broken file preview instead of collage. The `showRecipeEditor` initialization path, `recipeEditorInitialized` flag, center preview rendering, and grid loading sequence are all interacting incorrectly.
 
 ### Session 28 changes (2026-05-21)
 

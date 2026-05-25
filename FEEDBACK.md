@@ -170,6 +170,10 @@ Verbatim from Oren. Check off when completed and visually verified.
 
 - [x] **S24-1**: Loading states reworked. No-folder state: right panel hidden, filmstrip hidden, center shows empty state ("Select a folder to get started" + camera icon). Skeletons (collage grid, filmstrip thumbs, right panel skeleton) only appear during active directory loading (between folder click and data arriving). Fixed root cause: `await checkCameraStatus()` (3s blocking) was running before UI rendered — now fires in background. Dropdown toggle bug fixed (wasOpen pattern). Tab persistence fixed (reload stays on tab, new visit defaults to Cull). VARIANT TEST hidden when no photos. SIMULATE hidden when no baseline.
 
+## Session 29 — CRITICAL
+
+- [ ] **S29-1**: Recipe Lab browse/load/resume flow is completely broken. Clicking a directory (e.g. X100VI) should load the session directly but instead shows it in bottom-left panel. After clicking Load, filmstrip fills but center view shows broken file preview (session resume cards) instead of collage grid. The `loadRecipeDirectory()` refactor (auto-load on tree click, shared function for session + tree clicks) broke the interaction between `selectRecipeNode`, `showRecipeEditor`, `recipeEditorInitialized`, and center preview rendering. Needs full revert or careful fix — all three load paths (tree click, session click, Load button) must produce correct behavior: collapse left panel, show skeleton, load grid + filmstrip + EXIF, render collage in center.
+
 ## Older — Unresolved
 
 - [x] **Progress bar**: Closed — Oren doesn't recognize this item.
