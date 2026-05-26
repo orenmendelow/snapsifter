@@ -87,8 +87,8 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [x] **S23-62**: Simulated image then launched variant test — IMPLEMENTED: renderGrid checks `simulatedPhotos[photo.file]` for currentVal cell, shows pre-sim image instead of original. Pending count, checkAllSimulated, and simulate handler all skip pre-simulated currentVal cells.
 - [x] **S23-63**: Simulate button on regular/focus view — IMPLEMENTED: button always visible when params changed. Orange outline + "Connect camera to simulate" when disconnected (matching variant test pattern). Chevron no longer shows alone.
 - [x] **S23-63b**: Audit all simulate/variant edge cases — DONE: Found and fixed pre-sim params mismatch bug. `simParamsUsed` tracks per-photo sim params. `hasValidPreSim()` validates before showing pre-sim images. No bugs in baseline switching, re-entry reset, or photo switching.
-- [ ] **Progress bar**: Oren doesn't know what this refers to. Closing this item.
-- [ ] **No logo**: Will rename app and pick logo soon. Not actionable yet.
+- [x] **Progress bar**: Closed — Oren doesn't recognize this item.
+- [x] **No logo**: Logo selected — clothespin (darkroom print clip), V4d variant. Integrated as favicon + app icon in session 28.
 
 ## Session 23 Round 4 — Unresolved
 
@@ -182,21 +182,21 @@ Verbatim from Oren. Check off when completed and visually verified.
 
 ## Session 31 — Audit Findings
 
-- [ ] **S31-1**: Back button fails after arrow key navigation in focus mode. Enter focus via cell click → press ArrowRight → click back = stays in focus. Works without arrow keys.
-- [ ] **S31-2**: VARIANT TEST from collage skips photo selection step. Should show "Select a photo" toast + crosshair on cells. Instead jumps directly into compare grid mode.
-- [ ] **S31-3**: No way to exit compare mode when entered from collage. Escape does nothing, no CANCEL visible. User stuck — only recovery is page reload.
-- [ ] **S31-4**: Session delete (Photo Cull) has no confirmation dialog. Clicking X immediately deletes.
-- [ ] **S31-5**: Tree state lost on tab switch. Expanding folders in Photo Cull, switching to Recipe Lab and back, collapses the tree.
-- [ ] **S31-6**: Resume cards in Recipe Lab center show non-compatible sessions (e.g., "Pictures" with no Liked/RAF/). Clicking fails with error. Should filter or dim.
-- [ ] **S31-7**: 404 console errors on every Recipe Lab entry. `buildRecipeSessionCard()` fetches `/api/browse?dir={session.dir}/Liked/HIF` then `/Liked/JPG` for all sessions, even those without Liked/ folders.
-- [ ] **S31-8**: `?` key opens Photo Cull help overlay on landing page. Keydown handler doesn't gate on active screen.
-- [ ] **S31-9**: Recipe editor auto-opens on reload when localStorage has `drkrm-active-tool=recipe`. Should show landing with Recipe Lab tab pre-selected, not auto-enter editor.
-- [ ] **S31-10**: No way to return to landing from Recipe Lab. Logo not clickable. Only way back is clicking Photo Cull tab.
-- [ ] **S31-11**: Rapid tree clicks show stale preview data. No request cancellation — API responses arrive out of order.
-- [ ] **S31-12**: Disconnected session click (Photo Cull) gives no feedback — no error toast or message.
-- [ ] **S31-13**: Right panel (379px) doesn't adapt to small viewports. No responsive breakpoint.
-- [ ] **S31-14**: Load button (`#recipe-left-load-btn`) is vestigial — never actionable in current flow. Consider removing.
-- [ ] **S31-15**: Recipe Lab tree filtering — RAF-only directories (no matching HIF/JPG) should eventually support camera-based preview generation on load. Discussed with Oren: show directory as available, prompt "Generate previews from RAFs?" with confirm/cancel when selected.
+- [x] **S31-1**: Back button fails after arrow key navigation in focus mode. Enter focus via cell click → press ArrowRight → click back = stays in focus. Works without arrow keys. — FIXED: removed intermediate savedCollageFocus step from back button handler. Back always returns to collage grid.
+- [x] **S31-2**: VARIANT TEST from collage skips photo selection step. Should show "Select a photo" toast + crosshair on cells. Instead jumps directly into compare grid mode. — FIXED: added showToast('Select a photo'), removed undefined bannerCancel reference that threw TypeError.
+- [x] **S31-3**: No way to exit compare mode when entered from collage. Escape does nothing, no CANCEL visible. User stuck — only recovery is page reload. — FIXED: added Escape keydown handler for compare mode, ensured recipe-right-panel is visible when entering compare.
+- [x] **S31-4**: Session delete (Photo Cull) has no confirmation dialog. Clicking X immediately deletes. — FIXED: added confirm() dialog before delete.
+- [x] **S31-5**: Tree state lost on tab switch. Expanding folders in Photo Cull, switching to Recipe Lab and back, collapses the tree. — FIXED: showLanding() now skips initTree() if tree DOM already populated, preserving expanded state.
+- [x] **S31-6**: Resume cards in Recipe Lab center show non-compatible sessions (e.g., "Pictures" with no Liked/RAF/). Clicking fails with error. Should filter or dim. — FIXED: buildRecipeSessionCard returns null for sessions with no compatible files. Null cards skipped.
+- [x] **S31-7**: 404 console errors on every Recipe Lab entry. `buildRecipeSessionCard()` fetches `/api/browse?dir={session.dir}/Liked/HIF` then `/Liked/JPG` for all sessions, even those without Liked/ folders. — FIXED: check browseRes.ok before parsing JSON, preventing 404 errors from reaching console.
+- [x] **S31-8**: `?` key opens Photo Cull help overlay on landing page. Keydown handler doesn't gate on active screen. — FIXED: removed `?` key handler from landing screen.
+- [x] **S31-9**: Recipe editor auto-opens on reload when localStorage has `drkrm-active-tool=recipe`. Should show landing with Recipe Lab tab pre-selected, not auto-enter editor. — FIXED: removed showRecipeEditor() from saved-tool restore. Tab highlighted but landing shown. Click enters editor.
+- [x] **S31-10**: No way to return to landing from Recipe Lab. Logo not clickable. Only way back is clicking Photo Cull tab. — FIXED: added click handler on #recipe-shell-title + cursor:pointer. Calls hideRecipeEditor() + showLanding().
+- [x] **S31-11**: Rapid tree clicks show stale preview data. No request cancellation — API responses arrive out of order. — FIXED: added recipePreviewRequestId counter. Both selectRecipeNode and renderRecipeCenterPreview increment and check after awaits.
+- [x] **S31-12**: Disconnected session click (Photo Cull) gives no feedback — no error toast or message. — FIXED: disconnected session rows show toast on click.
+- [x] **S31-13**: Right panel (379px) doesn't adapt to small viewports. No responsive breakpoint. — FIXED: changed flex-shrink:0 to flex-shrink:1 with min-width:240px.
+- [x] **S31-14**: Load button (`#recipe-left-load-btn`) is vestigial — never actionable in current flow. Consider removing. — FIXED: removed button, CSS, variable, and click handler.
+- [ ] **S31-15**: Recipe Lab tree filtering — RAF-only directories (no matching HIF/JPG) should eventually support camera-based preview generation on load. Discussed with Oren: show directory as available, prompt "Generate previews from RAFs?" with confirm/cancel when selected. — DEFERRED: requires camera hardware for RAF preview generation.
 
 ## Older — Unresolved
 

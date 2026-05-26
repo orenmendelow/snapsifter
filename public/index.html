@@ -82,6 +82,7 @@ body::before {
   font-weight: 500;
   color: var(--amber);
   letter-spacing: 4px;
+  cursor: pointer;
 }
 
 #recipe-shell-meta {
@@ -218,20 +219,6 @@ body::before {
   display: none;
 }
 
-#recipe-left-load-btn {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  background: var(--amber);
-  color: #000;
-  border: none;
-  padding: 8px 20px;
-  cursor: pointer;
-  width: 100%;
-  transition: background 0.15s ease;
-}
-#recipe-left-load-btn:hover { filter: brightness(1.1); }
 
 /* Center panel */
 #recipe-center {
@@ -283,7 +270,8 @@ body::before {
 /* Right panel wrapper */
 #recipe-right-panel {
   width: 380px;
-  flex-shrink: 0;
+  min-width: 240px;
+  flex-shrink: 1;
   display: flex;
   flex-direction: column;
   border-left: 1px solid rgba(255,255,255,0.12);
@@ -3303,7 +3291,6 @@ body::before {
         <div id="recipe-left-folder-name"></div>
         <div id="recipe-left-folder-detail"></div>
         <div id="recipe-left-folder-thumbs"></div>
-        <button id="recipe-left-load-btn">Load</button>
       </div>
     </div>
 
@@ -3795,7 +3782,11 @@ body::before {
     selectedPath = '';
     selectedPhotoCount = 0;
     selectedPhotoFiles = [];
-    initTree();
+    if (treeVolumes.children.length === 0 && treeHome.children.length === 0) {
+      initTree();
+    } else {
+      loadSessions();
+    }
   }
 
   async function initTree() {
@@ -4225,6 +4216,8 @@ body::before {
 
     if (s.accessible !== false) {
       row.addEventListener('click', () => onResume(s));
+    } else {
+      row.addEventListener('click', () => showToast('Drive disconnected — reconnect to resume'));
     }
 
     return row;
@@ -4278,6 +4271,8 @@ body::before {
       const completed = sessions.filter(s => isSessionCompleted(s));
 
       async function handleDelete(s) {
+        const name = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+        if (!confirm('Delete session "' + name + '"?')) return;
         await fetch('/api/session/' + s.id, { method: 'DELETE' });
         loadSessions();
       }
@@ -5055,7 +5050,6 @@ body::before {
   document.addEventListener('keydown', (e) => {
     if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
     if (screen === 'landing') {
-      if (e.key === '?') toggleHelp();
       if (e.key === 'Escape' && helpVisible) toggleHelp();
       return;
     }
@@ -5195,7 +5189,6 @@ body::before {
   const recipeFolderInfo = document.getElementById('recipe-left-folder-info');
   const recipeFolderName = document.getElementById('recipe-left-folder-name');
   const recipeFolderDetail = document.getElementById('recipe-left-folder-detail');
-  const recipeLoadBtn = document.getElementById('recipe-left-load-btn');
 
   let recipeState = {
     recipes: {},
@@ -5230,6 +5223,7 @@ body::before {
 
   let recipeTreeState = {};
   let recipeSelectedPath = '';
+  let recipePreviewRequestId = 0;
   let recipeLoadedDir = null;
 
   function saveRecipeState() {
@@ -5464,6 +5458,7 @@ body::before {
     document.getElementById('recipe-drawer-top').style.display = 'none';
     document.getElementById('recipe-drawer-actions').style.display = 'none';
     document.getElementById('compare-right-controls').style.display = 'flex';
+    document.getElementById('recipe-right-panel').style.display = '';
     if (window._focusResetZoom) window._focusResetZoom();
     // Set baseline from argument (default: asshot)
     const bl = baseline || 'asshot';
@@ -8425,6 +8420,7 @@ body::before {
   }
 
   async function selectRecipeNode(nodePath) {
+    const requestId = ++recipePreviewRequestId;
     // Update selected highlight
     document.getElementById('recipe-left-tree').querySelectorAll('.tree-node-row.selected').forEach(el => el.classList.remove('selected'));
     const target = document.getElementById('recipe-left-tree').querySelector('.tree-node-row[data-path="' + CSS.escape(nodePath) + '"]');
@@ -8452,6 +8448,7 @@ body::before {
 
     try {
       const rafData = await fetch('/api/raf-count?dir=' + encodeURIComponent(rafDir)).then(r => r.json());
+      if (requestId !== recipePreviewRequestId) return;
       if (rafData.count > 0) {
         recipeSelectedPath = baseDir;
         recipeFolderInfo.classList.remove('visible');
@@ -8466,7 +8463,6 @@ body::before {
         const folderName = nodePath.split('/').filter(Boolean).pop();
         recipeFolderName.textContent = folderName;
         recipeFolderDetail.textContent = 'No Liked/RAF/ folder found here';
-        recipeLoadBtn.style.display = 'none';
       }
     } catch (e) {
       recipeSelectedPath = nodePath;
@@ -8475,6 +8471,7 @@ body::before {
   }
 
   async function renderRecipeCenterPreview(dirPath) {
+    const requestId = ++recipePreviewRequestId;
     const centerPreview = document.getElementById('recipe-center-preview');
     centerPreview.innerHTML = '';
     centerPreview.style.display = '';
@@ -8482,6 +8479,7 @@ body::before {
 
     try {
       const data = await fetch('/api/browse?dir=' + encodeURIComponent(dirPath)).then(r => r.json());
+      if (requestId !== recipePreviewRequestId) return;
       if (data.error || data.photoCount === 0) {
         centerPreview.innerHTML = '<div style="color:var(--text-dim);font-size:13px">No photos in this folder</div>';
         return;
@@ -8650,12 +8648,15 @@ body::before {
       const thumbsEl = document.createElement('div');
       thumbsEl.className = 'preview-group-thumbs';
 
+      let hasPreview = false;
       try {
         let likedDir = s.dir + '/Liked/HIF';
-        let browseData = await fetch('/api/browse?dir=' + encodeURIComponent(likedDir)).then(r => r.json());
+        let browseRes = await fetch('/api/browse?dir=' + encodeURIComponent(likedDir));
+        let browseData = browseRes.ok ? await browseRes.json() : {};
         if (!browseData.previewFiles || browseData.previewFiles.length === 0) {
           likedDir = s.dir + '/Liked/JPG';
-          browseData = await fetch('/api/browse?dir=' + encodeURIComponent(likedDir)).then(r => r.json());
+          browseRes = await fetch('/api/browse?dir=' + encodeURIComponent(likedDir));
+          browseData = browseRes.ok ? await browseRes.json() : {};
         }
         if (browseData.previewFiles && browseData.previewFiles.length > 0) {
           const dirB64 = btoa(unescape(encodeURIComponent(likedDir)));
@@ -8666,6 +8667,7 @@ body::before {
             img.onerror = function() { this.remove(); };
             thumbsEl.appendChild(img);
           }
+          hasPreview = true;
         } else {
           const rootData = await fetch('/api/browse?dir=' + encodeURIComponent(s.dir)).then(r => r.json());
           if (rootData.previewFiles && rootData.previewFiles.length > 0) {
@@ -8677,9 +8679,12 @@ body::before {
               img.onerror = function() { this.remove(); };
               thumbsEl.appendChild(img);
             }
+            hasPreview = true;
           }
         }
       } catch (e) {}
+
+      if (!hasPreview) return null;
 
       groupEl.appendChild(thumbsEl);
 
@@ -8710,7 +8715,8 @@ body::before {
         centerPreview.appendChild(heading);
 
         for (const s of inProgress.slice(0, 6)) {
-          centerPreview.appendChild(await buildRecipeSessionCard(s));
+          const card = await buildRecipeSessionCard(s);
+          if (card) centerPreview.appendChild(card);
         }
       }
 
@@ -8722,7 +8728,8 @@ body::before {
         centerPreview.appendChild(completedHeading);
 
         for (const s of completed.slice(0, 6)) {
-          centerPreview.appendChild(await buildRecipeSessionCard(s));
+          const card = await buildRecipeSessionCard(s);
+          if (card) centerPreview.appendChild(card);
         }
       }
     } catch (e) {}
@@ -8782,7 +8789,6 @@ body::before {
     } catch (e) {}
   }
 
-  recipeLoadBtn.addEventListener('click', () => loadRecipeDirectory(recipeSelectedPath));
 
   // ── Event bindings ──
 
@@ -8791,6 +8797,11 @@ body::before {
     hideRecipeEditor();
     showLanding();
     toolCullBtn.click();
+  });
+
+  document.getElementById('recipe-shell-title').addEventListener('click', () => {
+    hideRecipeEditor();
+    showLanding();
   });
 
   // Library button in topbar
@@ -8817,13 +8828,6 @@ body::before {
       focusEl.style.display = 'flex';
       document.getElementById('recipe-compare-row').style.display = 'flex';
       document.getElementById('focus-back-btn').style.display = '';
-      renderFocusMode();
-    } else if (recipeState.focusBrowse && recipeState.savedCollageFocus) {
-      const saved = recipeState.savedCollageFocus;
-      recipeState.savedCollageFocus = null;
-      recipeState.focusBrowse = false;
-      recipeState.focusBrowsePhoto = null;
-      recipeState.focusIndex = saved.index;
       renderFocusMode();
     } else {
       recipeState.focusHistory = [];
@@ -8880,6 +8884,17 @@ body::before {
     }
   });
 
+  // Escape in compare mode — exit to focus
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (recipeState.mode !== 'compare') return;
+    if (recipeState._compareSimulating) {
+      recipeState.compareSimCancelled = true;
+    } else {
+      enterFocusMode(recipeState.focusIndex || 0);
+    }
+  });
+
   // Arrow keys in focus mode — cycle through collage or filmstrip photos
   document.addEventListener('keydown', (e) => {
     if (recipeLightbox && recipeLightbox.classList.contains('visible')) return;
@@ -8933,6 +8948,7 @@ body::before {
     pickBtn.style.pointerEvents = 'none';
 
     recipeState._variantSelectMode = true;
+    showToast('Select a photo');
 
     const cleanup = () => {
       collage.classList.remove('variant-select-mode');
@@ -8978,7 +8994,6 @@ body::before {
     collage.addEventListener('click', selectHandler);
     document.addEventListener('keydown', escHandler);
     cancelBtn.addEventListener('click', cancelHandler);
-    bannerCancel.addEventListener('click', cancelHandler);
   }
 
   document.getElementById('recipe-compare-btn').addEventListener('click', () => {
@@ -9712,7 +9727,7 @@ body::before {
   });
 
   toolRecipeBtn.addEventListener('click', async () => {
-    if (activeToolTab === 'recipe') return;
+    if (activeToolTab === 'recipe' && screen !== 'landing') return;
     activeToolTab = 'recipe';
     localStorage.setItem('drkrm-active-tool', 'recipe');
     toolRecipeBtn.classList.add('active');
@@ -9733,11 +9748,10 @@ body::before {
   }
   const savedTool = localStorage.getItem('drkrm-active-tool');
   if (savedTool === 'recipe') {
+    initLanding();
     activeToolTab = 'recipe';
     toolCullBtn.classList.remove('active');
     toolRecipeBtn.classList.add('active');
-    initLanding();
-    showRecipeEditor();
   } else {
     initLanding();
   }

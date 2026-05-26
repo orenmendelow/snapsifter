@@ -70,6 +70,24 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 32 changes (2026-05-26)
+
+**S31 audit fixes (14 of 15 items resolved):**
+- S31-1: Back button after arrow key navigation — removed intermediate `savedCollageFocus` step. Back always returns to collage grid via `showRecipePreview()`.
+- S31-2: VARIANT TEST from collage — added `showToast('Select a photo')`, removed undefined `bannerCancel` reference.
+- S31-3: Compare mode exit — added Escape keydown handler for compare mode, ensured `recipe-right-panel` visible on `enterCompareMode()`.
+- S31-4: Session delete confirmation — `confirm()` dialog before Photo Cull session delete.
+- S31-5: Tree state preserved on tab switch — `showLanding()` skips `initTree()` if tree DOM already populated.
+- S31-6/S31-7: Non-compatible sessions filtered from Recipe Lab resume cards. `buildRecipeSessionCard()` checks `browseRes.ok` before JSON parse, returns `null` for sessions with no preview files. Eliminates 404 console errors.
+- S31-8: `?` key no longer opens help overlay on landing page.
+- S31-9: Recipe editor no longer auto-opens on reload. Landing shown with Recipe Lab tab pre-selected. Tab click handler allows re-entry from landing even when already selected.
+- S31-10: Logo (`#recipe-shell-title`) clickable — returns to landing via `hideRecipeEditor()` + `showLanding()`.
+- S31-11: Rapid tree click stale data — `recipePreviewRequestId` counter shared between `selectRecipeNode` and `renderRecipeCenterPreview`. Stale responses discarded after each `await`.
+- S31-12: Disconnected session click shows toast feedback.
+- S31-13: Right panel responsive — `flex-shrink: 1` with `min-width: 240px` (was `flex-shrink: 0` at 380px).
+- S31-14: Vestigial `#recipe-left-load-btn` removed (CSS, HTML, JS variable, click handler).
+- S31-15: Deferred — requires camera hardware for RAF preview generation.
+
 ### Session 31 changes (2026-05-25)
 
 **Non-compatible directory error handling (S30-1):**
