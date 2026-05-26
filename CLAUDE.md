@@ -69,7 +69,31 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
-- **CRITICAL: Recipe Lab browse/load/resume flow is broken.** Session 29 attempted to make tree clicks auto-load directories with RAFs (skip the "Load" button step) and extracted `loadRecipeDirectory()` as a shared function for both tree clicks and session clicks. The refactor broke the entire flow — browsing, loading, and center view rendering are all broken. Must be reverted or properly fixed. The session click handler, `selectRecipeNode`, `loadRecipeDirectory`, and `showRecipeEditor` all interact and the current state is inconsistent.
+- Loading non-compatible directories (no Liked/RAF/) has a freeze/weird interaction — needs investigation and graceful handling.
+
+### Session 30 changes (2026-05-25)
+
+**Recipe Lab load flow fix:**
+- Fixed broken browse/load/resume flow from session 29. Root causes: `showRecipePreview()` was called inside `loadRecipeDirectory()` before grid loaded (reset collage display to hidden), and `renderRecipeCenterPreview()` raced with directory loading.
+- All 4 entry points (tree click with RAFs, session click, resume card click, Load button) now route through single `loadRecipeDirectory(dir)` function.
+- `selectRecipeNode` auto-loads when RAFs found — no Load button step. `recipeFolderInfo` hidden by `loadRecipeDirectory`.
+- `loadRecipeDirectory` does NOT call `showRecipePreview()`. Sets display states explicitly: hides center preview, shows collage skeleton, hides focus/compare views.
+- `renderRecipeCenterPreview` only fires in no-RAFs branch (no race with loading).
+- `loadRecipeGrid()` shows `recipe-compare-row` after photos load.
+
+**Session list deduplication:**
+- `filterLeafSessions()` removes parent directories when children exist as separate sessions (e.g., "Iceland - April 2026" filtered out when "X100VI" and "XT-30" exist under it).
+- `sessionDisplayName()` generates parent/child path labels (e.g., "Iceland - April 2026/X100VI").
+- Applied to left panel Recent section AND center Resume/Recently Completed sections.
+
+**Variant select mode polish:**
+- No UI movement — VARIANT TEST and CANCEL stay in place and remain active.
+- Filmstrip, center toolbar, recipe label row, params panel, drawer actions fade to 0.2 opacity with `pointer-events: none`.
+- `recipe-compare-row` (contains VARIANT TEST + CANCEL) stays fully interactive — not overlayed.
+- Collage cells get crosshair cursor + amber hover outline.
+- Cleanup on photo select, escape, cancel, or tab switch.
+
+**Known issue:** Loading non-compatible directories (no Liked/RAF/) has freeze/weird interaction — needs investigation.
 
 ### Session 29 changes (2026-05-23 to 2026-05-25)
 
@@ -85,7 +109,7 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Placeholder gradients in all photo slots — waiting for Oren's photos (needs: 5 filmstrip photos, 1 photo rendered through 6+ film sims, app screenshot for laptop frame).
 - Design decisions documented: Linear/Raycast-inspired dark aesthetic, scroll reveals + interactive demos, sequential workflow presentation, sticky nav CTA, no section boxes, no decorative elements.
 
-**Recipe Lab directory loading refactor (BROKEN):**
+**Recipe Lab directory loading refactor (fixed in session 30):**
 - Extracted `loadRecipeDirectory(dir)` as shared function (was duplicated in session click handler and Load button handler).
 - Changed `selectRecipeNode` to auto-call `loadRecipeDirectory` when a folder has RAFs (previously showed "Load" button and required a second click).
 - Replaced session click handler's inline load logic with `loadRecipeDirectory(s.dir)`.

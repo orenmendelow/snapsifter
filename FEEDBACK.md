@@ -172,7 +172,13 @@ Verbatim from Oren. Check off when completed and visually verified.
 
 ## Session 29 — CRITICAL
 
-- [ ] **S29-1**: Recipe Lab browse/load/resume flow is completely broken. Clicking a directory (e.g. X100VI) should load the session directly but instead shows it in bottom-left panel. After clicking Load, filmstrip fills but center view shows broken file preview (session resume cards) instead of collage grid. The `loadRecipeDirectory()` refactor (auto-load on tree click, shared function for session + tree clicks) broke the interaction between `selectRecipeNode`, `showRecipeEditor`, `recipeEditorInitialized`, and center preview rendering. Needs full revert or careful fix — all three load paths (tree click, session click, Load button) must produce correct behavior: collapse left panel, show skeleton, load grid + filmstrip + EXIF, render collage in center.
+- [x] **S29-1**: Recipe Lab browse/load/resume flow fixed. All 4 entry points route through `loadRecipeDirectory()`. Auto-load on tree click works. No `showRecipePreview()` race. No `renderRecipeCenterPreview` race.
+
+## Session 30 — New
+
+- [ ] **S30-1**: Loading non-compatible directories (no Liked/RAF/) freezes or has weird interaction. Needs graceful error handling — show message and return to browse state.
+- [ ] **S30-2**: Session list deduplication — implemented but needs Oren verification with SSD plugged in. Parent folders filtered, leaf sessions show parent/child path labels.
+- [ ] **S30-3**: Variant select mode — VARIANT TEST + CANCEL stay active, everything else fades. Needs Oren verification with SSD plugged in.
 
 ## Older — Unresolved
 

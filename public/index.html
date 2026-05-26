@@ -1430,6 +1430,10 @@ body::before {
 #recipe-collage.variant-select-mode .recipe-grid-cell:hover {
   outline-color: var(--amber);
 }
+.variant-select-overlay {
+  pointer-events: none;
+  opacity: 0.2;
+}
 #recipe-compare-chevron {
   background: none;
   color: var(--text-dim);
@@ -4162,6 +4166,29 @@ body::before {
     return s.accessible !== false && total > 0 && rated >= total;
   }
 
+  function filterLeafSessions(sessions) {
+    const dirs = sessions.map(s => s.dir.replace(/\/+$/, ''));
+    return sessions.filter(s => {
+      const d = s.dir.replace(/\/+$/, '');
+      return !dirs.some(other => other !== d && other.startsWith(d + '/'));
+    });
+  }
+
+  function sessionDisplayName(s, allSessions) {
+    const dir = s.dir.replace(/\/+$/, '');
+    const parts = dir.split('/').filter(Boolean);
+    const folderName = parts[parts.length - 1] || dir;
+    if (s.name && s.name !== folderName) return s.name;
+    for (const other of allSessions) {
+      const otherDir = other.dir.replace(/\/+$/, '');
+      if (otherDir !== dir && dir.startsWith(otherDir + '/')) {
+        const parentName = otherDir.split('/').filter(Boolean).pop();
+        return parentName + '/' + folderName;
+      }
+    }
+    return folderName;
+  }
+
   function buildSessionRow(s, onDelete, onResume) {
     const row = document.createElement('div');
     row.className = 'session-row' + (s.accessible === false ? ' dimmed' : '');
@@ -5927,16 +5954,17 @@ body::before {
       recipeState._variantSelectMode = false;
       const cancelBtn = document.getElementById('variant-select-cancel');
       if (cancelBtn) cancelBtn.style.display = 'none';
+      document.getElementById('recipe-collage').classList.remove('variant-select-mode');
+      document.getElementById('recipe-filmstrip-container').classList.remove('variant-select-overlay');
+      document.getElementById('recipe-center-toolbar').classList.remove('variant-select-overlay');
+      document.getElementById('recipe-label-row').classList.remove('variant-select-overlay');
+      document.getElementById('recipe-right-panel-params').classList.remove('variant-select-overlay');
+      const da = document.getElementById('recipe-drawer-actions');
+      if (da) da.classList.remove('variant-select-overlay');
       document.getElementById('recipe-shuffle-btn').disabled = false;
-      document.getElementById('recipe-shuffle-btn').style.opacity = '';
       document.getElementById('recipe-shuffle-btn').style.pointerEvents = '';
       document.getElementById('recipe-pick-btn').disabled = false;
-      document.getElementById('recipe-pick-btn').style.opacity = '';
       document.getElementById('recipe-pick-btn').style.pointerEvents = '';
-      const compareBtn = document.getElementById('recipe-compare-btn');
-      if (compareBtn) compareBtn.disabled = false;
-      const compareChevron = document.getElementById('recipe-compare-chevron');
-      if (compareChevron) compareChevron.disabled = false;
     }
   }
 
@@ -7823,6 +7851,7 @@ body::before {
         document.getElementById('recipe-collage').style.display = '';
         document.getElementById('recipe-shuffle-btn').style.display = '';
         document.getElementById('recipe-pick-btn').style.display = '';
+        document.getElementById('recipe-compare-row').style.display = 'flex';
       }
 
       // Pre-warm thumbnails in parallel (fire-and-forget)
@@ -8172,13 +8201,14 @@ body::before {
       container.appendChild(recentLabel);
       container.appendChild(sessionsList);
       if (sessions && sessions.length > 0) {
-        for (const s of sessions) {
-          if (s.accessible === false) continue;
+        const accessible = sessions.filter(s => s.accessible !== false);
+        const leafSessions = filterLeafSessions(accessible);
+        for (const s of leafSessions) {
           const row = document.createElement('div');
           row.className = 'session-row';
           const name = document.createElement('div');
           name.className = 'session-name';
-          name.textContent = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+          name.textContent = sessionDisplayName(s, sessions);
           row.appendChild(name);
           const detail = document.createElement('div');
           detail.className = 'session-detail';
@@ -8400,18 +8430,17 @@ body::before {
       baseDir = normalized;
     }
 
-    // Render center preview for the browsed folder (only if no collage loaded)
-    if (!recipeLoadedDir || recipeState.gridPhotos.length === 0) {
-      renderRecipeCenterPreview(nodePath);
-    }
-
     try {
       const rafData = await fetch('/api/raf-count?dir=' + encodeURIComponent(rafDir)).then(r => r.json());
       if (rafData.count > 0) {
         recipeSelectedPath = baseDir;
-        loadRecipeDirectory(baseDir);
         recipeFolderInfo.classList.remove('visible');
+        loadRecipeDirectory(baseDir);
       } else {
+        // No RAFs — show browse preview in center if no collage loaded
+        if (!recipeLoadedDir || recipeState.gridPhotos.length === 0) {
+          renderRecipeCenterPreview(nodePath);
+        }
         recipeSelectedPath = nodePath;
         recipeFolderInfo.classList.add('visible');
         const folderName = nodePath.split('/').filter(Boolean).pop();
@@ -8584,7 +8613,7 @@ body::before {
 
       const nameEl = document.createElement('span');
       nameEl.className = 'preview-group-name';
-      nameEl.textContent = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+      nameEl.textContent = s._displayName || s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
       labelEl.appendChild(nameEl);
 
       const countEl = document.createElement('span');
@@ -8634,39 +8663,7 @@ body::before {
 
       groupEl.appendChild(thumbsEl);
 
-      groupEl.addEventListener('click', async () => {
-        if (s.dir === recipeLoadedDir) {
-          collapseRecipeLeftPanel();
-          return;
-        }
-        try {
-          const res = await fetch('/api/recipe-load', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dir: s.dir })
-          }).then(r => r.json());
-          if (res.ok) {
-            recipeLoadedDir = s.dir;
-            collapseRecipeLeftPanel();
-            recipeState.lastLoadedDir = null;
-            recipeState.gridPhotos = [];
-            recipeState.exifBaseline = null;
-            recipeState.perPhotoParams = {};
-            recipeState.simulatedPhotos = {};
-            recipeState.simParamsUsed = {};
-            recipeState.cleanParams = null;
-            document.getElementById('recipe-right-panel').style.display = '';
-            showRightPanelSkeleton();
-            showSkeletonCollage();
-            centerPreview.style.display = 'none';
-            document.getElementById('recipe-filmstrip-container').style.display = '';
-            const gridP = loadRecipeGrid();
-            loadRecipeFilmstrip();
-            await gridP;
-            if (recipeState.gridPhotos.length > 0) await loadBatchExif();
-          }
-        } catch (e) {}
-      });
+      groupEl.addEventListener('click', () => loadRecipeDirectory(s.dir));
 
       return groupEl;
     }
@@ -8680,8 +8677,10 @@ body::before {
       const accessible = sessions.filter(s => s.accessible !== false);
       if (accessible.length === 0) { centerPreview.innerHTML = emptyStateHTML; return; }
 
-      const inProgress = accessible.filter(s => !isSessionCompleted(s));
-      const completed = accessible.filter(s => isSessionCompleted(s));
+      const leafSessions = filterLeafSessions(accessible);
+      leafSessions.forEach(s => { s._displayName = sessionDisplayName(s, sessions); });
+      const inProgress = leafSessions.filter(s => !isSessionCompleted(s));
+      const completed = leafSessions.filter(s => isSessionCompleted(s));
 
       // Resume section (in-progress sessions)
       if (inProgress.length > 0) {
@@ -8723,6 +8722,7 @@ body::before {
       }).then(r => r.json());
       if (res.ok) {
         recipeLoadedDir = dir;
+        recipeFolderInfo.classList.remove('visible');
         collapseRecipeLeftPanel();
         recipeState.lastLoadedDir = null;
         recipeState.gridPhotos = [];
@@ -8735,9 +8735,15 @@ body::before {
         showRightPanelSkeleton();
         showSkeletonCollage();
         document.getElementById('recipe-center-preview').style.display = 'none';
+        document.getElementById('recipe-collage').style.display = '';
         document.getElementById('recipe-filmstrip-container').style.display = '';
+        document.getElementById('focus-view').style.display = 'none';
+        document.getElementById('compare-view').style.display = 'none';
+        document.getElementById('focus-back-btn').style.display = 'none';
+        document.getElementById('recipe-shuffle-btn').style.display = 'none';
+        document.getElementById('recipe-pick-btn').style.display = 'none';
+        document.getElementById('recipe-compare-row').style.display = 'none';
         recipeState.mode = 'preview';
-        showRecipePreview();
         const recipesP = loadRecipes();
         const gridP = loadRecipeGrid();
         loadRecipeFilmstrip();
@@ -8882,39 +8888,44 @@ body::before {
   document.getElementById('recipe-shuffle-btn').addEventListener('click', shuffleGrid);
   document.getElementById('recipe-pick-btn').addEventListener('click', openPhotoPicker);
   function enterVariantSelectMode(baseline) {
-    showToast('Select a photo for variant test');
     const collage = document.getElementById('recipe-collage');
     const cancelBtn = document.getElementById('variant-select-cancel');
     const shuffleBtn = document.getElementById('recipe-shuffle-btn');
     const pickBtn = document.getElementById('recipe-pick-btn');
-    const compareBtn = document.getElementById('recipe-compare-btn');
-    const chevron = document.getElementById('recipe-compare-chevron');
+    const filmstrip = document.getElementById('recipe-filmstrip-container');
+    const rightPanel = document.getElementById('recipe-right-panel');
+    const toolbar = document.getElementById('recipe-center-toolbar');
+
+    const labelRow = document.getElementById('recipe-label-row');
+    const paramsPanel = document.getElementById('recipe-right-panel-params');
+    const drawerActions = document.getElementById('recipe-drawer-actions');
 
     collage.classList.add('variant-select-mode');
     cancelBtn.style.display = '';
-    // Disable other toolbar actions (S23-85)
+    filmstrip.classList.add('variant-select-overlay');
+    toolbar.classList.add('variant-select-overlay');
+    labelRow.classList.add('variant-select-overlay');
+    paramsPanel.classList.add('variant-select-overlay');
+    if (drawerActions) drawerActions.classList.add('variant-select-overlay');
     shuffleBtn.disabled = true;
-    shuffleBtn.style.opacity = '0.3';
     shuffleBtn.style.pointerEvents = 'none';
     pickBtn.disabled = true;
-    pickBtn.style.opacity = '0.3';
     pickBtn.style.pointerEvents = 'none';
-    compareBtn.disabled = true;
-    chevron.disabled = true;
 
     recipeState._variantSelectMode = true;
 
     const cleanup = () => {
       collage.classList.remove('variant-select-mode');
       cancelBtn.style.display = 'none';
+      filmstrip.classList.remove('variant-select-overlay');
+      toolbar.classList.remove('variant-select-overlay');
+      labelRow.classList.remove('variant-select-overlay');
+      paramsPanel.classList.remove('variant-select-overlay');
+      if (drawerActions) drawerActions.classList.remove('variant-select-overlay');
       shuffleBtn.disabled = false;
-      shuffleBtn.style.opacity = '';
       shuffleBtn.style.pointerEvents = '';
       pickBtn.disabled = false;
-      pickBtn.style.opacity = '';
       pickBtn.style.pointerEvents = '';
-      compareBtn.disabled = false;
-      chevron.disabled = false;
       recipeState._variantSelectMode = false;
       collage.removeEventListener('click', selectHandler);
       document.removeEventListener('keydown', escHandler);
@@ -8947,6 +8958,7 @@ body::before {
     collage.addEventListener('click', selectHandler);
     document.addEventListener('keydown', escHandler);
     cancelBtn.addEventListener('click', cancelHandler);
+    bannerCancel.addEventListener('click', cancelHandler);
   }
 
   document.getElementById('recipe-compare-btn').addEventListener('click', () => {
