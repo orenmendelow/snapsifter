@@ -7838,7 +7838,11 @@ body::before {
     updateCollageLayout(9);
 
     try {
-      const res = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=9').then(r => r.json());
+      const gridRes = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=9');
+      const res = await gridRes.json();
+      if (!gridRes.ok || res.error) {
+        throw new Error(res.error || 'Failed to load grid');
+      }
       if (res.hifDir) recipeState.gridDir = res.hifDir;
       recipeState.gridPhotos = res.selected || [];
       recipeState.gridPhotos.forEach(p => recipeState.usedPhotos.add(p.file));
@@ -7862,9 +7866,24 @@ body::before {
       });
     } catch(e) {
       recipeGridEl.innerHTML = '';
+      document.getElementById('recipe-collage').style.display = 'none';
       document.getElementById('recipe-center-preview').style.display = '';
+      document.getElementById('recipe-filmstrip-container').style.display = 'none';
       document.getElementById('recipe-shuffle-btn').style.display = 'none';
       document.getElementById('recipe-pick-btn').style.display = 'none';
+      document.getElementById('recipe-compare-row').style.display = 'none';
+      document.getElementById('recipe-right-panel').style.display = 'none';
+      recipeLoadedDir = null;
+      recipeState.lastLoadedDir = null;
+      recipeState.gridPhotos = [];
+      expandRecipeLeftPanel();
+      var folderName = (recipeSelectedPath || '').split('/').filter(Boolean).pop() || 'folder';
+      var centerPreview = document.getElementById('recipe-center-preview');
+      centerPreview.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-dim);font-size:13px;font-family:var(--font-mono)">' +
+        '<div style="font-size:15px;color:var(--text)">' + folderName + '</div>' +
+        '<div>No Liked/RAF/ folder structure found</div>' +
+        '<div style="font-size:11px;opacity:0.5">Select a folder with sorted photos to use Recipe Lab</div>' +
+        '</div>';
     }
   }
 
@@ -8343,12 +8362,13 @@ body::before {
     }
 
     childrenEl.innerHTML = '';
-    if (state.children.length === 0) {
+    var filteredChildren = state.children.filter(function(f) { return f.hasRafs || f.hasRatings; });
+    if (filteredChildren.length === 0) {
       chevron.classList.add('empty');
       return;
     }
 
-    for (const folder of state.children) {
+    for (const folder of filteredChildren) {
       renderRecipeTreeChild(childrenEl, folder, childDepth);
     }
 
@@ -8484,7 +8504,7 @@ body::before {
             isCurrentDir: true
           });
         }
-        for (const folder of foldersWithPhotos.slice(0, 8)) {
+        for (const folder of foldersWithPhotos.filter(function(f) { return f.hasRafs; }).slice(0, 8)) {
           groups.push({
             name: folder.name,
             path: folder.path,

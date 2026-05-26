@@ -69,7 +69,29 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
-- Loading non-compatible directories (no Liked/RAF/) has a freeze/weird interaction — needs investigation and graceful handling.
+
+### Session 31 changes (2026-05-25)
+
+**Non-compatible directory error handling (S30-1):**
+- `loadRecipeGrid()` now checks `gridRes.ok` and `res.error` before processing grid data. On 404 (no Liked/RAF/ or no Liked/HIF/), throws to trigger error recovery.
+- Error catch block: resets `recipeLoadedDir` to null, clears `gridPhotos`, hides collage/filmstrip/right panel, re-expands left panel, shows centered error message in `recipe-center-preview` with folder name + "No Liked/RAF/ folder structure found".
+- Subsequent directory clicks work immediately — no freeze, no stuck state, no same-dir guard blocking.
+- Covers both cases: directories with RAFs but no HIF/JPG, and directories where grid-select fails for any reason.
+
+**Recipe Lab tree filtering:**
+- `hasRafFiles(dir, maxDepth, depth)` helper in server.js — recursively checks for `.RAF` files up to 5 levels deep.
+- `/api/browse` returns `hasRafs` field per folder.
+- Recipe Lab tree (`toggleRecipeNode`) filters children to only show folders where `hasRafs` or `hasRatings` is true.
+- Recipe Lab center preview (`renderRecipeCenterPreview`) also filters subfolder groups to `hasRafs` only.
+- Non-photo directories (Calibre Library, Creative Cloud Files, etc.) no longer appear in Recipe Lab tree or center preview.
+- Photo Cull tree is unaffected — uses separate `#tree` element and rendering code.
+- Future: RAF-only directories (no matching HIF/JPG) will prompt camera-based preview generation on load.
+
+**Comprehensive 4-agent UI/UX audit (session 31):**
+- Tested: Recipe Lab load flows, Recipe Lab editor flows, Photo Cull flows, cross-cutting concerns.
+- Bugs found (10): back button fails after arrow key nav in focus, VARIANT TEST from collage skips photo selection, no exit from compare mode (stuck), session delete no confirmation, tree state lost on tab switch, resume cards show non-compatible sessions, 404 console errors from stale sessions, `?` opens help on landing, recipe editor auto-opens on reload, shuffle/pick disappear in stuck compare.
+- UX issues (7): rapid clicks show stale data, disconnected session no feedback, no landing return from Recipe Lab, right panel no responsive breakpoint, Load button vestigial, center preview groups no click affordance, tooltip `?` icons click-not-hover.
+- Working correctly: grid loading, focus mode, filmstrip browse, right panel params, recipe dropdown, cookbook/library, zoom+pan, tree filtering, error handling+recovery, same-dir re-click, rapid load resilience, tab switch preserves state, API error responses, DOM stability, left panel collapse/expand.
 
 ### Session 30 changes (2026-05-25)
 

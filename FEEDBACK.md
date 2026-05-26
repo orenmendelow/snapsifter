@@ -176,9 +176,27 @@ Verbatim from Oren. Check off when completed and visually verified.
 
 ## Session 30 — New
 
-- [ ] **S30-1**: Loading non-compatible directories (no Liked/RAF/) freezes or has weird interaction. Needs graceful error handling — show message and return to browse state.
+- [x] **S30-1**: Loading non-compatible directories (no Liked/RAF/) freezes or has weird interaction. Needs graceful error handling — show message and return to browse state. — FIXED: `loadRecipeGrid` checks HTTP status, catches errors, resets all state (recipeLoadedDir, gridPhotos), hides collage/filmstrip/right panel, re-expands left panel, shows error message in center preview. Recovery to other directories works immediately.
 - [ ] **S30-2**: Session list deduplication — implemented but needs Oren verification with SSD plugged in. Parent folders filtered, leaf sessions show parent/child path labels.
 - [ ] **S30-3**: Variant select mode — VARIANT TEST + CANCEL stay active, everything else fades. Needs Oren verification with SSD plugged in.
+
+## Session 31 — Audit Findings
+
+- [ ] **S31-1**: Back button fails after arrow key navigation in focus mode. Enter focus via cell click → press ArrowRight → click back = stays in focus. Works without arrow keys.
+- [ ] **S31-2**: VARIANT TEST from collage skips photo selection step. Should show "Select a photo" toast + crosshair on cells. Instead jumps directly into compare grid mode.
+- [ ] **S31-3**: No way to exit compare mode when entered from collage. Escape does nothing, no CANCEL visible. User stuck — only recovery is page reload.
+- [ ] **S31-4**: Session delete (Photo Cull) has no confirmation dialog. Clicking X immediately deletes.
+- [ ] **S31-5**: Tree state lost on tab switch. Expanding folders in Photo Cull, switching to Recipe Lab and back, collapses the tree.
+- [ ] **S31-6**: Resume cards in Recipe Lab center show non-compatible sessions (e.g., "Pictures" with no Liked/RAF/). Clicking fails with error. Should filter or dim.
+- [ ] **S31-7**: 404 console errors on every Recipe Lab entry. `buildRecipeSessionCard()` fetches `/api/browse?dir={session.dir}/Liked/HIF` then `/Liked/JPG` for all sessions, even those without Liked/ folders.
+- [ ] **S31-8**: `?` key opens Photo Cull help overlay on landing page. Keydown handler doesn't gate on active screen.
+- [ ] **S31-9**: Recipe editor auto-opens on reload when localStorage has `drkrm-active-tool=recipe`. Should show landing with Recipe Lab tab pre-selected, not auto-enter editor.
+- [ ] **S31-10**: No way to return to landing from Recipe Lab. Logo not clickable. Only way back is clicking Photo Cull tab.
+- [ ] **S31-11**: Rapid tree clicks show stale preview data. No request cancellation — API responses arrive out of order.
+- [ ] **S31-12**: Disconnected session click (Photo Cull) gives no feedback — no error toast or message.
+- [ ] **S31-13**: Right panel (379px) doesn't adapt to small viewports. No responsive breakpoint.
+- [ ] **S31-14**: Load button (`#recipe-left-load-btn`) is vestigial — never actionable in current flow. Consider removing.
+- [ ] **S31-15**: Recipe Lab tree filtering — RAF-only directories (no matching HIF/JPG) should eventually support camera-based preview generation on load. Discussed with Oren: show directory as available, prompt "Generate previews from RAFs?" with confirm/cancel when selected.
 
 ## Older — Unresolved
 

@@ -181,6 +181,20 @@ function isHeifFile(filename) {
   return upper.endsWith('.HIF') || upper.endsWith('.HEIF');
 }
 
+function hasRafFiles(dir, maxDepth, depth) {
+  if (depth > maxDepth) return false;
+  let entries;
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return false; }
+  for (const entry of entries) {
+    if (entry.name.startsWith('.')) continue;
+    if (entry.isFile() && entry.name.toUpperCase().endsWith('.RAF')) return true;
+    if (entry.isDirectory()) {
+      if (hasRafFiles(path.join(dir, entry.name), maxDepth, depth + 1)) return true;
+    }
+  }
+  return false;
+}
+
 function walkDir(baseDir, currentDir, maxDepth, depth) {
   if (depth > maxDepth) return [];
   let results = [];
@@ -399,7 +413,11 @@ app.get('/api/browse', (req, res) => {
 
       const hasRatings = fs.existsSync(path.join(fullPath, 'ratings.json'));
       const ratedCount = hasRatings ? countRatingsInDir(fullPath) : 0;
-      folders.push({ name: entry.name, path: fullPath, photoCount, previewFiles, hasRatings, ratedCount });
+      let hasRafs = false;
+      try {
+        hasRafs = hasRafFiles(fullPath, 5, 0);
+      } catch (e) {}
+      folders.push({ name: entry.name, path: fullPath, photoCount, previewFiles, hasRatings, ratedCount, hasRafs });
     }
 
     folders.sort((a, b) => a.name.localeCompare(b.name));
