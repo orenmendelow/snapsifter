@@ -74,6 +74,34 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 36 changes (2026-05-28)
+
+**Landing page (`landing/index.html`):**
+- Cull demo rating badges: "1/2/3" number circles → "DITCH/MAYBE/LIKE" text pills (8px uppercase, pill-shaped).
+- X100VI SVG: muted all colors to dark greys (#e8e8e8→#555, #888→#3a3a3a, #444→#2a2a2a, #1a1a1a→#111). Amber accents preserved.
+- Generated 130 new film sim variants (13 photos × 10 sims) via camera PTP. Photos from Ari Bachelor Party, Western USA Road Trip, San Diego trips.
+- Oren's variant picks: DSCF3048 (BEST), DSCF9397, DSCF3479, DSCF3278 (vertical), DSCF5058.
+- Sim demo tab switcher: DSCF3048 with all 10 sims (was 6 sims with DSCF8039).
+- Variant grid (Step 3): swapped to DSCF5058, expanded to 10 cells (5x2) from 9 (3x3). All 10 film sims.
+- SBS compare (Step 4): swapped to DSCF9397 ClassicNeg vs Nostalgic (was DSCF7011).
+- Flow-step alignment fix: `.flow-number` + `.section-label` absolutely positioned above headline. `.flow-content` and `.flow-visual` both get `padding-top: 80px` so headline aligns with visual top.
+- Spacing tightened: section padding 120→80px (desktop), 48px (mobile). Flow-step margin 160→80px. Last flow-step margin eliminated. Pricing 100→80px. Stats desc margin 48→32px.
+- Wide breakpoint (1400px+): section max-width 1400px, flow-content 35%.
+- Mobile responsive: flow-visual padding-top zeroed, flow-content 48px, sim tabs `flex: 0 0 auto` for horizontal scroll.
+- Footer cleaned: removed 8 dead placeholder links. Replaced with real links (Features, Pricing, Contact) + system requirements column.
+- Removed variant grid click-to-zoom lightbox (Oren wants zoom only on SBS section).
+
+**New files:**
+- `landing/PHOTO-CANDIDATES.md` — Oren's 14 photo picks with sources and variant selections.
+- `landing/pick-variants.html` — Preview page for comparing all variants (click to select, shift+click to zoom).
+- `landing/variants/` — 130 new variant JPGs (13 photos × 10 sims): DSCF9145, DSCF9258, DSCF9397, DSCF3479, DSCF3391, DSCF3345, DSCF3278, DSCF3048, DSCF3010, DSCF4589, DSCF4600, DSCF4773, DSCF5058.
+
+**Distribution decisions:**
+- Mac App Store not viable — sandbox blocks `requestSendPTPCommand` (raw PTP), `/Volumes/` browsing, and child process spawning. Direct download required.
+- Apple Developer $99/yr needed for code signing + notarization before marketing push, not day 1.
+- Licensing: LemonSqueezy as MoR, key in `~/.drkrm/license.json`, same DMG for all users. Recipe Lab locked after 14-day trial without key.
+- Watermark approach for free tier more hack-resistant than UI gate (baked into rendered JPEG server-side).
+
 ### Session 35 changes (2026-05-28)
 
 **Bug fixes:**

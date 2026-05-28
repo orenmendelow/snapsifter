@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>drkrm — Pick Landing Page Variants</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #000;
+  color: #e8e8e8;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  padding: 24px;
+}
+h1 { font-size: 18px; font-weight: 500; margin-bottom: 8px; letter-spacing: 1px; }
+.subtitle { color: rgba(255,255,255,0.4); font-size: 12px; margin-bottom: 32px; }
+.photo-section {
+  margin-bottom: 48px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: 32px;
+}
+.photo-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: #c45a30;
+}
+.variant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+}
+.variant-cell {
+  position: relative;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 2px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.variant-cell:hover { border-color: rgba(255,255,255,0.2); }
+.variant-cell.selected { border-color: #c45a30; }
+.variant-cell img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 3/2;
+  object-fit: cover;
+  background: #111;
+}
+.variant-cell .label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 4px 8px;
+  background: rgba(0,0,0,0.7);
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.variant-cell .sim-name { color: rgba(255,255,255,0.7); }
+.variant-cell.selected .sim-name { color: #c45a30; }
+.variant-cell .check { display: none; color: #c45a30; font-weight: 700; }
+.variant-cell.selected .check { display: inline; }
+.variant-cell.missing img { opacity: 0.15; }
+.variant-cell.missing .label { color: rgba(255,255,255,0.3); }
+.no-raf { color: rgba(255,255,255,0.3); font-size: 11px; font-style: italic; }
+.summary {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 24px;
+  background: rgba(10,10,10,0.95);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+.summary .count { color: #c45a30; font-weight: 500; }
+.summary button {
+  background: #c45a30;
+  color: #000;
+  border: none;
+  padding: 8px 20px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.summary button:hover { opacity: 0.9; }
+.lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 20;
+  cursor: zoom-out;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 95vw; max-height: 95vh; object-fit: contain; }
+.lightbox .lb-label {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+}
+</style>
+</head>
+<body>
+<h1>drkrm Landing Page — Pick Variants</h1>
+<p class="subtitle">Click to select favorites. Click image to zoom. Selections logged to console.</p>
+<div id="content"></div>
+<div class="summary">
+  <span><span class="count" id="sel-count">0</span> selected</span>
+  <button onclick="copySelections()">Copy selections to clipboard</button>
+</div>
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('open')">
+  <img id="lb-img" src="">
+  <div class="lb-label" id="lb-label"></div>
+</div>
+
+<script>
+const PHOTOS = [
+  'DSCF9145', 'DSCF9258', 'DSCF9397',
+  'DSCF3479', 'DSCF3391', 'DSCF3345', 'DSCF3278', 'DSCF3048', 'DSCF3010',
+  'DSCF4589', 'DSCF4600', 'DSCF4773', 'DSCF5058'
+];
+
+const SIMS = [
+  'Provia', 'Velvia', 'Astia', 'ClassicNeg', 'Nostalgic',
+  'RealaACE', 'Acros', 'Classic', 'Eterna', 'BleachBypass'
+];
+
+const selections = new Set();
+const content = document.getElementById('content');
+
+PHOTOS.forEach(stem => {
+  const section = document.createElement('div');
+  section.className = 'photo-section';
+  section.innerHTML = `<div class="photo-title">${stem}</div>`;
+
+  const grid = document.createElement('div');
+  grid.className = 'variant-grid';
+
+  SIMS.forEach(sim => {
+    const cell = document.createElement('div');
+    cell.className = 'variant-cell';
+    const src = `variants/${stem}_${sim}.jpg`;
+    const key = `${stem}_${sim}`;
+
+    const img = new Image();
+    img.src = src;
+    img.alt = `${stem} ${sim}`;
+    img.loading = 'lazy';
+    img.onerror = () => { cell.classList.add('missing'); };
+
+    cell.innerHTML = `<div class="label"><span class="sim-name">${sim}</span><span class="check">SEL</span></div>`;
+    cell.prepend(img);
+
+    cell.addEventListener('click', (e) => {
+      if (e.shiftKey) {
+        document.getElementById('lb-img').src = src;
+        document.getElementById('lb-label').textContent = `${stem} / ${sim}`;
+        document.getElementById('lightbox').classList.add('open');
+        return;
+      }
+      cell.classList.toggle('selected');
+      if (cell.classList.contains('selected')) {
+        selections.add(key);
+      } else {
+        selections.delete(key);
+      }
+      document.getElementById('sel-count').textContent = selections.size;
+    });
+
+    grid.appendChild(cell);
+  });
+
+  section.appendChild(grid);
+  content.appendChild(section);
+});
+
+function copySelections() {
+  const text = Array.from(selections).sort().join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Copied ' + selections.size + ' selections to clipboard');
+  });
+  console.log('Selections:', Array.from(selections).sort());
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('lightbox').classList.remove('open');
+});
+</script>
+</body>
+</html>

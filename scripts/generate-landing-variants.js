@@ -1,9 +1,27 @@
 #!/usr/bin/env node
 const BASE = 'http://localhost:4000';
 
-const PHOTOS = ['DSCF8039', 'DSCF7009', 'DSCF7011'];
-const FILM_SIMS = ['Provia', 'Velvia', 'ClassicNeg', 'Nostalgic', 'RealaACE', 'Acros'];
-const RAF_DIR = '/Volumes/OYM 2/Iceland - April 2026/X100VI/Liked/RAF';
+const PHOTOS = [
+  { stem: 'DSCF9145', raf: '/Volumes/OYM 2/Ari Bachelor Party May 2026/Liked/RAF/DSCF9145.RAF' },
+  { stem: 'DSCF9258', raf: '/Volumes/OYM 2/Ari Bachelor Party May 2026/Liked/RAF/DSCF9258.RAF' },
+  { stem: 'DSCF9397', raf: '/Volumes/OYM 2/Ari Bachelor Party May 2026/Liked/RAF/DSCF9397.RAF' },
+  { stem: 'DSCF3479', raf: '/Volumes/OYM 2/Western USA Road Trip Summer 2025/RAW/DSCF3479.RAF' },
+  { stem: 'DSCF3391', raf: '/Volumes/OYM 2/Western USA Road Trip Summer 2025/RAW/DSCF3391.RAF' },
+  { stem: 'DSCF3345', raf: '/Volumes/OYM 2/Western USA Road Trip Summer 2025/RAW/DSCF3345.RAF' },
+  { stem: 'DSCF3278', raf: '/Volumes/OYM 2/Western USA Road Trip Summer 2025/RAW/DSCF3278.RAF' },
+  { stem: 'DSCF3048', raf: '/Volumes/OYM 2/Western USA Road Trip Summer 2025/RAW/DSCF3048.RAF' },
+  { stem: 'DSCF3010', raf: '/Volumes/OYM 2/Western USA Road Trip Summer 2025/RAW/DSCF3010.RAF' },
+  { stem: 'DSCF4589', raf: '/Volumes/OYM 2/San Diego January 2026/FUJI/RAW/DSCF4589.RAF' },
+  { stem: 'DSCF4600', raf: '/Volumes/OYM 2/San Diego January 2026/FUJI/RAW/DSCF4600.RAF' },
+  { stem: 'DSCF4773', raf: '/Volumes/OYM 2/San Diego January 2026/FUJI/RAW/DSCF4773.RAF' },
+  { stem: 'DSCF5058', raf: '/Volumes/OYM 2/San Diego January 2026/FUJI/RAW/DSCF5058.RAF' },
+];
+
+const FILM_SIMS = [
+  'Provia', 'Velvia', 'Astia', 'ClassicNeg', 'Nostalgic',
+  'RealaACE', 'Acros', 'Classic', 'Eterna', 'BleachBypass'
+];
+
 const OUTPUT_DIR = '/Users/oren/Documents/photo-culler/landing/variants';
 
 const fs = require('fs');
@@ -29,29 +47,32 @@ async function main() {
   console.log('Connecting...');
   await api('/api/camera/connect', { method: 'POST' });
 
-  for (const stem of PHOTOS) {
-    const rafPath = RAF_DIR + '/' + stem + '.RAF';
-    if (!fs.existsSync(rafPath)) {
-      console.error('RAF not found: ' + rafPath);
+  let rendered = 0;
+  let skipped = 0;
+  const total = PHOTOS.length * FILM_SIMS.length;
+
+  for (const photo of PHOTOS) {
+    if (!fs.existsSync(photo.raf)) {
+      console.error('RAF not found: ' + photo.raf);
       continue;
     }
 
     for (const sim of FILM_SIMS) {
-      const outFile = path.join(OUTPUT_DIR, stem + '_' + sim + '.jpg');
+      const outFile = path.join(OUTPUT_DIR, photo.stem + '_' + sim + '.jpg');
       if (fs.existsSync(outFile)) {
-        console.log('  SKIP ' + stem + ' / ' + sim + ' (exists)');
+        skipped++;
         continue;
       }
 
-      console.log('  Rendering ' + stem + ' / ' + sim + '...');
+      console.log(`[${rendered + skipped + 1}/${total}] ${photo.stem} / ${sim}...`);
 
       const uploadRes = await api('/api/camera/upload-raf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: rafPath })
+        body: JSON.stringify({ path: photo.raf })
       });
       if (uploadRes.error) {
-        console.error('    Upload failed: ' + uploadRes.error);
+        console.error('  Upload failed: ' + uploadRes.error);
         continue;
       }
 
@@ -91,16 +112,17 @@ async function main() {
       });
 
       if (resultRes.ok) {
-        console.log('    OK: ' + outFile);
+        rendered++;
+        console.log('  OK');
       } else {
-        console.error('    FAILED: ' + (resultRes.error || 'unknown'));
+        console.error('  FAILED: ' + (resultRes.error || 'unknown'));
       }
     }
   }
 
   console.log('Disconnecting...');
   await api('/api/camera/disconnect', { method: 'POST' });
-  console.log('Done. Variants saved to ' + OUTPUT_DIR);
+  console.log(`Done. Rendered: ${rendered}, Skipped (existing): ${skipped}, Total: ${total}`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

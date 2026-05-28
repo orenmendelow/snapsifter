@@ -235,7 +235,16 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [x] **S35-7**: REVERT button next to SIMULATE — always show together as a pair. — FIXED: `#revert-all-btn` added to `#simulate-row`, shows/hides with simulate button. Reverts to `exifBaseline`.
 - [x] **S35-8**: Add "Download to ~/Downloads" option in the 3-dots (⋮) menu in variant view cells. — FIXED: DOWNLOAD item in compare cell action menu, triggers browser download.
 - [x] **S35-9**: Generate film sim variants for landing page photos: DSCF8039, DSCF7009, DSCF7011. All 6 film sims per photo. Store in project for landing page use. — DONE: 18 variants (3 photos × 6 sims: Provia, Velvia, ClassicNeg, Nostalgic, RealaACE, Acros) in `landing/variants/`.
-- [ ] **S35-10**: Landing page variant photo candidates: DSCF8039 (horizontal), DSCF7009 (horizontal), DSCF7011 (vertical). Oren to pick best photo + best 6 film sim variants.
+- [x] **S35-10**: Landing page variant photo candidates — RESOLVED: Oren picked DSCF3048 (BEST), DSCF9397, DSCF3479, DSCF3278 (vertical), DSCF5058. Sim demo uses DSCF3048, variant grid uses DSCF5058, SBS uses DSCF9397.
+
+## Session 36 — New
+
+- [ ] **S36-1**: Landing page missing feature sections — session management/resume, file browser/directory tree, star/favorite, cookbook/recipe library, collage view, focus mode not shown on page.
+- [ ] **S36-2**: Landing page hero MacBook mockup still static screenshot — Oren wants animated cursor demonstrations cycling through the app (culling flow, recipe dialing).
+- [ ] **S36-3**: Download buttons (`btn-download`) unwired — all 3 point to `javascript:void(0)`. Need hosted DMG URL.
+- [ ] **S36-4**: No OG/Twitter meta tags for link sharing.
+- [ ] **S36-5**: `support@drkrm.app` mailto in footer — domain may not be configured for email.
+- [ ] **S36-6**: Landing page spacing still needs tuning on certain breakpoints — Oren flagged dead space under headers and between sections. Audit applied fixes but may need further refinement after visual review.
 
 ## Older — Unresolved
 
