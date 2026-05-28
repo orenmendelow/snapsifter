@@ -57,6 +57,7 @@ let thumbCacheDir = null;
 let ratingsFile = null;
 let files = [];
 let ratings = {};
+let stars = {};
 
 // Recipe Lab directory state (independent from Photo Cull)
 let recipeDir = null;
@@ -118,7 +119,7 @@ function countRatingsInDir(dir) {
   try {
     if (fs.existsSync(rf)) {
       const data = JSON.parse(fs.readFileSync(rf, 'utf8'));
-      return Object.keys(data).length;
+      return Object.keys(data).filter(k => k !== 'stars').length;
     }
   } catch (e) {}
   return 0;
@@ -236,14 +237,21 @@ function loadDirectory(dir) {
   console.log(`Found ${files.length} photos in ${dir}`);
 
   ratings = {};
+  stars = {};
   if (fs.existsSync(ratingsFile)) {
     try {
-      ratings = JSON.parse(fs.readFileSync(ratingsFile, 'utf8'));
+      const data = JSON.parse(fs.readFileSync(ratingsFile, 'utf8'));
+      if (data.stars && typeof data.stars === 'object') {
+        stars = data.stars;
+        delete data.stars;
+      }
+      ratings = data;
       const ratedCount = Object.keys(ratings).length;
       console.log(`Loaded ${ratedCount} existing ratings`);
     } catch (e) {
       console.error('Failed to parse ratings.json, starting fresh');
       ratings = {};
+      stars = {};
     }
   }
 
@@ -256,7 +264,11 @@ function loadDirectory(dir) {
 
 function saveRatings() {
   if (!ratingsFile) return;
-  fs.writeFileSync(ratingsFile, JSON.stringify(ratings, null, 2));
+  const data = { ...ratings };
+  if (Object.keys(stars).length > 0) {
+    data.stars = stars;
+  }
+  fs.writeFileSync(ratingsFile, JSON.stringify(data, null, 2));
   // Keep session ratedCount in sync
   if (activeDir) {
     updateSessionRatedCount(activeDir);
@@ -271,6 +283,7 @@ function requireActiveDir(req, res, next) {
     activeDir = null;
     files = [];
     ratings = {};
+    stars = {};
     cacheDir = null;
     thumbCacheDir = null;
     ratingsFile = null;
@@ -625,7 +638,7 @@ app.get('/api/files', requireActiveDir, (req, res) => {
 
 // Get all ratings
 app.get('/api/ratings', requireActiveDir, (req, res) => {
-  res.json(ratings);
+  res.json({ ...ratings, stars });
 });
 
 // Rate a file
@@ -637,6 +650,19 @@ app.post('/api/rate', requireActiveDir, (req, res) => {
     delete ratings[key];
   } else {
     ratings[key] = rating;
+  }
+  saveRatings();
+  res.json({ ok: true });
+});
+
+// Star/unstar a file
+app.post('/api/star', requireActiveDir, (req, res) => {
+  const { filename, starred } = req.body;
+  const key = filename.replace(/\.[^.]+$/, '');
+  if (starred) {
+    stars[key] = true;
+  } else {
+    delete stars[key];
   }
   saveRatings();
   res.json({ ok: true });
@@ -844,6 +870,17 @@ app.post('/api/sort', requireActiveDir, (req, res) => {
   }
   Object.assign(newRatings, updatedRatings);
   ratings = newRatings;
+
+  // Update star keys to match new rating keys (sorted paths)
+  const newStars = {};
+  for (const [stem, val] of Object.entries(stars)) {
+    const pureStem = path.basename(stem);
+    // Check if this stem was sorted — find matching updated rating key
+    const matchingKey = Object.keys(updatedRatings).find(k => path.basename(k) === pureStem);
+    newStars[matchingKey || stem] = val;
+  }
+  stars = newStars;
+
   saveRatings();
 
   // Re-scan
@@ -936,6 +973,21 @@ app.post('/api/unsort', requireActiveDir, (req, res) => {
     }
   }
   ratings = newRatings;
+
+  // Update star keys: strip folder prefixes same as ratings
+  const newStars = {};
+  for (const [stem, val] of Object.entries(stars)) {
+    const parts = stem.split('/');
+    if (parts.length === 3 && sortFolderNames.includes(parts[0])) {
+      newStars[parts[2]] = val;
+    } else if (parts.length === 2 && sortFolderNames.includes(parts[0])) {
+      newStars[parts[1]] = val;
+    } else {
+      newStars[stem] = val;
+    }
+  }
+  stars = newStars;
+
   saveRatings();
 
   // Re-scan
@@ -957,6 +1009,40 @@ app.post('/api/recipe-load', (req, res) => {
 
 app.get('/api/recipe-status', (req, res) => {
   res.json({ loaded: !!recipeDir, dir: recipeDir });
+});
+
+// Get stars for Recipe Lab directory
+app.get('/api/recipe-stars', requireRecipeDir, (req, res) => {
+  const rf = path.join(recipeDir, 'ratings.json');
+  try {
+    if (fs.existsSync(rf)) {
+      const data = JSON.parse(fs.readFileSync(rf, 'utf8'));
+      res.json(data.stars || {});
+      return;
+    }
+  } catch (e) {}
+  res.json({});
+});
+
+// Star/unstar in Recipe Lab directory
+app.post('/api/recipe-star', requireRecipeDir, (req, res) => {
+  const { filename, starred } = req.body;
+  const key = filename.replace(/\.[^.]+$/, '');
+  const rf = path.join(recipeDir, 'ratings.json');
+  let data = {};
+  try {
+    if (fs.existsSync(rf)) {
+      data = JSON.parse(fs.readFileSync(rf, 'utf8'));
+    }
+  } catch (e) {}
+  if (!data.stars) data.stars = {};
+  if (starred) {
+    data.stars[key] = true;
+  } else {
+    delete data.stars[key];
+  }
+  fs.writeFileSync(rf, JSON.stringify(data, null, 2));
+  res.json({ ok: true });
 });
 
 app.get('/api/recipe-last-dir', (req, res) => {

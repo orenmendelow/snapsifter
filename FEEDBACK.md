@@ -198,6 +198,32 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [x] **S31-14**: Load button (`#recipe-left-load-btn`) is vestigial — never actionable in current flow. Consider removing. — FIXED: removed button, CSS, variable, and click handler.
 - [ ] **S31-15**: Recipe Lab tree filtering — RAF-only directories (no matching HIF/JPG) should eventually support camera-based preview generation on load. Discussed with Oren: show directory as available, prompt "Generate previews from RAFs?" with confirm/cancel when selected. — DEFERRED: requires camera hardware for RAF preview generation.
 
+## Session 33 — New
+
+- [x] **S33-1**: Recipe Lab filmstrip carousel is NOT in chronological order. Needs to be sorted by date/time (DateTimeOriginal from EXIF). — FIXED: filmstrip sorted alphabetically by filename (Fuji filenames are sequential = chronological).
+- [x] **S33-2**: Add star/favorite feature for photos in Recipe Lab and Photo Cull. Should show an icon or dot on that photo in the filmstrip carousel. Distinct from ratings (1/2/3) — this is a "flag this photo" marker. — IMPLEMENTED: S key toggles star. 6px amber dot on filmstrip thumbnails. Stored in ratings.json under "stars" key. Works in both Photo Cull and Recipe Lab.
+- [x] **S33-3**: When clicking an image in the filmstrip carousel, DO NOT scroll/move the carousel to center that clicked image. Leave the carousel position as-is and just highlight the clicked image. Arrow key navigation can continue scrolling as currently implemented. — FIXED: filmstrip click passes noScroll flag, scrollIntoView skipped on click. Arrow keys still scroll.
+- [x] **S33-4**: VARIANT TEST opens the wrong photo. Scenario: user is browsing filmstrip (carousel), clicks a photo to view it, then clicks VARIANT TEST — it opens variant test for the previously selected COLLAGE photo instead of the currently viewed filmstrip photo. The variant test target should always be the currently displayed photo regardless of how the user navigated to it. — FIXED: added getCurrentRecipePhoto() helper. Updated all compare-mode photo lookups (7 locations). Also fixed 7 compare-exit paths that lost browse context via returnToFocusFromCompare(). Also fixed toggleBeforeAfter and simulate handlers for browse photos.
+- [x] **S33-5**: Add search/filter for photos in Recipe Lab. Filter by filename or capture time. Funnel icon button in the center toolbar (beside folder toggle and collage grid button). — IMPLEMENTED: funnel icon in toolbar, dropdown with filename search input, 200ms debounced filtering, amber dot indicator when active, filter preserved across filmstrip reloads.
+- [ ] **S33-6**: Landing page filmstrip photos selected by Oren: DSCF8910, DSCF8884, DSCF8803, DSCF8684, DSCF8495, DSCF8378. Document these as the chosen set — use fewer if needed but these are the approved choices. — DOCUMENTED.
+- [ ] **S33-7**: On reload with Recipe Lab tab persisted — directories don't load with image previews in the tree browser. The tree appears but no image thumbnails show when clicking/hovering directories.
+- [ ] **S33-8**: On reload with Recipe Lab tab persisted — clicking a directory opens Photo Cull instead of Recipe Lab. Tab persists visually but the content/behavior doesn't match.
+- [ ] **S33-9**: Photo Cull and Recipe Lab file browsers should share code. The UI should be identical between both — same tree structure, same image previews, same interactions. Only the filtering criteria differ (Cull works with any folder of images, Recipe Lab filters to RAF-containing folders). Currently they're separate implementations with divergent behavior.
+- [ ] **S33-10**: Star/favorite indicator should be bottom-left, not top-left (collage) or top-right (filmstrip). No circle background behind it once clicked. Don't use a star icon — use a white circle like Lightroom does. Hover shows faded circle, click makes white circle persist. Simple.
+
+## Session 33 — Audit Findings (focusIndex/focusBrowsePhoto pattern)
+
+- [x] **S33-A1**: toggleBeforeAfter() focus mode photo (was line 7640) — used gridPhotos[focusIndex] without browse check. — FIXED: uses getCurrentRecipePhoto().
+- [x] **S33-A2**: simulate-btn click handler — simulateOnePhoto(focusIndex) when in browse mode simulates wrong photo. — FIXED: passes browse photo object directly.
+- [x] **S33-A3**: Sim scope "photo" option — same simulateOnePhoto(focusIndex) bug. — FIXED: same approach.
+- [x] **S33-A4**: APPLY & RETURN inside enterCompareMode pre-built cells — enterFocusMode(focusIndex) loses browse context. — FIXED: uses returnToFocusFromCompare().
+- [x] **S33-A5**: Escape from compare mode — loses browse context. — FIXED.
+- [x] **S33-A6**: Compare back button — loses browse context. — FIXED.
+- [x] **S33-A7**: Compare cancel button — loses browse context. — FIXED.
+- [x] **S33-A8**: SBS panel APPLY & RETURN — loses browse context. — FIXED.
+- [x] **S33-A9**: retryCompareCell post-render APPLY & RETURN — loses browse context. — FIXED.
+- [x] **S33-A10**: Compare simulate post-render APPLY & RETURN — loses browse context. — FIXED.
+
 ## Older — Unresolved
 
 - [x] **Progress bar**: Closed — Oren doesn't recognize this item.

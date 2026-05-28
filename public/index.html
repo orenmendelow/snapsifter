@@ -232,6 +232,7 @@ body::before {
 
 /* Center toolbar */
 #recipe-center-toolbar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -256,6 +257,73 @@ body::before {
   font-size: 10px;
   padding: 4px 10px;
 }
+
+/* Filter button + dropdown */
+#recipe-filter-btn {
+  position: relative;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px 6px;
+  line-height: 1;
+}
+#recipe-filter-btn:hover { color: var(--amber); }
+#recipe-filter-btn .filter-active-dot {
+  display: none;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  background: var(--amber);
+  border-radius: 50%;
+}
+#recipe-filter-btn.filter-active .filter-active-dot { display: block; }
+#recipe-filter-btn.filter-active { color: var(--amber); }
+#recipe-filter-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 220px;
+  z-index: 100;
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 8px;
+  margin-top: 2px;
+}
+#recipe-filter-dropdown .filter-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+#recipe-filter-input {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 28px 6px 8px;
+  background: #0a0a0a;
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.15);
+  outline: none;
+  letter-spacing: 0.5px;
+}
+#recipe-filter-input:focus { border-color: var(--amber); }
+#recipe-filter-input::placeholder { color: var(--text-dim); }
+#recipe-filter-clear {
+  position: absolute;
+  right: 4px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  line-height: 1;
+  display: none;
+}
+#recipe-filter-clear:hover { color: var(--amber); }
 
 /* Collage grid */
 #recipe-collage {
@@ -785,13 +853,13 @@ body::before {
 }
 
 #camera-status {
-  margin-left: auto;
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 1px;
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 #camera-status .dot {
   width: 7px;
@@ -1140,6 +1208,28 @@ body::before {
 .recipe-grid-cell:hover .cell-swap { opacity: 1; }
 .recipe-grid-cell .cell-swap:hover { color: var(--amber); }
 
+.cell-star {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  opacity: 0;
+  z-index: 2;
+  color: var(--text-dim);
+  background: rgba(0,0,0,0.5);
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.recipe-grid-cell:hover .cell-star { opacity: 1; }
+.cell-star:hover { color: var(--amber); }
+.cell-star.starred { color: var(--amber); opacity: 1; }
+
 .recipe-grid-cell.loading {
   animation: cell-pulse 1.5s ease-in-out infinite;
 }
@@ -1186,9 +1276,9 @@ body::before {
   gap: 4px;
 }
 .skel-resume-card .skel-thumb {
-  width: 64px;
-  height: 44px;
-  border-radius: 3px;
+  width: 60px;
+  height: 60px;
+  border-radius: 0;
   background: #141414;
   animation: cell-pulse 1.5s ease-in-out infinite;
 }
@@ -2883,6 +2973,30 @@ body::before {
   opacity: 1 !important;
 }
 
+.thumb-star {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  opacity: 0;
+  z-index: 2;
+  color: var(--text-dim);
+  background: rgba(0,0,0,0.5);
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 8px;
+  line-height: 1;
+}
+.thumb-wrapper:hover .thumb-star { opacity: 1; }
+.thumb-star:hover { color: var(--amber); }
+.thumb-star.starred { color: var(--amber); opacity: 1; }
+
 .thumb-wrapper .thumb-img {
   width: 100%;
   flex: 1;
@@ -3247,6 +3361,7 @@ body::before {
     <div class="shortcut-row"><span class="key">2</span><span class="desc">Maybe</span></div>
     <div class="shortcut-row"><span class="key">3</span><span class="desc">Like</span></div>
     <div class="shortcut-row"><span class="key">0</span><span class="desc">Clear rating</span></div>
+    <div class="shortcut-row"><span class="key">S</span><span class="desc">Toggle star</span></div>
     <div class="shortcut-row"><span class="key">K</span><span class="desc">Like over previous</span></div>
     <div class="shortcut-row"><span class="key">N</span><span class="desc">Next unrated photo</span></div>
     <div class="shortcut-row"><span class="key">Z / Click image</span><span class="desc">Toggle zoom (fit / 3x max)</span></div>
@@ -3302,6 +3417,8 @@ body::before {
         <button id="focus-back-btn" title="Back to collage" style="display:none"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="4.5" height="4.5"/><rect x="5.75" y="0" width="4.5" height="4.5"/><rect x="11.5" y="0" width="4.5" height="4.5"/><rect x="0" y="5.75" width="4.5" height="4.5"/><rect x="5.75" y="5.75" width="4.5" height="4.5"/><rect x="11.5" y="5.75" width="4.5" height="4.5"/><rect x="0" y="11.5" width="4.5" height="4.5"/><rect x="5.75" y="11.5" width="4.5" height="4.5"/><rect x="11.5" y="11.5" width="4.5" height="4.5"/></svg></button>
         <button class="recipe-action-btn" id="recipe-shuffle-btn" style="display:none">SHUFFLE</button>
         <button class="recipe-action-btn" id="recipe-pick-btn" style="display:none">PICK PHOTOS</button>
+        <button id="recipe-filter-btn" title="Filter filmstrip"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 2h12M3 5h8M5 8h4M6 11h2"/></svg><span class="filter-active-dot"></span></button>
+        <div id="recipe-filter-dropdown"><div class="filter-input-wrap"><input type="text" id="recipe-filter-input" placeholder="Search filename..." spellcheck="false" autocomplete="off"><button id="recipe-filter-clear" type="button">&times;</button></div></div>
       </div>
 
       <!-- Center preview (folder browsing / resume) -->
@@ -3528,6 +3645,7 @@ body::before {
 
   let allFiles = [];
   let ratings = {};
+  let stars = {};
   let currentIndex = 0;
   let filteredIndices = [];
   let filterMode = 'all';
@@ -3772,9 +3890,15 @@ body::before {
     if (re) re.style.display = 'none';
     var tc = document.getElementById('tool-cull');
     var tr = document.getElementById('tool-recipe');
-    if (tc) tc.classList.add('active');
-    if (tr) tr.classList.remove('active');
-    activeToolTab = 'cull';
+    // Respect activeToolTab — don't force it to 'cull'
+    if (activeToolTab === 'recipe') {
+      if (tc) tc.classList.remove('active');
+      if (tr) tr.classList.add('active');
+    } else {
+      activeToolTab = 'cull';
+      if (tc) tc.classList.add('active');
+      if (tr) tr.classList.remove('active');
+    }
     var tp = document.getElementById('tree-panel');
     var rp = document.getElementById('right-panel');
     if (tp) tp.style.display = '';
@@ -4328,6 +4452,12 @@ body::before {
   }
 
   async function resumeSession(s) {
+    if (activeToolTab === 'recipe') {
+      // Route to Recipe Lab
+      await showRecipeEditor();
+      loadRecipeDirectory(s.dir);
+      return;
+    }
     loadingScreen.querySelector('span').textContent = 'Loading...';
     loadingScreen.classList.add('visible');
     try {
@@ -4354,6 +4484,14 @@ body::before {
 
   loadBtn.addEventListener('click', async () => {
     if (selectedPhotoCount === 0) return;
+
+    if (activeToolTab === 'recipe') {
+      // Route to Recipe Lab
+      await showRecipeEditor();
+      loadRecipeDirectory(selectedPath);
+      return;
+    }
+
     loadingScreen.querySelector('span').textContent = 'Loading...';
     loadingScreen.classList.add('visible');
 
@@ -4428,6 +4566,8 @@ body::before {
     }
     const [filesRes, ratingsRes, statusRes] = await Promise.all(responses.map(r => r.json()));
     allFiles = filesRes;
+    stars = ratingsRes.stars || {};
+    delete ratingsRes.stars;
     ratings = ratingsRes;
     metaCache = {};
     filterMode = 'all';
@@ -4515,6 +4655,20 @@ body::before {
       // Dim reviewed photos based on rating (img + label only, not the mark)
       if (r === 1) { img.style.opacity = '0.25'; label.style.opacity = '0.25'; }
       else if (r === 2) { img.style.opacity = '0.6'; label.style.opacity = '0.6'; }
+
+      // Star button
+      const stem = file.replace(/\.[^.]+$/, '');
+      const starBtn = document.createElement('button');
+      starBtn.className = 'thumb-star' + (stars[stem] ? ' starred' : '');
+      starBtn.innerHTML = '★';
+      starBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const s = !stars[stem];
+        if (s) { stars[stem] = true; } else { delete stars[stem]; }
+        starBtn.classList.toggle('starred', s);
+        fetch('/api/star', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: file, starred: s }) });
+      });
+      wrapper.appendChild(starBtn);
 
       filmstrip.appendChild(wrapper);
     });
@@ -4827,6 +4981,30 @@ body::before {
     return '#cccccc';
   }
 
+  function toggleStar() {
+    if (filteredIndices.length === 0) return;
+    const realIdx = filteredIndices[currentIndex];
+    const file = allFiles[realIdx];
+    const basename = file.replace(/\.[^.]+$/, '');
+    const starred = !stars[basename];
+    if (starred) {
+      stars[basename] = true;
+    } else {
+      delete stars[basename];
+    }
+    // Update filmstrip thumb star button
+    const wrapper = filmstrip.children[realIdx];
+    if (wrapper) {
+      const ts = wrapper.querySelector('.thumb-star');
+      if (ts) ts.classList.toggle('starred', starred);
+    }
+    fetch('/api/star', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: file, starred })
+    });
+  }
+
   async function rate(rating) {
     if (filteredIndices.length === 0) return;
     const realIdx = filteredIndices[currentIndex];
@@ -4996,6 +5174,8 @@ body::before {
           fetch('/api/ratings').then(r => r.json())
         ]);
         allFiles = filesRes;
+        stars = ratingsRes.stars || {};
+        delete ratingsRes.stars;
         ratings = ratingsRes;
         buildFilmstrip();
         rebuildFilter();
@@ -5027,6 +5207,8 @@ body::before {
           fetch('/api/ratings').then(r => r.json())
         ]);
         allFiles = filesRes;
+        stars = ratingsRes.stars || {};
+        delete ratingsRes.stars;
         ratings = ratingsRes;
         buildFilmstrip();
         rebuildFilter();
@@ -5088,6 +5270,11 @@ body::before {
         break;
       case '0':
         rate(0);
+        break;
+      case 's':
+      case 'S':
+        e.preventDefault();
+        toggleStar();
         break;
       case 'k':
       case 'K':
@@ -5221,10 +5408,24 @@ body::before {
     perPhotoParams: {}
   };
 
+  function getCurrentRecipePhoto() {
+    if (recipeState.focusBrowse && recipeState.focusBrowsePhoto) return recipeState.focusBrowsePhoto;
+    return recipeState.gridPhotos[recipeState.focusIndex] || null;
+  }
+
+  function returnToFocusFromCompare() {
+    if (recipeState._comparePrevBrowse && recipeState._comparePrevBrowsePhoto) {
+      enterFocusMode(recipeState.focusIndex || 0, { browse: true, photo: recipeState._comparePrevBrowsePhoto });
+    } else {
+      enterFocusMode(recipeState.focusIndex || 0);
+    }
+  }
+
   let recipeTreeState = {};
   let recipeSelectedPath = '';
   let recipePreviewRequestId = 0;
   let recipeLoadedDir = null;
+  let recipeStars = {};
 
   function saveRecipeState() {
     try {
@@ -5341,6 +5542,11 @@ body::before {
 
   let recipeEditorInitialized = false;
 
+  // Start camera polling immediately on page load (background, non-blocking)
+  checkCameraStatus().then(() => {
+    if (!cameraCheckInterval) cameraCheckInterval = setInterval(checkCameraStatus, 5000);
+  });
+
   async function showRecipeEditor() {
     screen = 'recipe';
     landing.classList.add('hidden');
@@ -5356,10 +5562,11 @@ body::before {
 
     initRecipeLeftTree();
 
-    checkCameraStatus().then(() => {
-      if (cameraCheckInterval) clearInterval(cameraCheckInterval);
+    // Ensure camera polling is active (may have been stopped by hideRecipeEditor)
+    if (!cameraCheckInterval) {
+      checkCameraStatus();
       cameraCheckInterval = setInterval(checkCameraStatus, 5000);
-    });
+    }
 
     if (!recipeEditorInitialized) {
       recipeEditorInitialized = true;
@@ -5441,6 +5648,8 @@ body::before {
       }
     }
     recipeState.mode = 'compare';
+    recipeState._comparePrevBrowse = recipeState.focusBrowse || false;
+    recipeState._comparePrevBrowsePhoto = recipeState.focusBrowsePhoto || null;
     recipeState.compareRendered = new Set();
     recipeState.compareSelectedFavorite = null;
     recipeState._compareSimulating = false;
@@ -5479,7 +5688,7 @@ body::before {
     document.getElementById('compare-meta-name').textContent = nameEl ? nameEl.textContent : '';
     document.getElementById('compare-meta-details').innerHTML = metaEl ? metaEl.innerHTML : '';
     // Set thumb from focus photo
-    const cmpPhoto = recipeState.gridPhotos[recipeState.focusIndex || 0];
+    const cmpPhoto = getCurrentRecipePhoto();
     if (cmpPhoto && recipeState.gridDir) {
       const cmpDirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
       document.getElementById('compare-meta-thumb').src = '/api/preview-thumb/' + cmpDirB64 + '/' + encodeURIComponent(cmpPhoto.file);
@@ -5569,7 +5778,7 @@ body::before {
       const paramKey = recipeState.compareParam;
       const currentVal = String(recipeState.currentParams[paramKey] || '');
       const exifVal = recipeState.exifBaseline ? String(recipeState.exifBaseline[paramKey] || '') : '';
-      const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
+      const photo = getCurrentRecipePhoto();
       const hasPreSim = photo && hasValidPreSim(photo.file, paramKey);
       const cancelBtn = document.getElementById('compare-cancel-btn');
       let pending = 0;
@@ -5612,7 +5821,7 @@ body::before {
       const paramKey = recipeState.compareParam;
       const currentVal = String(recipeState.currentParams[paramKey] || '');
       const exifVal = recipeState.exifBaseline ? String(recipeState.exifBaseline[paramKey] || '') : '';
-      const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
+      const photo = getCurrentRecipePhoto();
       const hasPreSim = photo && hasValidPreSim(photo.file, paramKey);
       const active = [...selectedValues];
       const allDone = active.every(v => {
@@ -5636,7 +5845,7 @@ body::before {
       const cols = Math.min(active.length, 3);
       grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
 
-      const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
+      const photo = getCurrentRecipePhoto();
       if (!photo) return;
       const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
       const paramKey = recipeState.compareParam;
@@ -5737,7 +5946,7 @@ body::before {
               recipeState.cleanParams = recipeState.exifBaseline ? { ...recipeState.exifBaseline } : { ...recipeState.currentParams };
               recipeState.dirty = false;
               renderParams();
-              enterFocusMode(recipeState.focusIndex || 0);
+              returnToFocusFromCompare();
             } catch(err) { console.error('APPLY & RETURN failed', err); }
           });
           const applyNext = document.createElement('div');
@@ -5944,7 +6153,7 @@ body::before {
   function hideRecipeEditor() {
     recipeEditor.style.display = 'none';
     if (recipeState.autoSaveTimer) clearTimeout(recipeState.autoSaveTimer);
-    if (cameraCheckInterval) { clearInterval(cameraCheckInterval); cameraCheckInterval = null; }
+    // Camera polling continues globally — don't clear it here
     if (recipeState._variantSelectMode) {
       recipeState._variantSelectMode = false;
       const cancelBtn = document.getElementById('variant-select-cancel');
@@ -6091,6 +6300,7 @@ body::before {
     document.getElementById('recipe-compare-row').style.display = 'flex';
     document.getElementById('focus-back-btn').style.display = '';
     if (window._focusResetZoom) window._focusResetZoom();
+    recipeState._scrollFilmstrip = !(opts && opts.noScroll);
     renderFocusMode();
   }
 
@@ -6181,7 +6391,7 @@ body::before {
       const label = w.querySelector('.thumb-label');
       if (label && label.textContent === curFile.replace(/\.[^.]+$/, '')) {
         w.classList.add('active');
-        w.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+        if (recipeState._scrollFilmstrip !== false) w.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
       }
     });
   }
@@ -6205,8 +6415,13 @@ body::before {
     }
 
     try {
-      const gridRes = await fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=999').then(r => r.json());
+      const [gridRes, starsRes] = await Promise.all([
+        fetch('/api/grid-select?dir=' + encodeURIComponent(recipeLoadedDir) + '&count=999').then(r => r.json()),
+        fetch('/api/recipe-stars').then(r => r.json()).catch(() => ({}))
+      ]);
+      recipeStars = starsRes;
       if (!gridRes.selected) return;
+      gridRes.selected.sort((a, b) => a.file.localeCompare(b.file));
       recipeState.filmstripPhotos = gridRes.selected;
       const useDirB64 = btoa(unescape(encodeURIComponent(gridRes.hifDir || recipeLoadedDir + '/Liked/HIF/')));
       strip.innerHTML = '';
@@ -6224,16 +6439,32 @@ body::before {
         label.className = 'thumb-label';
         label.textContent = photo.file.replace(/\.[^.]+$/, '');
 
+        const stem = photo.file.replace(/\.[^.]+$/, '');
+
         wrapper.appendChild(img);
         wrapper.appendChild(label);
 
+        // Star button
+        const starBtn = document.createElement('button');
+        starBtn.className = 'thumb-star' + (recipeStars[stem] ? ' starred' : '');
+        starBtn.innerHTML = '★';
+        starBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const s = !recipeStars[stem];
+          if (s) { recipeStars[stem] = true; } else { delete recipeStars[stem]; }
+          starBtn.classList.toggle('starred', s);
+          fetch('/api/recipe-star', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: photo.file, starred: s }) });
+        });
+        wrapper.appendChild(starBtn);
+
         wrapper.addEventListener('click', () => {
           if (recipeState._variantSelectMode) return;
-          enterFocusMode(0, { browse: true, photo });
+          enterFocusMode(0, { browse: true, photo, noScroll: true });
         });
 
         strip.appendChild(wrapper);
       });
+      if (window._applyFilmstripFilter) window._applyFilmstripFilter();
     } catch(e) {
       console.error('Filmstrip load failed', e);
     }
@@ -7332,6 +7563,8 @@ body::before {
     if (sbsListLeft) sbsListLeft.style.display = 'none';
     const sbsListRight = document.getElementById('sbs-list-right');
     if (sbsListRight) sbsListRight.style.display = 'none';
+    const filterDropdown = document.getElementById('recipe-filter-dropdown');
+    if (filterDropdown) filterDropdown.style.display = 'none';
   }
 
   function showParamTip(icon, text) {
@@ -7380,9 +7613,78 @@ body::before {
     if (e.key === 'Escape') closeAllDropdowns();
   });
 
+  // ── Filmstrip filter ──
+  (function initFilmstripFilter() {
+    const filterBtn = document.getElementById('recipe-filter-btn');
+    const filterDropdown = document.getElementById('recipe-filter-dropdown');
+    const filterInput = document.getElementById('recipe-filter-input');
+    const filterClear = document.getElementById('recipe-filter-clear');
+    let filterDebounceTimer = null;
+
+    filterBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasOpen = filterDropdown.style.display === 'block';
+      closeAllDropdowns();
+      if (!wasOpen) {
+        filterDropdown.style.display = 'block';
+        filterInput.focus();
+      }
+    });
+
+    filterDropdown.addEventListener('click', (e) => { e.stopPropagation(); });
+
+    filterInput.addEventListener('input', () => {
+      clearTimeout(filterDebounceTimer);
+      filterDebounceTimer = setTimeout(applyFilmstripFilter, 200);
+      filterClear.style.display = filterInput.value ? 'block' : 'none';
+    });
+
+    filterClear.addEventListener('click', () => {
+      filterInput.value = '';
+      filterClear.style.display = 'none';
+      applyFilmstripFilter();
+      filterInput.focus();
+    });
+
+    filterInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        filterDropdown.style.display = 'none';
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#recipe-filter-btn') && !e.target.closest('#recipe-filter-dropdown')) {
+        filterDropdown.style.display = 'none';
+      }
+    });
+
+    function applyFilmstripFilter() {
+      const query = filterInput.value.trim().toLowerCase();
+      const strip = document.getElementById('recipe-filmstrip');
+      const wrappers = strip.querySelectorAll('.thumb-wrapper');
+      wrappers.forEach(w => {
+        const label = w.querySelector('.thumb-label');
+        if (!label) return;
+        const name = label.textContent.toLowerCase();
+        w.style.display = (!query || name.includes(query)) ? '' : 'none';
+      });
+      filterBtn.classList.toggle('filter-active', !!query);
+    }
+
+    window._applyFilmstripFilter = applyFilmstripFilter;
+    window._clearFilmstripFilter = function() {
+      filterInput.value = '';
+      filterClear.style.display = 'none';
+      applyFilmstripFilter();
+    };
+  })();
+
   // ── Simulate ──
 
-  async function simulateOnePhoto(photoIndex, skipToggle) {
+  async function simulateOnePhoto(photoIndexOrPhoto, skipToggle) {
+    const photoIndex = (typeof photoIndexOrPhoto === 'object' && photoIndexOrPhoto !== null) ? null : photoIndexOrPhoto;
+    const browsePhoto = (typeof photoIndexOrPhoto === 'object' && photoIndexOrPhoto !== null) ? photoIndexOrPhoto : null;
     const simBtn = document.getElementById('simulate-btn');
     const progress = document.getElementById('simulate-progress');
     simBtn.classList.add('simulating');
@@ -7421,7 +7723,8 @@ body::before {
     }
 
     const photos = recipeState.gridPhotos;
-    const targets = (photoIndex != null) ? [{ photo: photos[photoIndex], idx: photoIndex }]
+    const targets = browsePhoto ? [{ photo: browsePhoto, idx: -1 }]
+      : (photoIndex != null) ? [{ photo: photos[photoIndex], idx: photoIndex }]
       : photos.map((p, i) => ({ photo: p, idx: i }));
 
     simBtn.innerHTML = '<span class="sim-text-back">Connecting...</span><span class="sim-text-front" style="clip-path:inset(0 100% 0 0)">Connecting...</span>';
@@ -7554,7 +7857,7 @@ body::before {
     // Update focus mode photo if active
     if (recipeState.mode === 'focus') {
       const focusPhoto = document.getElementById('focus-photo');
-      const photo = recipeState.gridPhotos[recipeState.focusIndex];
+      const photo = getCurrentRecipePhoto();
       if (focusPhoto && photo) {
         if (showSim && recipeState.simulatedPhotos[photo.file]) {
           const simPath = recipeState.simulatedPhotos[photo.file];
@@ -7574,7 +7877,12 @@ body::before {
     document.getElementById('sim-scope-dropdown').style.display = 'none';
     document.getElementById('sim-scope-toggle').style.display = 'none';
     if (recipeState.mode === 'focus') {
-      simulateOnePhoto(recipeState.focusIndex || 0);
+      const curPhoto = getCurrentRecipePhoto();
+      if (recipeState.focusBrowse && curPhoto) {
+        simulateOnePhoto(curPhoto);
+      } else {
+        simulateOnePhoto(recipeState.focusIndex || 0);
+      }
     } else {
       simulateOnePhoto();
     }
@@ -7596,7 +7904,12 @@ body::before {
       document.getElementById('sim-scope-dropdown').style.display = 'none';
       const scope = opt.dataset.scope;
       if (scope === 'photo' && recipeState.mode === 'focus') {
-        simulateOnePhoto(recipeState.focusIndex || 0);
+        const curPhoto = getCurrentRecipePhoto();
+        if (recipeState.focusBrowse && curPhoto) {
+          simulateOnePhoto(curPhoto);
+        } else {
+          simulateOnePhoto(recipeState.focusIndex || 0);
+        }
       } else if (scope === 'photo') {
         simulateOnePhoto(recipeState.focusIndex || 0);
       } else if (scope === 'collage') {
@@ -7959,6 +8272,28 @@ body::before {
       });
       cell.appendChild(swapBtn);
 
+      // Star button
+      const cellStarBtn = document.createElement('button');
+      cellStarBtn.className = 'cell-star' + (recipeStars[stem] ? ' starred' : '');
+      cellStarBtn.innerHTML = '★';
+      cellStarBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const s = !recipeStars[stem];
+        if (s) { recipeStars[stem] = true; } else { delete recipeStars[stem]; }
+        cellStarBtn.classList.toggle('starred', s);
+        // Also update filmstrip star if visible
+        const strip = document.getElementById('recipe-filmstrip');
+        strip.querySelectorAll('.thumb-wrapper').forEach(w => {
+          const lbl = w.querySelector('.thumb-label');
+          if (lbl && lbl.textContent === stem) {
+            const ts = w.querySelector('.thumb-star');
+            if (ts) ts.classList.toggle('starred', s);
+          }
+        });
+        fetch('/api/recipe-star', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: photo.file, starred: s }) });
+      });
+      cell.appendChild(cellStarBtn);
+
       // Hold-to-compare (Snapseed-style) + tap-to-focus
       let cellComparing = false;
       let cellDownTime = 0;
@@ -7984,7 +8319,7 @@ body::before {
         indicator.classList.remove('visible');
       }
       function cellCompareStart(e) {
-        if (e.target.closest('.cell-swap')) return;
+        if (e.target.closest('.cell-swap') || e.target.closest('.cell-star')) return;
         if (e.type === 'touchstart') e.preventDefault();
         cellDownTime = Date.now();
         if (recipeState.showSimulated && recipeState.simulatedPhotos[photo.file]) {
@@ -7992,7 +8327,7 @@ body::before {
         }
       }
       function cellCompareEnd(e) {
-        if (e.target.closest('.cell-swap')) return;
+        if (e.target.closest('.cell-swap') || e.target.closest('.cell-star')) return;
         clearTimeout(cellHoldTimer);
         const wasComparing = cellComparing;
         if (cellComparing) revertToSim();
@@ -8891,7 +9226,7 @@ body::before {
     if (recipeState._compareSimulating) {
       recipeState.compareSimCancelled = true;
     } else {
-      enterFocusMode(recipeState.focusIndex || 0);
+      returnToFocusFromCompare();
     }
   });
 
@@ -8918,6 +9253,44 @@ body::before {
       const nextIdx = (curIdx + dir + photos.length) % photos.length;
       enterFocusMode(0, { browse: true, photo: photos[nextIdx] });
     }
+  });
+
+  // S key in focus mode — toggle star
+  document.addEventListener('keydown', (e) => {
+    if (recipeState.mode !== 'focus') return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (e.key !== 's' && e.key !== 'S') return;
+    e.preventDefault();
+    const photo = recipeState.focusBrowse && recipeState.focusBrowsePhoto ? recipeState.focusBrowsePhoto : recipeState.gridPhotos[recipeState.focusIndex];
+    if (!photo) return;
+    const stem = photo.file.replace(/\.[^.]+$/, '');
+    const starred = !recipeStars[stem];
+    if (starred) {
+      recipeStars[stem] = true;
+    } else {
+      delete recipeStars[stem];
+    }
+    // Update filmstrip + collage star buttons
+    const strip = document.getElementById('recipe-filmstrip');
+    strip.querySelectorAll('.thumb-wrapper').forEach(w => {
+      const label = w.querySelector('.thumb-label');
+      if (label && label.textContent === stem) {
+        const ts = w.querySelector('.thumb-star');
+        if (ts) ts.classList.toggle('starred', starred);
+      }
+    });
+    recipeGridEl.querySelectorAll('.recipe-grid-cell').forEach(c => {
+      const cimg = c.querySelector('img');
+      if (cimg && cimg.alt && cimg.alt.replace(/\.[^.]+$/, '') === stem) {
+        const cs = c.querySelector('.cell-star');
+        if (cs) cs.classList.toggle('starred', starred);
+      }
+    });
+    fetch('/api/recipe-star', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: photo.file, starred })
+    });
   });
 
   document.getElementById('recipe-shuffle-btn').addEventListener('click', shuffleGrid);
@@ -9072,7 +9445,7 @@ body::before {
       }, 150);
       return;
     }
-    enterFocusMode(recipeState.focusIndex || 0);
+    returnToFocusFromCompare();
   });
 
   // Cancel/Stop button — cancel simulation if running, otherwise exit compare mode
@@ -9080,7 +9453,7 @@ body::before {
     if (recipeState._compareSimulating) {
       recipeState.compareSimCancelled = true;
     } else {
-      enterFocusMode(recipeState.focusIndex || 0);
+      returnToFocusFromCompare();
     }
   });
 
@@ -9088,7 +9461,7 @@ body::before {
   let sbsZoomLevel = 1;
 
   function getSbsImageUrl(value) {
-    const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
+    const photo = getCurrentRecipePhoto();
     if (!photo) return '';
     const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
     const paramKey = recipeState.compareParam;
@@ -9223,7 +9596,7 @@ body::before {
         recipeState.cleanParams = recipeState.exifBaseline ? { ...recipeState.exifBaseline } : { ...recipeState.currentParams };
         recipeState.dirty = false;
         renderParams();
-        enterFocusMode(recipeState.focusIndex || 0);
+        returnToFocusFromCompare();
       } catch(err) { console.error('APPLY & RETURN failed', err); }
     });
     const applyNext = document.createElement('div');
@@ -9327,7 +9700,7 @@ body::before {
     const pendingEl = cell.querySelector('.compare-cell-pending');
     if (pendingEl) { pendingEl.textContent = 'RETRYING...'; pendingEl.style.color = 'rgba(255,255,255,0.4)'; const retryBtn = pendingEl.querySelector('.compare-cell-retry'); if (retryBtn) retryBtn.remove(); }
     const grid = document.getElementById('compare-grid');
-    const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
+    const photo = getCurrentRecipePhoto();
     if (!photo) { if (pendingEl) { pendingEl.textContent = 'FAILED'; pendingEl.style.color = 'var(--amber)'; appendRetryBtn(pendingEl, cell, val, paramKey); } return; }
     const stem = photo.file.replace(/\.[^.]+$/, '');
     const rafPath = recipeLoadedDir + '/Liked/RAF/' + stem + '.RAF';
@@ -9365,7 +9738,7 @@ body::before {
           const applyReturn = document.createElement('div');
           applyReturn.className = 'cell-action-item';
           applyReturn.textContent = 'APPLY & RETURN';
-          applyReturn.addEventListener('click', (ev) => { ev.stopPropagation(); actMenu.style.display = 'none'; try { recipeState.currentParams[paramKey] = isNaN(val) ? val : Number(val); recipeState.cleanParams = recipeState.exifBaseline ? { ...recipeState.exifBaseline } : { ...recipeState.currentParams }; recipeState.dirty = false; renderParams(); enterFocusMode(recipeState.focusIndex || 0); } catch(err) { console.error('APPLY & RETURN failed', err); } });
+          applyReturn.addEventListener('click', (ev) => { ev.stopPropagation(); actMenu.style.display = 'none'; try { recipeState.currentParams[paramKey] = isNaN(val) ? val : Number(val); recipeState.cleanParams = recipeState.exifBaseline ? { ...recipeState.exifBaseline } : { ...recipeState.currentParams }; recipeState.dirty = false; renderParams(); returnToFocusFromCompare(); } catch(err) { console.error('APPLY & RETURN failed', err); } });
           const applyNext = document.createElement('div');
           applyNext.className = 'cell-action-item';
           applyNext.textContent = 'APPLY & NEXT PARAMETER';
@@ -9413,7 +9786,7 @@ body::before {
 
     // Filter to only values that need simulation (not exif baseline val, not pre-simulated currentVal, not already rendered)
     const exifVal = recipeState.exifBaseline ? String(recipeState.exifBaseline[paramKey] || '') : '';
-    const photo = recipeState.gridPhotos[recipeState.focusIndex || 0];
+    const photo = getCurrentRecipePhoto();
     const hasPreSim = photo && hasValidPreSim(photo.file, recipeState.compareParam);
     const toSimulate = allSelected.filter(v => {
       const sv = String(v);
@@ -9518,7 +9891,7 @@ body::before {
                   recipeState.cleanParams = recipeState.exifBaseline ? { ...recipeState.exifBaseline } : { ...recipeState.currentParams };
                   recipeState.dirty = false;
                   renderParams();
-                  enterFocusMode(recipeState.focusIndex || 0);
+                  returnToFocusFromCompare();
                 } catch(err) { console.error('APPLY & RETURN failed', err); }
               });
               const applyNext = document.createElement('div');
@@ -9724,6 +10097,10 @@ body::before {
     toolRecipeBtn.classList.remove('active');
     document.getElementById('tree-panel').style.display = '';
     document.getElementById('right-panel').style.display = '';
+    // Reload sessions to show Photo Cull sessions when switching tabs on landing
+    if (screen === 'landing') {
+      loadSessions();
+    }
   });
 
   toolRecipeBtn.addEventListener('click', async () => {
@@ -9748,13 +10125,9 @@ body::before {
   }
   const savedTool = localStorage.getItem('drkrm-active-tool');
   if (savedTool === 'recipe') {
-    initLanding();
     activeToolTab = 'recipe';
-    toolCullBtn.classList.remove('active');
-    toolRecipeBtn.classList.add('active');
-  } else {
-    initLanding();
   }
+  initLanding();
 })();
 </script>
 </body>

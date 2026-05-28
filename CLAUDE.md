@@ -17,6 +17,7 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - **Folder picker**: On startup, shows a directory browser. User navigates to a folder containing photos and clicks Load. Volumes from /Volumes/ shown as quick-jump shortcuts. System directories (Library, Applications, node_modules, etc.) filtered from browse.
 - **Ratings**: Stored in `ratings.json` in the photo directory. Written to disk on every change. Keyed by filename stem (e.g. `DSCF6733`).
 - **Rating values**: 1 = ditch, 2 = maybe, 3 = like. Backend stores numbers only.
+- **Stars**: Stored in `ratings.json` under a `"stars"` key (object keyed by filename stem, value `true`). Toggle with `S` key in both Photo Cull and Recipe Lab focus mode. Shown as 6px amber dot on filmstrip thumbnails.
 - **Filter modes**: All / Unrated / Like / Ditch / Maybe. Tab cycles through them. Navigation stays within the filtered subset. Filmstrip reflects current filter.
 - **Preloading**: Next and previous images preloaded in background for instant scrubbing.
 - **Thumbnails**: Lazy-loaded via IntersectionObserver as filmstrip scrolls.
@@ -51,6 +52,9 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - `GET /api/files` — list of photo files (requires loaded dir)
 - `GET /api/ratings` — current ratings object
 - `POST /api/rate` `{filename, rating}` — rate a file
+- `POST /api/star` `{filename, starred}` — star/unstar a file (Photo Cull)
+- `GET /api/recipe-stars` — get stars from Recipe Lab directory's ratings.json
+- `POST /api/recipe-star` `{filename, starred}` — star/unstar a file (Recipe Lab)
 - `GET /api/image/{*filepath}` — full-size image (HEIF converted to JPEG, JPG served directly)
 - `GET /api/thumb/{*filepath}` — 300px thumbnail
 - `GET /api/meta/{*filepath}` — full EXIF metadata (date, camera, lens, exposure, dimensions, file size, GPS, film simulation)
@@ -63,12 +67,35 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 ## Key shortcuts
 
-1/2/3 = rate (ditch/maybe/like) + auto-advance to next sequential, 0 = clear rating, arrows = navigate, N = jump to next unrated, K = like over previous, Tab = cycle filter, Space = toggle metadata, F = fullscreen, Z = zoom, Escape = back to folder picker (when at first photo), ? = help
+1/2/3 = rate (ditch/maybe/like) + auto-advance to next sequential, 0 = clear rating, S = toggle star, arrows = navigate, N = jump to next unrated, K = like over previous, Tab = cycle filter, Space = toggle metadata, F = fullscreen, Z = zoom, Escape = back to folder picker (when at first photo), ? = help
 
 ## Open bugs / unresolved feedback (verbatim from Oren)
 
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
+
+### Session 33 changes (2026-05-28)
+
+**Bug fixes:**
+- S33-4: Variant test wrong photo when browsing filmstrip. Added `getCurrentRecipePhoto()` helper — checks `focusBrowsePhoto` before falling back to `gridPhotos[focusIndex]`. Updated 7 compare-mode photo lookups and 7 compare-exit paths via `returnToFocusFromCompare()`.
+- S33-3: Filmstrip click no longer scrolls carousel to center the clicked image. `noScroll` flag skips `scrollIntoView` on click; arrow keys still scroll.
+- S33-1: Filmstrip sorted alphabetically by filename (Fuji sequential naming = chronological).
+- Audit found 10 additional `focusIndex`/`focusBrowsePhoto` bugs (toggleBeforeAfter, simulate handler, all compare exit paths). All fixed.
+- Skeleton thumbs changed from 64x44 to 60x60 (square, matching real preview thumbnails, no border-radius).
+- Camera status polling starts on page load (was only on Recipe Lab entry). Polling never stops on tab switch. Auto-detects camera/SSD without refresh.
+- Camera status alignment fixed — removed duplicate `margin-left: auto`.
+
+**New features:**
+- S33-2: Star/favorite photos — `S` key toggles star in both Photo Cull and Recipe Lab. 6px amber dot on filmstrip thumbnails. Stored in `ratings.json` under `"stars"` key. Backend: `POST /api/star`, `GET/POST /api/recipe-star{s}`.
+- S33-5: Filmstrip search/filter — funnel icon in Recipe Lab center toolbar. Dropdown with filename search input, 200ms debounced. Amber dot on icon when filter active. Filter preserved across filmstrip reloads.
+
+**Pending (not yet implemented):**
+- S33-7/S33-8: Tab persistence on reload broken — `showLanding()` forces `activeToolTab = 'cull'`, Recipe Lab tab highlights visually but tree/click behavior is Photo Cull. Root cause identified. Fix agent was in progress (may or may not have landed — verify before starting).
+- S33-9: Unify Photo Cull and Recipe Lab tree browsers. Plan completed: shared `renderTreeNode()` and `toggleTreeNode()` with opts pattern, saves ~142 lines. Plan agent output available. NOT YET IMPLEMENTED.
+- S33-10: Star indicator redesign — bottom-left position, white circle (Lightroom-style) instead of star icon, no background circle. Hover = faded, click = solid white persist.
+
+**Landing page:**
+- S33-6: Oren selected filmstrip photos: DSCF8910, DSCF8884, DSCF8803, DSCF8684, DSCF8495, DSCF8378. Still needed: photo for 6 film sim variants, app screenshot for MacBook mockup.
 
 ### Session 32 changes (2026-05-26)
 
