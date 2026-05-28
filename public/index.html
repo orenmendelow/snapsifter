@@ -1210,25 +1210,26 @@ body::before {
 
 .cell-star {
   position: absolute;
-  top: 4px;
+  bottom: 4px;
   left: 4px;
-  width: 18px;
-  height: 18px;
+  width: 8px;
+  height: 8px;
   cursor: pointer;
   opacity: 0;
   z-index: 2;
-  color: var(--text-dim);
-  background: rgba(0,0,0,0.5);
+  color: rgba(255,255,255,0.4);
+  background: none;
   border: none;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  font-size: 8px;
+  line-height: 1;
 }
 .recipe-grid-cell:hover .cell-star { opacity: 1; }
-.cell-star:hover { color: var(--amber); }
-.cell-star.starred { color: var(--amber); opacity: 1; }
+.cell-star:hover { color: rgba(255,255,255,0.7); }
+.cell-star.starred { color: #fff; opacity: 1; }
 
 .recipe-grid-cell.loading {
   animation: cell-pulse 1.5s ease-in-out infinite;
@@ -2975,27 +2976,26 @@ body::before {
 
 .thumb-star {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 14px;
-  height: 14px;
+  bottom: 2px;
+  left: 2px;
+  width: 6px;
+  height: 6px;
   cursor: pointer;
   opacity: 0;
   z-index: 2;
-  color: var(--text-dim);
-  background: rgba(0,0,0,0.5);
+  color: rgba(255,255,255,0.4);
+  background: none;
   border: none;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  font-size: 8px;
+  font-size: 6px;
   line-height: 1;
 }
 .thumb-wrapper:hover .thumb-star { opacity: 1; }
-.thumb-star:hover { color: var(--amber); }
-.thumb-star.starred { color: var(--amber); opacity: 1; }
+.thumb-star:hover { color: rgba(255,255,255,0.7); }
+.thumb-star.starred { color: #fff; opacity: 1; }
 
 .thumb-wrapper .thumb-img {
   width: 100%;
@@ -3968,7 +3968,9 @@ body::before {
     return 'oren';
   }
 
-  function renderTreeRoot(container, name, path, depth) {
+  // --- Shared tree browser implementation ---
+
+  function _renderTreeRoot(container, name, path, depth, toggleFn, selectFn, stateObj) {
     const node = document.createElement('div');
     const row = document.createElement('div');
     row.className = 'tree-node-row';
@@ -3988,17 +3990,15 @@ body::before {
     const childrenEl = document.createElement('div');
     childrenEl.className = 'tree-children';
 
-    // Click chevron to expand/collapse
     chevron.addEventListener('click', (e) => {
       e.stopPropagation();
-      toggleNode(path, chevron, childrenEl, depth + 1);
+      toggleFn(path, chevron, childrenEl, depth + 1);
     });
 
-    // Click row to select AND expand
     row.addEventListener('click', () => {
-      selectNode(path);
-      if (!treeState[path] || !treeState[path].expanded) {
-        toggleNode(path, chevron, childrenEl, depth + 1);
+      selectFn(path);
+      if (!stateObj[path] || !stateObj[path].expanded) {
+        toggleFn(path, chevron, childrenEl, depth + 1);
       }
     });
 
@@ -4007,21 +4007,19 @@ body::before {
     container.appendChild(node);
   }
 
-  async function toggleNode(path, chevron, childrenEl, childDepth) {
-    if (!treeState[path]) {
-      treeState[path] = { expanded: false, children: null, loaded: false };
+  async function _toggleTreeNode(path, chevron, childrenEl, childDepth, stateObj, filterFn, renderChildFn) {
+    if (!stateObj[path]) {
+      stateObj[path] = { expanded: false, children: null, loaded: false };
     }
-    const state = treeState[path];
+    const state = stateObj[path];
 
     if (state.expanded) {
-      // Collapse
       state.expanded = false;
       chevron.classList.remove('expanded');
       childrenEl.classList.remove('expanded');
       return;
     }
 
-    // Expand — load children if needed
     if (!state.loaded) {
       try {
         const data = await fetch('/api/browse?dir=' + encodeURIComponent(path)).then(r => r.json());
@@ -4033,15 +4031,15 @@ body::before {
       }
     }
 
-    // Render children
     childrenEl.innerHTML = '';
-    if (state.children.length === 0) {
+    var children = filterFn ? state.children.filter(filterFn) : state.children;
+    if (children.length === 0) {
       chevron.classList.add('empty');
       return;
     }
 
-    for (const folder of state.children) {
-      renderTreeChild(childrenEl, folder, childDepth);
+    for (const folder of children) {
+      renderChildFn(childrenEl, folder, childDepth);
     }
 
     state.expanded = true;
@@ -4049,8 +4047,8 @@ body::before {
     childrenEl.classList.add('expanded');
   }
 
-  function renderTreeChild(container, folder, depth) {
-    if (depth > 8) return; // max depth guard
+  function _renderTreeChild(container, folder, depth, toggleFn, selectFn, getSelectedPath, showRatedDot) {
+    if (depth > 8) return;
 
     const node = document.createElement('div');
     const row = document.createElement('div');
@@ -4058,7 +4056,7 @@ body::before {
     row.dataset.path = folder.path;
     row.style.paddingLeft = (depth * 16) + 'px';
 
-    if (folder.path === selectedPath) {
+    if (folder.path === getSelectedPath()) {
       row.classList.add('selected');
     }
 
@@ -4079,7 +4077,7 @@ body::before {
       row.appendChild(badge);
     }
 
-    if (folder.hasRatings) {
+    if (showRatedDot && folder.hasRatings) {
       const dot = document.createElement('span');
       dot.className = 'tree-node-rated';
       row.appendChild(dot);
@@ -4090,17 +4088,30 @@ body::before {
 
     chevron.addEventListener('click', (e) => {
       e.stopPropagation();
-      toggleNode(folder.path, chevron, childrenEl, depth + 1);
+      toggleFn(folder.path, chevron, childrenEl, depth + 1);
     });
 
     row.addEventListener('click', () => {
-      selectNode(folder.path);
-      // Don't auto-expand on click for child nodes — only chevron expands
+      selectFn(folder.path);
     });
 
     node.appendChild(row);
     node.appendChild(childrenEl);
     container.appendChild(node);
+  }
+
+  // --- Photo Cull tree wrappers ---
+
+  function renderTreeRoot(container, name, path, depth) {
+    _renderTreeRoot(container, name, path, depth, toggleNode, selectNode, treeState);
+  }
+
+  function toggleNode(path, chevron, childrenEl, childDepth) {
+    return _toggleTreeNode(path, chevron, childrenEl, childDepth, treeState, null, renderTreeChild);
+  }
+
+  function renderTreeChild(container, folder, depth) {
+    _renderTreeChild(container, folder, depth, toggleNode, selectNode, function() { return selectedPath; }, true);
   }
 
   function selectNode(path) {
@@ -4660,7 +4671,7 @@ body::before {
       const stem = file.replace(/\.[^.]+$/, '');
       const starBtn = document.createElement('button');
       starBtn.className = 'thumb-star' + (stars[stem] ? ' starred' : '');
-      starBtn.innerHTML = '★';
+      starBtn.innerHTML = '●';
       starBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
         const s = !stars[stem];
@@ -6447,7 +6458,7 @@ body::before {
         // Star button
         const starBtn = document.createElement('button');
         starBtn.className = 'thumb-star' + (recipeStars[stem] ? ' starred' : '');
-        starBtn.innerHTML = '★';
+        starBtn.innerHTML = '●';
         starBtn.addEventListener('click', (ev) => {
           ev.stopPropagation();
           const s = !recipeStars[stem];
@@ -8275,7 +8286,7 @@ body::before {
       // Star button
       const cellStarBtn = document.createElement('button');
       cellStarBtn.className = 'cell-star' + (recipeStars[stem] ? ' starred' : '');
-      cellStarBtn.innerHTML = '★';
+      cellStarBtn.innerHTML = '●';
       cellStarBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
         const s = !recipeStars[stem];
@@ -8630,128 +8641,18 @@ body::before {
     initRecipeLeftTree();
   }
 
+  // --- Recipe Lab tree wrappers ---
+
   function renderRecipeTreeRoot(container, name, treePath, depth) {
-    const node = document.createElement('div');
-    const row = document.createElement('div');
-    row.className = 'tree-node-row';
-    row.dataset.path = treePath;
-    row.style.paddingLeft = (depth * 16) + 'px';
-
-    const chevron = document.createElement('span');
-    chevron.className = 'tree-chevron';
-    chevron.textContent = '▶';
-    row.appendChild(chevron);
-
-    const nameEl = document.createElement('span');
-    nameEl.className = 'tree-node-name';
-    nameEl.textContent = name;
-    row.appendChild(nameEl);
-
-    const childrenEl = document.createElement('div');
-    childrenEl.className = 'tree-children';
-
-    chevron.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleRecipeNode(treePath, chevron, childrenEl, depth + 1);
-    });
-
-    row.addEventListener('click', () => {
-      selectRecipeNode(treePath);
-      if (!recipeTreeState[treePath] || !recipeTreeState[treePath].expanded) {
-        toggleRecipeNode(treePath, chevron, childrenEl, depth + 1);
-      }
-    });
-
-    node.appendChild(row);
-    node.appendChild(childrenEl);
-    container.appendChild(node);
+    _renderTreeRoot(container, name, treePath, depth, toggleRecipeNode, selectRecipeNode, recipeTreeState);
   }
 
-  async function toggleRecipeNode(treePath, chevron, childrenEl, childDepth) {
-    if (!recipeTreeState[treePath]) {
-      recipeTreeState[treePath] = { expanded: false, children: null, loaded: false };
-    }
-    const state = recipeTreeState[treePath];
-
-    if (state.expanded) {
-      state.expanded = false;
-      chevron.classList.remove('expanded');
-      childrenEl.classList.remove('expanded');
-      return;
-    }
-
-    if (!state.loaded) {
-      try {
-        const data = await fetch('/api/browse?dir=' + encodeURIComponent(treePath)).then(r => r.json());
-        if (data.error) return;
-        state.children = data.folders || [];
-        state.loaded = true;
-      } catch (e) {
-        return;
-      }
-    }
-
-    childrenEl.innerHTML = '';
-    var filteredChildren = state.children.filter(function(f) { return f.hasRafs || f.hasRatings; });
-    if (filteredChildren.length === 0) {
-      chevron.classList.add('empty');
-      return;
-    }
-
-    for (const folder of filteredChildren) {
-      renderRecipeTreeChild(childrenEl, folder, childDepth);
-    }
-
-    state.expanded = true;
-    chevron.classList.add('expanded');
-    childrenEl.classList.add('expanded');
+  function toggleRecipeNode(treePath, chevron, childrenEl, childDepth) {
+    return _toggleTreeNode(treePath, chevron, childrenEl, childDepth, recipeTreeState, function(f) { return f.hasRafs || f.hasRatings; }, renderRecipeTreeChild);
   }
 
   function renderRecipeTreeChild(container, folder, depth) {
-    if (depth > 8) return;
-
-    const node = document.createElement('div');
-    const row = document.createElement('div');
-    row.className = 'tree-node-row';
-    row.dataset.path = folder.path;
-    row.style.paddingLeft = (depth * 16) + 'px';
-
-    if (folder.path === recipeSelectedPath) {
-      row.classList.add('selected');
-    }
-
-    const chevron = document.createElement('span');
-    chevron.className = 'tree-chevron';
-    chevron.textContent = '▶';
-    row.appendChild(chevron);
-
-    const nameEl = document.createElement('span');
-    nameEl.className = 'tree-node-name';
-    nameEl.textContent = folder.name;
-    row.appendChild(nameEl);
-
-    if (folder.photoCount > 0) {
-      const badge = document.createElement('span');
-      badge.className = 'tree-node-badge';
-      badge.textContent = folder.photoCount;
-      row.appendChild(badge);
-    }
-
-    const childrenEl = document.createElement('div');
-    childrenEl.className = 'tree-children';
-
-    chevron.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleRecipeNode(folder.path, chevron, childrenEl, depth + 1);
-    });
-
-    row.addEventListener('click', () => {
-      selectRecipeNode(folder.path);
-    });
-
-    node.appendChild(row);
-    node.appendChild(childrenEl);
-    container.appendChild(node);
+    _renderTreeChild(container, folder, depth, toggleRecipeNode, selectRecipeNode, function() { return recipeSelectedPath; }, false);
   }
 
   async function selectRecipeNode(nodePath) {
@@ -10126,8 +10027,10 @@ body::before {
   const savedTool = localStorage.getItem('drkrm-active-tool');
   if (savedTool === 'recipe') {
     activeToolTab = 'recipe';
+    showRecipeEditor();
+  } else {
+    initLanding();
   }
-  initLanding();
 })();
 </script>
 </body>

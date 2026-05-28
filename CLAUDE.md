@@ -74,6 +74,17 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 34 changes (2026-05-28)
+
+**Bug fixes:**
+- S33-7/S33-8: Tab persistence — reload with saved Recipe Lab tab now calls `showRecipeEditor()` directly instead of `showLanding()`. Recipe Lab tree (with RAF filtering + image previews) loads properly on reload. Root cause was `showLanding()` always showing the Photo Cull tree regardless of `activeToolTab`.
+
+**Refactors:**
+- S33-9: Tree browser unification — shared `_renderTreeRoot()`, `_toggleTreeNode()`, `_renderTreeChild()` replace duplicated code. Six original functions are now 1-line wrappers. Differences parameterized: state object, child filter function (`null` for Cull, `hasRafs || hasRatings` for Recipe Lab), selected path getter, rated dot toggle.
+
+**UI changes:**
+- S33-10: Star indicator redesign — bottom-left white filled circle (Lightroom-style). No star icon, no background circle. Hover = faded white (`rgba(255,255,255,0.4)`), starred = solid white (`#fff`). Both `.cell-star` (collage) and `.thumb-star` (filmstrip) updated.
+
 ### Session 33 changes (2026-05-28)
 
 **Bug fixes:**
@@ -88,11 +99,6 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 **New features:**
 - S33-2: Star/favorite photos — `S` key toggles star in both Photo Cull and Recipe Lab. 6px amber dot on filmstrip thumbnails. Stored in `ratings.json` under `"stars"` key. Backend: `POST /api/star`, `GET/POST /api/recipe-star{s}`.
 - S33-5: Filmstrip search/filter — funnel icon in Recipe Lab center toolbar. Dropdown with filename search input, 200ms debounced. Amber dot on icon when filter active. Filter preserved across filmstrip reloads.
-
-**Pending (not yet implemented):**
-- S33-7/S33-8: Tab persistence on reload broken — `showLanding()` forces `activeToolTab = 'cull'`, Recipe Lab tab highlights visually but tree/click behavior is Photo Cull. Root cause identified. Fix agent was in progress (may or may not have landed — verify before starting).
-- S33-9: Unify Photo Cull and Recipe Lab tree browsers. Plan completed: shared `renderTreeNode()` and `toggleTreeNode()` with opts pattern, saves ~142 lines. Plan agent output available. NOT YET IMPLEMENTED.
-- S33-10: Star indicator redesign — bottom-left position, white circle (Lightroom-style) instead of star icon, no background circle. Hover = faded, click = solid white persist.
 
 **Landing page:**
 - S33-6: Oren selected filmstrip photos: DSCF8910, DSCF8884, DSCF8803, DSCF8684, DSCF8495, DSCF8378. Still needed: photo for 6 film sim variants, app screenshot for MacBook mockup.
