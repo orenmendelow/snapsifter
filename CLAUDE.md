@@ -74,6 +74,33 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 35 changes (2026-05-28)
+
+**Bug fixes:**
+- S35-4: Per-photo exifBaseline bug — `enterFocusMode` now updates `exifBaseline` from `perFileExif` for the focused photo. `showRecipePreview` restores majority baseline via `_majorityExifBaseline`. Fixes params bleeding between photos in focus/variant mode.
+
+**UI changes:**
+- S35-5/6/7: SIMULATE button filled amber when actionable (was outline). Chevron hidden when not actionable. REVERT button (`#revert-all-btn`) added next to SIMULATE, shows/hides as pair.
+- S35-1: Filter icon hidden on file browse, only shows in collage/focus views.
+- S35-3: Directory search input added above both Cull and Recipe Lab tree panels. `_setupTreeSearch()` shared function, 150ms debounce.
+- S35-8: DOWNLOAD option in variant 3-dots cell action menu.
+
+**Landing page (`landing/index.html`):**
+- Real photos replace all placeholders: filmstrip (6 photos in `landing/photos/`), MacBook mockup (`app-screenshot.png`), film sim variants (10 in `landing/variants/` for DSCF8039), SBS comparison (DSCF7011 ClassicNeg vs Nostalgic).
+- Additional 4 variants generated: Astia, Classic, Eterna, BleachBypass for DSCF8039.
+- Variant grid: all 9 cells populated with same photo (DSCF8039) across 9 film sims.
+- X100VI camera SVG replaced with real SVG from Oren (`x100vi.svg`), recolored for dark theme with amber accents.
+- Laptop screen CSS: removed forced 16:10 aspect-ratio, image renders at natural dimensions.
+- Auto-animation system: cull demo auto-cycles ratings, film sim tabs auto-carousel, SBS auto-zooms/pans. All pause 5s on user interaction, resume after idle.
+- Download buttons changed to `javascript:void(0)` (no more scroll-to-nothing).
+- Script: `scripts/generate-landing-variants.js` for camera-based variant generation.
+
+**New files:**
+- `landing/photos/` — 6 filmstrip JPGs (1200px) + app screenshot PNG
+- `landing/variants/` — 22 film sim variant JPGs (1200px): DSCF8039 x10, DSCF7009 x6, DSCF7011 x6
+- `landing/x100vi.svg` — real X100VI camera illustration
+- `scripts/generate-landing-variants.js` — batch variant generation via camera PTP
+
 ### Session 34 changes (2026-05-28)
 
 **Bug fixes:**

@@ -136,6 +136,38 @@ body::before {
 }
 
 /* Left panel */
+#recipe-tree-search-wrap, #cull-tree-search-wrap {
+  position: relative;
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+#recipe-tree-search, #cull-tree-search {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 28px 6px 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text);
+  letter-spacing: 0.3px;
+  box-sizing: border-box;
+}
+#recipe-tree-search:focus, #cull-tree-search:focus { border-color: var(--amber); outline: none; }
+#recipe-tree-search::placeholder, #cull-tree-search::placeholder { color: var(--text-dim); }
+#recipe-tree-search-clear, #cull-tree-search-clear {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  display: none;
+  padding: 0 4px;
+}
+#recipe-tree-search-clear:hover, #cull-tree-search-clear:hover { color: var(--amber); }
 #recipe-left-panel {
   width: 280px;
   flex-shrink: 0;
@@ -1439,6 +1471,21 @@ body::before {
   opacity: 0.4;
   cursor: not-allowed;
 }
+#revert-all-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 8px 0 6px;
+  background: none;
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  flex: 0 0 auto;
+  width: 80px;
+  text-align: center;
+  transition: color 0.15s, border-color 0.15s;
+}
+#revert-all-btn:hover { color: var(--amber); border-color: var(--amber); }
 #cancel-to-last-sim-btn {
   font-family: var(--mono);
   font-size: 11px;
@@ -3235,6 +3282,7 @@ body::before {
   </div>
   <div id="browser-section">
     <div id="tree-panel">
+      <div id="cull-tree-search-wrap"><input type="text" id="cull-tree-search" placeholder="Search directories..." spellcheck="false" autocomplete="off"><button id="cull-tree-search-clear" type="button">&times;</button></div>
       <div class="tree-section-label">Recent</div>
       <div id="sessions-list"></div>
       <div id="completed-sessions-divider" class="tree-divider" style="display:none"></div>
@@ -3401,6 +3449,7 @@ body::before {
   <div id="recipe-shell-body">
     <!-- Left: directory tree -->
     <div id="recipe-left-panel">
+      <div id="recipe-tree-search-wrap"><input type="text" id="recipe-tree-search" placeholder="Search directories..." spellcheck="false" autocomplete="off"><button id="recipe-tree-search-clear" type="button">&times;</button></div>
       <div id="recipe-left-tree"></div>
       <div id="recipe-left-folder-info">
         <div id="recipe-left-folder-name"></div>
@@ -3417,7 +3466,7 @@ body::before {
         <button id="focus-back-btn" title="Back to collage" style="display:none"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="4.5" height="4.5"/><rect x="5.75" y="0" width="4.5" height="4.5"/><rect x="11.5" y="0" width="4.5" height="4.5"/><rect x="0" y="5.75" width="4.5" height="4.5"/><rect x="5.75" y="5.75" width="4.5" height="4.5"/><rect x="11.5" y="5.75" width="4.5" height="4.5"/><rect x="0" y="11.5" width="4.5" height="4.5"/><rect x="5.75" y="11.5" width="4.5" height="4.5"/><rect x="11.5" y="11.5" width="4.5" height="4.5"/></svg></button>
         <button class="recipe-action-btn" id="recipe-shuffle-btn" style="display:none">SHUFFLE</button>
         <button class="recipe-action-btn" id="recipe-pick-btn" style="display:none">PICK PHOTOS</button>
-        <button id="recipe-filter-btn" title="Filter filmstrip"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 2h12M3 5h8M5 8h4M6 11h2"/></svg><span class="filter-active-dot"></span></button>
+        <button id="recipe-filter-btn" title="Filter filmstrip" style="display:none"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 2h12M3 5h8M5 8h4M6 11h2"/></svg><span class="filter-active-dot"></span></button>
         <div id="recipe-filter-dropdown"><div class="filter-input-wrap"><input type="text" id="recipe-filter-input" placeholder="Search filename..." spellcheck="false" autocomplete="off"><button id="recipe-filter-clear" type="button">&times;</button></div></div>
       </div>
 
@@ -3541,7 +3590,8 @@ body::before {
       <div id="recipe-drawer-actions">
         <div id="recipe-simulate-section">
           <div id="simulate-row">
-            <button id="simulate-btn"><span class="sim-main-label">SIMULATE</span></button><button id="sim-scope-toggle" class="sim-scope-chevron-btn">&#9662;</button>
+            <button id="revert-all-btn" style="display:none">REVERT</button>
+            <button id="simulate-btn"><span class="sim-main-label">SIMULATE</span></button><button id="sim-scope-toggle" class="sim-scope-chevron-btn" style="display:none">&#9662;</button>
             <div id="sim-scope-dropdown" style="display:none">
               <div class="sim-scope-option" data-scope="photo">This photo</div>
               <div class="sim-scope-option" data-scope="collage">Entire collage</div>
@@ -4046,6 +4096,49 @@ body::before {
     chevron.classList.add('expanded');
     childrenEl.classList.add('expanded');
   }
+
+  function _setupTreeSearch(inputId, clearId, panelId) {
+    const input = document.getElementById(inputId);
+    const clear = document.getElementById(clearId);
+    const panel = document.getElementById(panelId);
+    if (!input || !panel) return;
+    let debounce;
+    input.addEventListener('input', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        const q = input.value.trim().toLowerCase();
+        clear.style.display = q ? '' : 'none';
+        const rows = panel.querySelectorAll('.tree-node-row');
+        rows.forEach(row => {
+          const name = row.querySelector('.tree-node-name');
+          const text = name ? name.textContent.toLowerCase() : row.dataset.path.toLowerCase();
+          const node = row.closest('.tree-node-row')?.parentElement;
+          if (!q) {
+            row.style.display = '';
+            if (node) node.style.display = '';
+          } else if (text.includes(q) || row.dataset.path.toLowerCase().includes(q)) {
+            row.style.display = '';
+            if (node) node.style.display = '';
+            let p = row.parentElement;
+            while (p && p !== panel) {
+              p.style.display = '';
+              if (p.classList && p.classList.contains('tree-children')) p.classList.add('expanded');
+              p = p.parentElement;
+            }
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      }, 150);
+    });
+    clear.addEventListener('click', () => {
+      input.value = '';
+      clear.style.display = 'none';
+      panel.querySelectorAll('.tree-node-row').forEach(r => { r.style.display = ''; });
+    });
+  }
+  _setupTreeSearch('cull-tree-search', 'cull-tree-search-clear', 'tree-panel');
+  _setupTreeSearch('recipe-tree-search', 'recipe-tree-search-clear', 'recipe-left-tree');
 
   function _renderTreeChild(container, folder, depth, toggleFn, selectFn, getSelectedPath, showRatedDot) {
     if (depth > 8) return;
@@ -5671,6 +5764,8 @@ body::before {
     document.getElementById('compare-view').style.display = 'flex';
     document.getElementById('recipe-shuffle-btn').style.display = 'none';
     document.getElementById('recipe-pick-btn').style.display = 'none';
+    document.getElementById('recipe-filter-btn').style.display = 'none';
+    document.getElementById('recipe-filter-dropdown').style.display = 'none';
     document.getElementById('recipe-compare-row').style.display = 'flex';
     document.getElementById('focus-back-btn').style.display = 'none';
     // Swap right panel to compare controls
@@ -5983,8 +6078,26 @@ body::before {
               }
             } catch(err) { console.error('APPLY & NEXT failed', err); }
           });
+          const downloadItem = document.createElement('div');
+          downloadItem.className = 'cell-action-item';
+          downloadItem.textContent = 'DOWNLOAD';
+          downloadItem.addEventListener('click', (e) => {
+            e.stopPropagation();
+            actMenu.style.display = 'none';
+            const cellImg = cell.querySelector('img');
+            if (cellImg && cellImg.src) {
+              const a = document.createElement('a');
+              a.href = cellImg.src;
+              const stem = photo.file.replace(/\.[^.]+$/, '');
+              a.download = stem + '_' + paramKey + '_' + String(v).replace(/[^a-zA-Z0-9_-]/g, '_') + '.jpg';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            }
+          });
           actMenu.appendChild(applyReturn);
           actMenu.appendChild(applyNext);
+          actMenu.appendChild(downloadItem);
           actBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             // Close other open menus
@@ -6143,6 +6256,7 @@ body::before {
 
       if (res.majority && Object.keys(res.majority).length > 0) {
         recipeState.exifBaseline = { ...RECIPE_DEFAULTS, ...res.majority };
+        recipeState._majorityExifBaseline = { ...recipeState.exifBaseline };
         if (!recipeState.currentId && !recipeState.dirty) {
           recipeState.currentParams = { ...recipeState.exifBaseline };
           recipeState.cleanParams = { ...recipeState.exifBaseline };
@@ -6225,6 +6339,12 @@ body::before {
       gallery.classList.add('hidden');
     }
     recipeState.mode = 'preview';
+    if (recipeState._majorityExifBaseline) {
+      recipeState.exifBaseline = { ...recipeState._majorityExifBaseline };
+      recipeState.currentParams = { ...recipeState.exifBaseline };
+      recipeState.cleanParams = { ...recipeState.exifBaseline };
+      renderParams();
+    }
     restoreRightPanel();
     const hasPhotos = recipeState.gridPhotos.length > 0;
     const centerPreview = document.getElementById('recipe-center-preview');
@@ -6250,6 +6370,8 @@ body::before {
     document.getElementById('compare-view').style.display = 'none';
     document.getElementById('recipe-shuffle-btn').style.display = hasPhotos ? '' : 'none';
     document.getElementById('recipe-pick-btn').style.display = hasPhotos ? '' : 'none';
+    document.getElementById('recipe-filter-btn').style.display = hasPhotos ? '' : 'none';
+    if (!hasPhotos) document.getElementById('recipe-filter-dropdown').style.display = 'none';
     document.getElementById('recipe-compare-row').style.display = hasPhotos ? 'flex' : 'none';
     document.getElementById('focus-back-btn').style.display = 'none';
     document.getElementById('recipe-filmstrip').querySelectorAll('.thumb-wrapper.active').forEach(w => w.classList.remove('active'));
@@ -6291,6 +6413,12 @@ body::before {
     if (newPhoto && recipeState.perPhotoParams[newPhoto]) {
       recipeState.currentParams = { ...recipeState.perPhotoParams[newPhoto].currentParams };
       recipeState.cleanParams = recipeState.perPhotoParams[newPhoto].cleanParams ? { ...recipeState.perPhotoParams[newPhoto].cleanParams } : recipeState.cleanParams;
+      const stem = newPhoto.replace(/\.[^.]+$/, '');
+      if (recipeState.perFileExif[stem]) {
+        const photoExif = recipeState.perFileExif[stem];
+        recipeState.exifBaseline = { ...RECIPE_DEFAULTS };
+        Object.keys(RECIPE_DEFAULTS).forEach(k => { if (photoExif[k] != null) recipeState.exifBaseline[k] = photoExif[k]; });
+      }
       renderParams();
     }
     restoreRightPanel();
@@ -6567,16 +6695,19 @@ body::before {
     const changed = Object.keys(recipeState.currentParams).some(
       k => recipeState.currentParams[k] !== recipeState.cleanParams[k]
     );
+    const simChevron = document.getElementById('sim-scope-toggle');
+    const revertBtn = document.getElementById('revert-all-btn');
     if (changed) {
       if (drawerActions) drawerActions.style.display = '';
       simBtn.style.display = '';
       if (recipeState.cameraConnected) {
         simBtn.querySelector('.sim-main-label').textContent = 'SIMULATE';
         simBtn.disabled = false;
-        simBtn.style.background = 'transparent';
-        simBtn.style.color = 'var(--amber)';
+        simBtn.style.background = 'var(--amber)';
+        simBtn.style.color = '#000';
         simBtn.style.opacity = '';
-        simBtn.style.border = '1px solid var(--amber)';
+        simBtn.style.border = 'none';
+        if (simChevron) simChevron.style.display = '';
       } else {
         simBtn.querySelector('.sim-main-label').textContent = 'Connect camera to simulate';
         simBtn.disabled = true;
@@ -6584,6 +6715,7 @@ body::before {
         simBtn.style.color = 'var(--text-dim)';
         simBtn.style.opacity = '0.5';
         simBtn.style.border = '1px solid var(--amber)';
+        if (simChevron) simChevron.style.display = 'none';
       }
       if (cancelBtn && recipeState.lastSimParams) {
         const diffFromLastSim = Object.keys(recipeState.currentParams).some(
@@ -6593,6 +6725,7 @@ body::before {
       } else if (cancelBtn) {
         cancelBtn.style.display = 'none';
       }
+      if (revertBtn) revertBtn.style.display = '';
       if (simRow) simRow.style.display = '';
     } else {
       if (drawerActions) drawerActions.style.display = 'none';
@@ -6601,7 +6734,9 @@ body::before {
       simBtn.style.color = '';
       simBtn.style.opacity = '';
       simBtn.style.border = '';
+      if (simChevron) simChevron.style.display = 'none';
       if (cancelBtn) cancelBtn.style.display = 'none';
+      if (revertBtn) revertBtn.style.display = 'none';
       if (simRow) simRow.style.display = 'none';
     }
     // Update recipe dropdown label to reflect current param state
@@ -7946,6 +8081,14 @@ body::before {
     checkParamsChanged();
   });
 
+  document.getElementById('revert-all-btn').addEventListener('click', () => {
+    if (!recipeState.exifBaseline) return;
+    recipeState.currentParams = { ...recipeState.exifBaseline };
+    recipeState.dirty = false;
+    renderParams();
+    checkParamsChanged();
+  });
+
   function updateRecipeActiveDropdown() {
     const list = document.getElementById('recipe-active-list');
     const label = document.getElementById('recipe-active-label');
@@ -8174,6 +8317,7 @@ body::before {
         document.getElementById('recipe-collage').style.display = '';
         document.getElementById('recipe-shuffle-btn').style.display = '';
         document.getElementById('recipe-pick-btn').style.display = '';
+        document.getElementById('recipe-filter-btn').style.display = '';
         document.getElementById('recipe-compare-row').style.display = 'flex';
       }
 
@@ -8190,6 +8334,8 @@ body::before {
       document.getElementById('recipe-filmstrip-container').style.display = 'none';
       document.getElementById('recipe-shuffle-btn').style.display = 'none';
       document.getElementById('recipe-pick-btn').style.display = 'none';
+      document.getElementById('recipe-filter-btn').style.display = 'none';
+      document.getElementById('recipe-filter-dropdown').style.display = 'none';
       document.getElementById('recipe-compare-row').style.display = 'none';
       document.getElementById('recipe-right-panel').style.display = 'none';
       recipeLoadedDir = null;
@@ -9005,6 +9151,8 @@ body::before {
         document.getElementById('focus-back-btn').style.display = 'none';
         document.getElementById('recipe-shuffle-btn').style.display = 'none';
         document.getElementById('recipe-pick-btn').style.display = 'none';
+        document.getElementById('recipe-filter-btn').style.display = 'none';
+        document.getElementById('recipe-filter-dropdown').style.display = 'none';
         document.getElementById('recipe-compare-row').style.display = 'none';
         recipeState.mode = 'preview';
         const recipesP = loadRecipes();

@@ -259,16 +259,14 @@ section {
 
 .laptop-screen {
   width: 100%;
-  aspect-ratio: 16/10;
   background: var(--black);
   position: relative;
-  overflow: hidden;
 }
 
 .laptop-screen img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  display: block;
 }
 
 .laptop-screen-placeholder {
@@ -863,7 +861,7 @@ footer {
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
   </div>
-  <a href="#download" class="btn-download">
+  <a href="javascript:void(0)" class="btn-download">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     Download Free
   </a>
@@ -876,7 +874,7 @@ footer {
     <h1 class="hero-headline reveal reveal-delay-1">Your photos.<br>Your <em>recipes</em>.<br>One darkroom.</h1>
     <p class="hero-sub reveal reveal-delay-2">The only macOS tool that combines fast photo culling with real Fujifilm film simulation rendering. Dial in recipes, test variants side-by-side, and process RAFs through your actual camera hardware.</p>
     <div class="hero-cta-row reveal reveal-delay-3">
-      <a href="#download" class="btn-download">
+      <a href="javascript:void(0)" class="btn-download">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download Free
       </a>
@@ -897,44 +895,11 @@ footer {
           <span class="laptop-dot"></span>
         </div>
         <div class="laptop-screen">
-          <div class="laptop-screen-placeholder">app screenshot</div>
+          <img src="photos/app-screenshot.png" alt="drkrm Recipe Lab" style="width:100%;height:100%;object-fit:cover;display:block">
         </div>
       </div>
       <!-- X100VI Camera SVG -->
-      <svg class="hero-camera" viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Camera body -->
-        <rect x="20" y="35" width="160" height="95" rx="6" fill="#1a1a1a" stroke="#333" stroke-width="1.5"/>
-        <!-- Top plate -->
-        <rect x="20" y="28" width="160" height="12" rx="3" fill="#222" stroke="#333" stroke-width="1"/>
-        <!-- Viewfinder bump -->
-        <rect x="60" y="18" width="35" height="14" rx="3" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
-        <rect x="67" y="20" width="21" height="8" rx="2" fill="#111"/>
-        <!-- Lens ring -->
-        <circle cx="100" cy="82" r="32" fill="#111" stroke="#444" stroke-width="2"/>
-        <circle cx="100" cy="82" r="26" fill="#0a0a0a" stroke="#333" stroke-width="1"/>
-        <circle cx="100" cy="82" r="18" fill="#050505" stroke="#222" stroke-width="1"/>
-        <circle cx="100" cy="82" r="12" fill="#020202"/>
-        <!-- Lens reflection -->
-        <ellipse cx="94" cy="76" rx="4" ry="6" fill="rgba(255,255,255,0.03)"/>
-        <!-- Shutter button -->
-        <circle cx="130" cy="24" r="5" fill="#333" stroke="#444" stroke-width="1"/>
-        <!-- Dials -->
-        <rect x="140" y="20" width="22" height="10" rx="2" fill="#222" stroke="#444" stroke-width="0.5"/>
-        <rect x="38" y="20" width="18" height="10" rx="2" fill="#222" stroke="#444" stroke-width="0.5"/>
-        <!-- Hot shoe -->
-        <rect x="98" y="18" width="20" height="3" rx="1" fill="#333"/>
-        <!-- Brand text -->
-        <text x="100" y="52" text-anchor="middle" fill="#555" font-family="'IBM Plex Mono', monospace" font-size="6" font-weight="500" letter-spacing="2">FUJIFILM</text>
-        <!-- Model -->
-        <text x="100" y="120" text-anchor="middle" fill="#444" font-family="'IBM Plex Mono', monospace" font-size="5" letter-spacing="1">X100VI</text>
-        <!-- Grip texture lines -->
-        <line x1="26" y1="50" x2="26" y2="115" stroke="#252525" stroke-width="0.5"/>
-        <line x1="29" y1="50" x2="29" y2="115" stroke="#252525" stroke-width="0.5"/>
-        <line x1="32" y1="50" x2="32" y2="115" stroke="#252525" stroke-width="0.5"/>
-        <line x1="35" y1="50" x2="35" y2="115" stroke="#252525" stroke-width="0.5"/>
-        <!-- Amber accent (hot shoe detail) -->
-        <rect x="105" y="18.5" width="8" height="2" rx="0.5" fill="var(--amber)" opacity="0.3"/>
-      </svg>
+      <img class="hero-camera" src="x100vi.svg" alt="X100VI">
     </div>
   </div>
 </section>
@@ -955,14 +920,14 @@ footer {
     <div class="flow-visual reveal reveal-delay-2">
       <div class="cull-demo" id="cull-demo">
         <div class="cull-main-view">
-          <div class="cull-main-placeholder">click a photo or press 1 / 2 / 3</div>
+          <img id="cull-main-img" src="photos/DSCF8910.jpg" alt="" style="width:100%;height:100%;object-fit:cover">
         </div>
         <div class="cull-filmstrip">
-          <div class="cull-thumb active" data-index="0"><div class="cull-thumb-placeholder"></div><div class="cull-rating-badge"></div></div>
-          <div class="cull-thumb" data-index="1"><div class="cull-thumb-placeholder"></div><div class="cull-rating-badge"></div></div>
-          <div class="cull-thumb" data-index="2"><div class="cull-thumb-placeholder"></div><div class="cull-rating-badge"></div></div>
-          <div class="cull-thumb" data-index="3"><div class="cull-thumb-placeholder"></div><div class="cull-rating-badge"></div></div>
-          <div class="cull-thumb" data-index="4"><div class="cull-thumb-placeholder"></div><div class="cull-rating-badge"></div></div>
+          <div class="cull-thumb active" data-index="0"><img src="photos/DSCF8910.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
+          <div class="cull-thumb" data-index="1"><img src="photos/DSCF8884.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
+          <div class="cull-thumb" data-index="2"><img src="photos/DSCF8803.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
+          <div class="cull-thumb" data-index="3"><img src="photos/DSCF8684.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
+          <div class="cull-thumb" data-index="4"><img src="photos/DSCF8495.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
         </div>
         <div class="cull-keys">
           <div class="cull-key" data-rating="1">
@@ -997,7 +962,7 @@ footer {
     <div class="flow-visual reveal reveal-delay-2">
       <div class="sim-demo" id="sim-demo">
         <div class="sim-photo">
-          <div class="sim-photo-placeholder">photo changes with film simulation selection</div>
+          <img id="sim-demo-img" src="variants/DSCF8039_Provia.jpg" alt="" style="width:100%;height:100%;object-fit:cover">
           <div class="sim-label" id="sim-current-label">Provia / Standard</div>
         </div>
         <div class="sim-tabs" id="sim-tabs">
@@ -1022,15 +987,15 @@ footer {
     </div>
     <div class="flow-visual reveal reveal-delay-2">
       <div class="variant-grid">
-        <div class="variant-cell"><div class="cull-thumb-placeholder"></div><div class="variant-cell-tag">As Shot</div><div class="variant-cell-label">Provia</div></div>
-        <div class="variant-cell"><div class="cull-thumb-placeholder"></div><div class="variant-cell-label">Velvia</div></div>
-        <div class="variant-cell"><div class="cull-thumb-placeholder"></div><div class="variant-cell-label">Astia</div></div>
-        <div class="variant-cell"><div class="cull-thumb-placeholder"></div><div class="variant-cell-label">Classic Chrome</div></div>
-        <div class="variant-cell"><div class="cull-thumb-placeholder"></div><div class="variant-cell-label">Classic Neg</div></div>
-        <div class="variant-cell"><div class="cull-thumb-placeholder"></div><div class="variant-cell-label">Nostalgic Neg</div></div>
-        <div class="variant-cell"><div class="cull-thumb-placeholder"></div><div class="variant-cell-label">Reala ACE</div></div>
-        <div class="variant-cell"><div class="cull-thumb-placeholder"></div><div class="variant-cell-label">Eterna</div></div>
-        <div class="variant-cell"><div class="cull-thumb-placeholder"></div><div class="variant-cell-label">Bleach Bypass</div></div>
+        <div class="variant-cell"><img src="variants/DSCF8039_Provia.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-tag">As Shot</div><div class="variant-cell-label">Provia</div></div>
+        <div class="variant-cell"><img src="variants/DSCF8039_Velvia.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Velvia</div></div>
+        <div class="variant-cell"><img src="variants/DSCF8039_Astia.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Astia</div></div>
+        <div class="variant-cell"><img src="variants/DSCF8039_Classic.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Classic Chrome</div></div>
+        <div class="variant-cell"><img src="variants/DSCF8039_ClassicNeg.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Classic Neg</div></div>
+        <div class="variant-cell"><img src="variants/DSCF8039_Nostalgic.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Nostalgic Neg</div></div>
+        <div class="variant-cell"><img src="variants/DSCF8039_RealaACE.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Reala ACE</div></div>
+        <div class="variant-cell"><img src="variants/DSCF8039_Eterna.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Eterna</div></div>
+        <div class="variant-cell"><img src="variants/DSCF8039_BleachBypass.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Bleach Bypass</div></div>
       </div>
     </div>
   </div>
@@ -1044,16 +1009,17 @@ footer {
       <p class="section-desc reveal reveal-delay-2">Pick any two renders and compare them side-by-side with synced zoom. Click to zoom in to 3x on both panels simultaneously. See the difference grain makes at the pixel level, not just the vibe level.</p>
     </div>
     <div class="flow-visual reveal reveal-delay-2">
-      <div style="display:flex;gap:4px;border-radius:4px;overflow:hidden;border:1px solid var(--border)">
-        <div style="flex:1;aspect-ratio:3/2;background:#1a1a1a;display:flex;align-items:center;justify-content:center;position:relative">
-          <span style="color:var(--text-muted);font-size:12px">Classic Neg</span>
-          <span style="position:absolute;top:8px;left:8px;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase">Panel A</span>
+      <div id="sbs-demo" style="display:flex;gap:4px;border-radius:4px;overflow:hidden;border:1px solid var(--border)">
+        <div class="sbs-panel" style="flex:1;aspect-ratio:3/2;overflow:hidden;position:relative;cursor:zoom-in">
+          <img src="variants/DSCF7011_ClassicNeg.jpg" alt="" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transition:transform 0.3s ease">
+          <span style="position:absolute;top:8px;left:8px;font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;background:rgba(0,0,0,0.5);padding:2px 6px">Classic Neg</span>
         </div>
-        <div style="flex:1;aspect-ratio:3/2;background:#1a1a1a;display:flex;align-items:center;justify-content:center;position:relative">
-          <span style="color:var(--text-muted);font-size:12px">Nostalgic Neg</span>
-          <span style="position:absolute;top:8px;left:8px;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase">Panel B</span>
+        <div class="sbs-panel" style="flex:1;aspect-ratio:3/2;overflow:hidden;position:relative;cursor:zoom-in">
+          <img src="variants/DSCF7011_Nostalgic.jpg" alt="" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transition:transform 0.3s ease">
+          <span style="position:absolute;top:8px;left:8px;font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;background:rgba(0,0,0,0.5);padding:2px 6px">Nostalgic Neg</span>
         </div>
       </div>
+      <div style="text-align:center;margin-top:8px;font-size:11px;color:var(--text-dim);letter-spacing:0.5px">Click to zoom · Synced pan</div>
     </div>
   </div>
 
@@ -1120,7 +1086,7 @@ footer {
   <h2 class="section-headline reveal">Your darkroom. Your rules.</h2>
   <p class="section-desc reveal reveal-delay-1">Download the free Photo Cull and start rating. When you're ready to dial in recipes, upgrade to Pro.</p>
   <div class="reveal reveal-delay-2">
-    <a href="#" class="btn-download" style="padding:12px 32px;font-size:14px">
+    <a href="javascript:void(0)" class="btn-download" style="padding:12px 32px;font-size:14px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Download Free for macOS
     </a>
@@ -1162,20 +1128,20 @@ footer {
       <div class="footer-col-title">Product</div>
       <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
-      <a href="#">Changelog</a>
-      <a href="#">Documentation</a>
+      <a href="javascript:void(0)">Changelog</a>
+      <a href="javascript:void(0)">Documentation</a>
     </div>
     <div class="footer-col">
       <div class="footer-col-title">Support</div>
       <a href="mailto:support@drkrm.app">Contact</a>
-      <a href="#">FAQ</a>
-      <a href="#">System Requirements</a>
+      <a href="javascript:void(0)">FAQ</a>
+      <a href="javascript:void(0)">System Requirements</a>
     </div>
     <div class="footer-col">
       <div class="footer-col-title">Connect</div>
-      <a href="#">Twitter / X</a>
-      <a href="#">Instagram</a>
-      <a href="#">GitHub</a>
+      <a href="javascript:void(0)">Twitter / X</a>
+      <a href="javascript:void(0)">Instagram</a>
+      <a href="javascript:void(0)">GitHub</a>
     </div>
   </div>
   <div class="footer-bottom">
@@ -1207,26 +1173,15 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   let activeIndex = 0;
   const ratings = {};
 
-  const photoColors = [
-    'linear-gradient(135deg, #2a1f1a 0%, #1a2a1f 100%)',
-    'linear-gradient(135deg, #1a1f2a 0%, #2a1a20 100%)',
-    'linear-gradient(135deg, #1f2a1a 0%, #1a1a2a 100%)',
-    'linear-gradient(135deg, #2a2a1a 0%, #1a2a2a 100%)',
-    'linear-gradient(135deg, #2a1a2a 0%, #1a2a1a 100%)'
-  ];
-
-  thumbs.forEach((t, i) => {
-    t.querySelector('.cull-thumb-placeholder').style.background = photoColors[i];
-  });
+  const photoFiles = ['photos/DSCF8910.jpg', 'photos/DSCF8884.jpg', 'photos/DSCF8803.jpg', 'photos/DSCF8684.jpg', 'photos/DSCF8495.jpg'];
+  const defaultMain = 'photos/DSCF8378.jpg';
 
   function setActive(index) {
     thumbs.forEach(t => t.classList.remove('active'));
     thumbs[index].classList.add('active');
     activeIndex = index;
-    const mainView = demo.querySelector('.cull-main-view');
-    mainView.style.background = photoColors[index];
-    const placeholder = mainView.querySelector('.cull-main-placeholder');
-    if (placeholder) placeholder.style.display = 'none';
+    const mainImg = document.getElementById('cull-main-img');
+    if (mainImg) mainImg.src = photoFiles[index];
   }
 
   function applyRating(rating) {
@@ -1251,8 +1206,16 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     }
   }
 
-  thumbs.forEach((t, i) => t.addEventListener('click', () => setActive(i)));
-  keys.forEach(k => k.addEventListener('click', () => applyRating(parseInt(k.dataset.rating))));
+  function clearAllRatings() {
+    for (let i = 0; i < thumbs.length; i++) {
+      const badge = thumbs[i].querySelector('.cull-rating-badge');
+      badge.className = 'cull-rating-badge';
+      delete ratings[i];
+    }
+  }
+
+  thumbs.forEach((t, i) => t.addEventListener('click', () => { pauseAutoAnim(); setActive(i); }));
+  keys.forEach(k => k.addEventListener('click', () => { pauseAutoAnim(); applyRating(parseInt(k.dataset.rating)); }));
 
   setActive(0);
 
@@ -1260,6 +1223,8 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   let demoVisible = false;
   const demoObs = new IntersectionObserver(entries => {
     demoVisible = entries[0].isIntersecting;
+    if (entries[0].isIntersecting && !autoAnimPaused) startAutoAnim();
+    if (!entries[0].isIntersecting) stopAutoAnim();
   }, { threshold: 0.3 });
   demoObs.observe(demo);
 
@@ -1267,50 +1232,274 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     if (!demoVisible) return;
     if (e.key >= '0' && e.key <= '3') {
       e.preventDefault();
+      pauseAutoAnim();
       applyRating(parseInt(e.key));
     }
     if (e.key === 'ArrowRight' && activeIndex < thumbs.length - 1) {
       e.preventDefault();
+      pauseAutoAnim();
       setActive(activeIndex + 1);
     }
     if (e.key === 'ArrowLeft' && activeIndex > 0) {
       e.preventDefault();
+      pauseAutoAnim();
       setActive(activeIndex - 1);
     }
   });
+
+  // ── Auto-animation ──
+  let autoAnimTimer = null;
+  let autoAnimPaused = false;
+  let pauseTimeout = null;
+
+  const autoSequence = [
+    { action: () => setActive(0), delay: 800 },
+    { action: () => applyRating(3), delay: 600 },
+    { action: () => applyRating(2), delay: 600 },
+    { action: () => applyRating(1), delay: 600 },
+    { action: () => applyRating(3), delay: 600 },
+    { action: () => applyRating(2), delay: 1500 },
+    { action: () => { clearAllRatings(); setActive(0); }, delay: 800 },
+  ];
+
+  let autoStep = 0;
+
+  function runAutoStep() {
+    if (autoAnimPaused || !demoVisible) return;
+    const step = autoSequence[autoStep];
+    step.action();
+    autoStep = (autoStep + 1) % autoSequence.length;
+    autoAnimTimer = setTimeout(runAutoStep, autoSequence[autoStep] ? autoSequence[autoStep].delay : autoSequence[0].delay);
+  }
+
+  function startAutoAnim() {
+    stopAutoAnim();
+    autoAnimPaused = false;
+    autoStep = 0;
+    clearAllRatings();
+    setActive(0);
+    autoAnimTimer = setTimeout(runAutoStep, 1000);
+  }
+
+  function stopAutoAnim() {
+    if (autoAnimTimer) { clearTimeout(autoAnimTimer); autoAnimTimer = null; }
+    if (pauseTimeout) { clearTimeout(pauseTimeout); pauseTimeout = null; }
+  }
+
+  function pauseAutoAnim() {
+    autoAnimPaused = true;
+    stopAutoAnim();
+    pauseTimeout = setTimeout(() => {
+      autoAnimPaused = false;
+      if (demoVisible) startAutoAnim();
+    }, 5000);
+  }
 })();
 
 // ── Film Sim Switcher ──
 (function() {
-  const tabs = document.querySelectorAll('#sim-tabs .sim-tab');
+  const tabsContainer = document.getElementById('sim-tabs');
+  const tabs = tabsContainer.querySelectorAll('.sim-tab');
   const label = document.getElementById('sim-current-label');
-  const photoEl = document.querySelector('#sim-demo .sim-photo');
+  const img = document.getElementById('sim-demo-img');
+  const simDemo = document.getElementById('sim-demo');
 
-  const simColors = {
-    'Provia': { bg: 'linear-gradient(135deg, #2a2520 0%, #1f2a25 100%)', name: 'Provia / Standard' },
-    'ClassicNeg': { bg: 'linear-gradient(135deg, #2a1f20 0%, #1a2025 100%)', name: 'Classic Neg' },
-    'Nostalgic': { bg: 'linear-gradient(135deg, #2a2a1a 0%, #201a2a 100%)', name: 'Nostalgic Neg' },
-    'Velvia': { bg: 'linear-gradient(135deg, #2a1a1a 0%, #1a2a1a 100%)', name: 'Velvia / Vivid' },
-    'Acros': { bg: 'linear-gradient(135deg, #1a1a1a 0%, #252525 100%)', name: 'Acros' },
-    'RealaACE': { bg: 'linear-gradient(135deg, #251f1a 0%, #1a2520 100%)', name: 'Reala ACE' },
+  const simData = {
+    'Provia': { src: 'variants/DSCF8039_Provia.jpg', name: 'Provia / Standard' },
+    'Velvia': { src: 'variants/DSCF8039_Velvia.jpg', name: 'Velvia / Vivid' },
+    'ClassicNeg': { src: 'variants/DSCF8039_ClassicNeg.jpg', name: 'Classic Neg' },
+    'Nostalgic': { src: 'variants/DSCF8039_Nostalgic.jpg', name: 'Nostalgic Neg' },
+    'RealaACE': { src: 'variants/DSCF8039_RealaACE.jpg', name: 'Reala ACE' },
+    'Acros': { src: 'variants/DSCF8039_Acros.jpg', name: 'Acros' },
   };
 
-  tabs.forEach(tab => {
+  let activeTabIndex = 0;
+
+  function switchToTab(index) {
+    tabs.forEach(t => t.classList.remove('active'));
+    tabs[index].classList.add('active');
+    activeTabIndex = index;
+    const sim = tabs[index].dataset.sim;
+    const info = simData[sim];
+    img.src = info.src;
+    label.textContent = info.name;
+  }
+
+  tabs.forEach((tab, i) => {
     tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const sim = tab.dataset.sim;
-      const info = simColors[sim];
-      photoEl.style.background = info.bg;
-      label.textContent = info.name;
+      pauseSimAnim();
+      switchToTab(i);
     });
   });
+
+  // ── Auto-carousel ──
+  let simAnimTimer = null;
+  let simAnimPaused = false;
+  let simPauseTimeout = null;
+  let simVisible = false;
+
+  const simObs = new IntersectionObserver(entries => {
+    simVisible = entries[0].isIntersecting;
+    if (simVisible && !simAnimPaused) startSimAnim();
+    if (!simVisible) stopSimAnim();
+  }, { threshold: 0.3 });
+  simObs.observe(simDemo);
+
+  function startSimAnim() {
+    stopSimAnim();
+    simAnimPaused = false;
+    simAnimTimer = setInterval(() => {
+      if (!simVisible || simAnimPaused) return;
+      switchToTab((activeTabIndex + 1) % tabs.length);
+    }, 2500);
+  }
+
+  function stopSimAnim() {
+    if (simAnimTimer) { clearInterval(simAnimTimer); simAnimTimer = null; }
+    if (simPauseTimeout) { clearTimeout(simPauseTimeout); simPauseTimeout = null; }
+  }
+
+  function pauseSimAnim() {
+    simAnimPaused = true;
+    stopSimAnim();
+    simPauseTimeout = setTimeout(() => {
+      simAnimPaused = false;
+      if (simVisible) startSimAnim();
+    }, 5000);
+  }
+})();
+
+// ── SBS Zoom Auto-Animation ──
+(function() {
+  const sbsDemo = document.getElementById('sbs-demo');
+  if (!sbsDemo) return;
+
+  const panels = sbsDemo.querySelectorAll('.sbs-panel');
+  const imgs = sbsDemo.querySelectorAll('.sbs-panel img');
+  let zoomed = false;
+  let sbsVisible = false;
+  let sbsAnimTimer = null;
+  let sbsAnimPaused = false;
+  let sbsPauseTimeout = null;
+  let panAnimFrame = null;
+
+  function setZoom(on, originX, originY) {
+    zoomed = on;
+    imgs.forEach(img => {
+      if (on) {
+        img.style.transform = 'scale(3)';
+        img.style.transformOrigin = (originX || 50) + '% ' + (originY || 50) + '%';
+      } else {
+        img.style.transform = 'scale(1)';
+        img.style.transformOrigin = 'center';
+      }
+    });
+    panels.forEach(p => p.style.cursor = on ? 'zoom-out' : 'zoom-in');
+  }
+
+  // Click to toggle zoom
+  panels.forEach(panel => {
+    panel.addEventListener('click', (e) => {
+      pauseSbsAnim();
+      const rect = panel.getBoundingClientRect();
+      const pctX = ((e.clientX - rect.left) / rect.width) * 100;
+      const pctY = ((e.clientY - rect.top) / rect.height) * 100;
+      setZoom(!zoomed, pctX, pctY);
+    });
+
+    // Mousemove pan when zoomed
+    panel.addEventListener('mousemove', (e) => {
+      if (!zoomed) return;
+      pauseSbsAnim();
+      const rect = panel.getBoundingClientRect();
+      const pctX = ((e.clientX - rect.left) / rect.width) * 100;
+      const pctY = ((e.clientY - rect.top) / rect.height) * 100;
+      imgs.forEach(img => {
+        img.style.transformOrigin = pctX + '% ' + pctY + '%';
+      });
+    });
+  });
+
+  // Auto-animation
+  const sbsObs = new IntersectionObserver(entries => {
+    sbsVisible = entries[0].isIntersecting;
+    if (sbsVisible && !sbsAnimPaused) startSbsAnim();
+    if (!sbsVisible) stopSbsAnim();
+  }, { threshold: 0.3 });
+  sbsObs.observe(sbsDemo);
+
+  function autoPanCycle() {
+    // Phase 1: wait 1s, then zoom in
+    sbsAnimTimer = setTimeout(() => {
+      if (!sbsVisible || sbsAnimPaused) return;
+      setZoom(true, 30, 30);
+
+      // Phase 2: pan from 30,30 to 70,70 over 4s
+      let startTime = performance.now();
+      const panDuration = 4000;
+
+      function animatePan(now) {
+        if (!sbsVisible || sbsAnimPaused || !zoomed) return;
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / panDuration, 1);
+        // Ease in-out
+        const eased = progress < 0.5
+          ? 2 * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+        const x = 30 + eased * 40;
+        const y = 30 + eased * 40;
+        imgs.forEach(img => {
+          img.style.transformOrigin = x + '% ' + y + '%';
+        });
+        if (progress < 1) {
+          panAnimFrame = requestAnimationFrame(animatePan);
+        } else {
+          // Phase 3: hold zoomed for 3s total (pan took 4s, so zoom out after short pause)
+          sbsAnimTimer = setTimeout(() => {
+            if (!sbsVisible || sbsAnimPaused) return;
+            setZoom(false);
+            // Phase 4: wait 2s, then loop
+            sbsAnimTimer = setTimeout(() => {
+              if (!sbsVisible || sbsAnimPaused) return;
+              autoPanCycle();
+            }, 2000);
+          }, 500);
+        }
+      }
+
+      panAnimFrame = requestAnimationFrame(animatePan);
+    }, 1000);
+  }
+
+  function startSbsAnim() {
+    stopSbsAnim();
+    sbsAnimPaused = false;
+    setZoom(false);
+    autoPanCycle();
+  }
+
+  function stopSbsAnim() {
+    if (sbsAnimTimer) { clearTimeout(sbsAnimTimer); sbsAnimTimer = null; }
+    if (panAnimFrame) { cancelAnimationFrame(panAnimFrame); panAnimFrame = null; }
+    if (sbsPauseTimeout) { clearTimeout(sbsPauseTimeout); sbsPauseTimeout = null; }
+  }
+
+  function pauseSbsAnim() {
+    sbsAnimPaused = true;
+    stopSbsAnim();
+    sbsPauseTimeout = setTimeout(() => {
+      sbsAnimPaused = false;
+      if (sbsVisible) startSbsAnim();
+    }, 5000);
+  }
 })();
 
 // ── Smooth scroll for anchor links ──
 document.querySelectorAll('a[href^="#"]').forEach(a => {
   a.addEventListener('click', (e) => {
-    const target = document.querySelector(a.getAttribute('href'));
+    const href = a.getAttribute('href');
+    if (!href || !href.startsWith('#')) return;
+    const target = document.querySelector(href);
     if (target) {
       e.preventDefault();
       target.scrollIntoView({ behavior: 'smooth' });
