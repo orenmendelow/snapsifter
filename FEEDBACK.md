@@ -243,7 +243,7 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [x] **S36-2**: Landing page hero animated cursor — DONE: Amber cursor dot with CSS keyframe animation cycles through 3 collage photos (LIKE/MAYBE/DITCH badges appear), then trails along filmstrip. 12s loop, 2s initial delay. Cursor "clicks" with scale pulse. Badges positioned at percentage coords for responsive scaling.
 - [ ] **S36-3**: Download buttons (`btn-download`) unwired — all 3 point to `javascript:void(0)`. Need hosted DMG URL.
 - [x] **S36-4**: No OG/Twitter meta tags for link sharing. — DONE: added og:title/description/type/url/image + twitter:card/title/description/image. og-image.jpg needs to be created before deploy.
-- [ ] **S37-1**: PINNED OPTION — Hero camera SVG at full opacity, positioned beside the laptop (not overlapping), with a wire running between them and a blinking green light indicating connection. Oren wants this as a design option, not implemented yet.
+- [x] **S37-1**: PINNED OPTION — Hero camera SVG beside laptop with wire + green light. IMPLEMENTED then REVERTED — Oren rejected the side-by-side layout. Camera restored to original absolute-positioned bottom-right corner. Wire + green light removed.
 - [ ] **S36-5**: `support@drkrm.app` mailto in footer — domain may not be configured for email.
 - [x] **S36-6**: Landing page spacing — DONE: Removed `min-height: 100vh` from hero (was creating dead space between hero CTA and first flow step). Set explicit `padding-top: 120px; padding-bottom: 48px`. Hero content determines section height now, flows directly into features.
 
