@@ -74,6 +74,16 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 38 changes (2026-05-29)
+
+**Landing page (`landing/index.html`):**
+- S37-1: Camera SVG beside laptop with wire + green light — IMPLEMENTED then REVERTED. Oren rejected the side-by-side layout. Camera restored to original absolute-positioned bottom-right corner. Wire, green light, wire-pulse animation all removed.
+- Hero cursor animation (12s loop with LIKE/MAYBE/DITCH badges) — REMOVED. Oren rejected. All cursor/rating HTML elements and 4 keyframe animations deleted.
+- OG image created: `landing/og-image.jpg` (1200x630) — hero section screenshot. Meta tags already wired.
+- `<noscript>` style override added for `.reveal` elements — search engines and no-JS users see all content.
+- Flow step numbers: opacity bumped 4% → 8% for visibility on low-contrast displays.
+- Mobile sim tabs: right-edge fade mask at 768px breakpoint signals horizontal scroll.
+
 ### Session 37 changes (2026-05-28)
 
 **App (`public/index.html` + `server.js`):**
@@ -81,10 +91,10 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 
 **Landing page (`landing/index.html`):**
 - S36-1: Added "Everything else / Built for the full workflow" features grid section between flow steps and stats. 3x2 CSS grid (responsive: 2-col tablet, 1-col mobile) with amber SVG icons. Features: Session Resume, File Browser, Star & Flag, Cookbook, Diverse Collage, Focus Mode.
-- S36-2: Hero MacBook mockup animated cursor overlay. Amber cursor dot with 12s CSS keyframe loop: moves to 3 collage photos (LIKE/MAYBE/DITCH badges appear), trails along filmstrip, fades, repeats. 2s initial delay. Cursor "clicks" with scale(0.7) pulse.
-- S36-4: OG/Twitter meta tags added (og:title, og:description, og:type, og:url, og:image, twitter:card/title/description/image). `og-image.jpg` file needed before deploy.
+- S36-2: Hero MacBook mockup animated cursor overlay. Amber cursor dot with 12s CSS keyframe loop: moves to 3 collage photos (LIKE/MAYBE/DITCH badges appear), trails along filmstrip, fades, repeats. 2s initial delay. Cursor "clicks" with scale(0.7) pulse. **REMOVED in session 38.**
+- S36-4: OG/Twitter meta tags added (og:title, og:description, og:type, og:url, og:image, twitter:card/title/description/image). OG image created in session 38.
 - S36-6: Hero spacing fix — removed `min-height: 100vh` (was creating dead space between hero and first flow step). Set `padding-top: 120px; padding-bottom: 48px`. Content determines section height.
-- S37-1: PINNED OPTION — Camera SVG full opacity beside laptop with wire and blinking green light. Not implemented.
+- S37-1: PINNED OPTION — Camera SVG full opacity beside laptop with wire and blinking green light. **IMPLEMENTED then REVERTED in session 38.**
 
 ### Session 36 changes (2026-05-28)
 
