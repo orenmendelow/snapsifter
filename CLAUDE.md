@@ -74,6 +74,30 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 40 changes (2026-05-29)
+
+**App (`public/index.html`):**
+- S31-15 RAF preview generation (DRAFTED, unconfirmed): `showRafPreviewPrompt()` and `generateRafPreviews()` added before `loadRecipeGrid()`. When a directory has `Liked/RAF/` but no `Liked/HIF/` or `Liked/JPG/`, and camera is connected, prompts user to generate JPEG previews. Camera PTP pipeline renders each RAF as-shot (no recipe patching) and saves to `Liked/HIF/{stem}.JPG`. Progress bar with count, ETA, failure tracking. Auto-loads directory on completion.
+- Dead code removed (155 lines): `escapeHtml()`, `relativeTime()`, `findOrAddToCollage()`, `markDirtyNoAutoSave()`, `initRecipeTree()`, `openRecipeLightbox()` + full lightbox system (DOM, CSS, event listeners, variables).
+
+**Server (`server.js`):**
+- Security: `POST /api/ensure-dir` scoped to `/Volumes/` and `os.homedir()` paths only (was unrestricted).
+- Validation: `POST /api/rate`, `/api/star`, `/api/recipe-star` — early 400 if `filename` missing.
+- Validation: `POST /api/recipe` and `PUT /api/recipe/:id` — validate `title` (non-empty string) and `params` (non-null object).
+- Stability: 15s timeout on all 3 `sips` `execSync` calls (`generateThumb` x2, image endpoint x1).
+- Stability: Top-level try/catch on 5 async handlers (`/api/image`, `/api/thumb`, `/api/meta`, `/api/recipe-exif-defaults`, `/api/batch-recipe-exif`).
+- New endpoints: `POST /api/check-raf-only` (checks RAF-only directory condition), `POST /api/ensure-dir` (creates directories with path scoping).
+
+**Landing page (`landing/index.html`):**
+- 18 images: empty `alt=""` → descriptive alt text for SEO/accessibility.
+- 4 orphan CSS classes removed (`.laptop-screen-placeholder`, `.cull-thumb-placeholder`, `.cull-main-placeholder`, `.sim-photo-placeholder`).
+- Dead variable `defaultMain` removed.
+
+**Tests:**
+- `tests/server-state.test.js`: fixed `.snapsifter` → `.drkrm` path.
+- `vitest.config.js` created: scopes vitest to `tests/` only (was picking up `test/compare-mode.test.js` which uses node:test).
+- `package.json`: added `test:compare` (node:test) and `test:all` (both runners). 55 vitest + 65 node:test = 120 total, all pass.
+
 ### Session 39 changes (2026-05-29)
 
 **App (`public/index.html`):**

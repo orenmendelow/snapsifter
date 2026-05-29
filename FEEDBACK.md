@@ -196,7 +196,7 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [x] **S31-12**: Disconnected session click (Photo Cull) gives no feedback — no error toast or message. — FIXED: disconnected session rows show toast on click.
 - [x] **S31-13**: Right panel (379px) doesn't adapt to small viewports. No responsive breakpoint. — FIXED: changed flex-shrink:0 to flex-shrink:1 with min-width:240px.
 - [x] **S31-14**: Load button (`#recipe-left-load-btn`) is vestigial — never actionable in current flow. Consider removing. — FIXED: removed button, CSS, variable, and click handler.
-- [ ] **S31-15**: Recipe Lab tree filtering — RAF-only directories (no matching HIF/JPG) should eventually support camera-based preview generation on load. Discussed with Oren: show directory as available, prompt "Generate previews from RAFs?" with confirm/cancel when selected. — DEFERRED: requires camera hardware for RAF preview generation.
+- [ ] **S31-15**: Recipe Lab tree filtering — RAF-only directories (no matching HIF/JPG) should eventually support camera-based preview generation on load. Discussed with Oren: show directory as available, prompt "Generate previews from RAFs?" with confirm/cancel when selected. — DRAFTED S40: prompt + camera PTP generation loop implemented. Unconfirmed — needs testing with a RAF-only directory.
 
 ## Session 33 — New
 

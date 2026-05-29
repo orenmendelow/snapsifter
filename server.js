@@ -307,9 +307,9 @@ function generateThumb(srcPath, destPath, size) {
   const upper = srcPath.toUpperCase();
   const needsConversion = upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.RAF');
   if (needsConversion) {
-    execSync(`sips -s format jpeg -Z ${size} ${JSON.stringify(srcPath)} --out ${JSON.stringify(destPath)}`, { stdio: 'pipe' });
+    execSync(`sips -s format jpeg -Z ${size} ${JSON.stringify(srcPath)} --out ${JSON.stringify(destPath)}`, { stdio: 'pipe', timeout: 15000 });
   } else {
-    execSync(`sips -Z ${size} ${JSON.stringify(srcPath)} --out ${JSON.stringify(destPath)}`, { stdio: 'pipe' });
+    execSync(`sips -Z ${size} ${JSON.stringify(srcPath)} --out ${JSON.stringify(destPath)}`, { stdio: 'pipe', timeout: 15000 });
   }
 }
 
@@ -644,6 +644,9 @@ app.get('/api/ratings', requireActiveDir, (req, res) => {
 // Rate a file
 app.post('/api/rate', requireActiveDir, (req, res) => {
   const { filename, rating } = req.body;
+  if (!filename || typeof filename !== 'string') {
+    return res.status(400).json({ error: 'filename is required' });
+  }
   // Use relative path without extension as key (backward-compatible for root-level files)
   const key = filename.replace(/\.[^.]+$/, '');
   if (rating === 0 || rating === null) {
@@ -658,6 +661,9 @@ app.post('/api/rate', requireActiveDir, (req, res) => {
 // Star/unstar a file
 app.post('/api/star', requireActiveDir, (req, res) => {
   const { filename, starred } = req.body;
+  if (!filename || typeof filename !== 'string') {
+    return res.status(400).json({ error: 'filename is required' });
+  }
   const key = filename.replace(/\.[^.]+$/, '');
   if (starred) {
     stars[key] = true;
@@ -670,57 +676,52 @@ app.post('/api/star', requireActiveDir, (req, res) => {
 
 // Serve full-size converted JPEG (HEIF needs sips conversion, JPG/JPEG served directly)
 app.get('/api/image/{*filepath}', requireActiveDir, async (req, res) => {
-  const filepath = req.params.filepath;
-  const filename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
-  const srcPath = path.join(activeDir, filename);
-  if (!fs.existsSync(srcPath)) {
-    return res.status(404).send('Not found');
-  }
+  try {
+    const filepath = req.params.filepath;
+    const filename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
+    const srcPath = path.join(activeDir, filename);
+    if (!fs.existsSync(srcPath)) {
+      return res.status(404).send('Not found');
+    }
 
-  // JPG/JPEG — serve directly, no conversion needed
-  const upper = filename.toUpperCase();
-  if (upper.endsWith('.JPG') || upper.endsWith('.JPEG')) {
-    try {
+    // JPG/JPEG — serve directly, no conversion needed
+    const upper = filename.toUpperCase();
+    if (upper.endsWith('.JPG') || upper.endsWith('.JPEG')) {
       res.type('image/jpeg');
       res.send(fs.readFileSync(srcPath));
-    } catch (err) {
-      console.error(`Error reading ${filename}:`, err.message);
-      res.status(500).send('Read failed');
+      return;
     }
-    return;
-  }
 
-  // HEIF — convert via sips — use hash of relative path for cache key to avoid collisions
-  const cacheKey = crypto.createHash('md5').update(filename).digest('hex').slice(0, 16);
-  const cacheName = cacheKey + '_' + path.parse(filename).name + '.jpg';
-  const cachePath = path.join(cacheDir, cacheName);
+    // HEIF — convert via sips — use hash of relative path for cache key to avoid collisions
+    const cacheKey = crypto.createHash('md5').update(filename).digest('hex').slice(0, 16);
+    const cacheName = cacheKey + '_' + path.parse(filename).name + '.jpg';
+    const cachePath = path.join(cacheDir, cacheName);
 
-  try {
     if (!fs.existsSync(cachePath)) {
-      execSync(`sips -s format jpeg -Z 2000 ${JSON.stringify(srcPath)} --out ${JSON.stringify(cachePath)}`, { stdio: 'pipe' });
+      execSync(`sips -s format jpeg -Z 2000 ${JSON.stringify(srcPath)} --out ${JSON.stringify(cachePath)}`, { stdio: 'pipe', timeout: 15000 });
     }
     res.type('image/jpeg');
     res.send(fs.readFileSync(cachePath));
   } catch (err) {
-    console.error(`Error converting ${filename}:`, err.message);
-    res.status(500).send('Conversion failed');
+    console.error(`Error serving image:`, err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
 // Serve thumbnail
 app.get('/api/thumb/{*filepath}', requireActiveDir, async (req, res) => {
-  const filepath = req.params.filepath;
-  const filename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
-  const srcPath = path.join(activeDir, filename);
-  if (!fs.existsSync(srcPath)) {
-    return res.status(404).send('Not found');
-  }
-
-  const cacheKey = crypto.createHash('md5').update(filename).digest('hex').slice(0, 16);
-  const cacheName = cacheKey + '_' + path.parse(filename).name + '_thumb.jpg';
-  const cachePath = path.join(thumbCacheDir, cacheName);
-
   try {
+    const filepath = req.params.filepath;
+    const filename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
+    const srcPath = path.join(activeDir, filename);
+    if (!fs.existsSync(srcPath)) {
+      return res.status(404).send('Not found');
+    }
+
+    const cacheKey = crypto.createHash('md5').update(filename).digest('hex').slice(0, 16);
+    const cacheName = cacheKey + '_' + path.parse(filename).name + '_thumb.jpg';
+    const cachePath = path.join(thumbCacheDir, cacheName);
+
     if (!fs.existsSync(cachePath)) {
       generateThumb(srcPath, cachePath, 300);
     }
@@ -728,20 +729,20 @@ app.get('/api/thumb/{*filepath}', requireActiveDir, async (req, res) => {
     res.send(fs.readFileSync(cachePath));
   } catch (err) {
     console.error(`Error creating thumbnail for ${filename}:`, err.message);
-    res.status(500).send('Thumbnail creation failed');
+    res.status(500).json({ error: err.message });
   }
 });
 
 // Serve EXIF metadata
 app.get('/api/meta/{*filepath}', requireActiveDir, async (req, res) => {
-  const filepath = req.params.filepath;
-  const filename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
-  const srcPath = path.join(activeDir, filename);
-  if (!fs.existsSync(srcPath)) {
-    return res.status(404).send('Not found');
-  }
-
   try {
+    const filepath = req.params.filepath;
+    const filename = decodeURIComponent(Array.isArray(filepath) ? filepath.join('/') : filepath);
+    const srcPath = path.join(activeDir, filename);
+    if (!fs.existsSync(srcPath)) {
+      return res.status(404).send('Not found');
+    }
+
     const exif = await exifr.parse(srcPath, true);
     const stat = fs.statSync(srcPath);
 
@@ -775,8 +776,8 @@ app.get('/api/meta/{*filepath}', requireActiveDir, async (req, res) => {
 
     res.json(meta);
   } catch (err) {
-    console.error(`Error reading EXIF for ${filename}:`, err.message);
-    res.json({});
+    console.error(`Error reading EXIF:`, err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -1027,6 +1028,9 @@ app.get('/api/recipe-stars', requireRecipeDir, (req, res) => {
 // Star/unstar in Recipe Lab directory
 app.post('/api/recipe-star', requireRecipeDir, (req, res) => {
   const { filename, starred } = req.body;
+  if (!filename || typeof filename !== 'string') {
+    return res.status(400).json({ error: 'filename is required' });
+  }
   const key = filename.replace(/\.[^.]+$/, '');
   const rf = path.join(recipeDir, 'ratings.json');
   let data = {};
@@ -1118,6 +1122,12 @@ app.get('/api/recipes', (req, res) => {
 
 app.post('/api/recipe', (req, res) => {
   const { title, params } = req.body;
+  if (typeof title !== 'string' || !title.trim()) {
+    return res.status(400).json({ error: 'title must be a non-empty string' });
+  }
+  if (!params || typeof params !== 'object' || Array.isArray(params)) {
+    return res.status(400).json({ error: 'params must be a non-null object' });
+  }
   const data = loadRecipes();
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
@@ -1135,6 +1145,9 @@ app.put('/api/recipe/:id', (req, res) => {
   }
   const recipe = data.recipes[id];
   if (req.body.params !== undefined) {
+    if (typeof req.body.params !== 'object' || req.body.params === null || Array.isArray(req.body.params)) {
+      return res.status(400).json({ error: 'params must be a non-null object' });
+    }
     if (!recipe.versions) recipe.versions = [];
     recipe.versions.push({
       version: recipe.versions.length + 1,
@@ -1143,7 +1156,12 @@ app.put('/api/recipe/:id', (req, res) => {
     });
     recipe.params = req.body.params;
   }
-  if (req.body.title !== undefined) recipe.title = req.body.title;
+  if (req.body.title !== undefined) {
+    if (typeof req.body.title !== 'string' || !req.body.title.trim()) {
+      return res.status(400).json({ error: 'title must be a non-empty string' });
+    }
+    recipe.title = req.body.title;
+  }
   recipe.modified = new Date().toISOString();
   saveRecipes(data);
   res.json(recipe);
@@ -2033,15 +2051,15 @@ function extractRecipeParams(exif) {
 }
 
 app.get('/api/recipe-exif-defaults', async (req, res) => {
-  const dir = req.query.dir;
-  if (!dir) return res.status(400).json({ error: 'dir param required' });
-
-  const rafDir = path.join(dir, 'Liked', 'RAF');
-  if (!fs.existsSync(rafDir)) {
-    return res.json({ params: null });
-  }
-
   try {
+    const dir = req.query.dir;
+    if (!dir) return res.status(400).json({ error: 'dir param required' });
+
+    const rafDir = path.join(dir, 'Liked', 'RAF');
+    if (!fs.existsSync(rafDir)) {
+      return res.json({ params: null });
+    }
+
     const entries = fs.readdirSync(rafDir);
     const rafFile = entries.find(f => f.toUpperCase().endsWith('.RAF'));
     if (!rafFile) {
@@ -2070,49 +2088,48 @@ app.get('/api/recipe-exif-defaults', async (req, res) => {
 
     const params = extractRecipeFromExiftool(parsed[0]);
     res.json({ params, sourceFile: rafFile });
-  } catch (e) {
-    console.error('Failed to read recipe EXIF defaults:', e.message);
-    res.json({ params: null, error: e.message });
+  } catch (err) {
+    console.error('Failed to read recipe EXIF defaults:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
 // ── Batch recipe EXIF extraction ──
 
 app.post('/api/batch-recipe-exif', express.json(), async (req, res) => {
-  const { dir, files } = req.body;
-  if (!dir || !Array.isArray(files) || files.length === 0) {
-    return res.status(400).json({ error: 'dir and files[] required' });
-  }
-
-  const rafDir = path.join(dir, 'Liked', 'RAF');
-  if (!fs.existsSync(rafDir)) {
-    return res.json({ perFile: {}, majority: {} });
-  }
-
-  // Map HIF stems to RAF filenames
-  const rafEntries = fs.readdirSync(rafDir).filter(f => f.toUpperCase().endsWith('.RAF'));
-  const rafByStem = {};
-  for (const f of rafEntries) {
-    const stem = f.replace(/\.[^.]+$/, '');
-    rafByStem[stem] = f;
-  }
-
-  // Find matching RAF files
-  const stems = files.map(f => f.replace(/\.[^.]+$/, ''));
-  const matchedPaths = [];
-  const matchedStems = [];
-  for (const stem of stems) {
-    if (rafByStem[stem]) {
-      matchedPaths.push(path.join(rafDir, rafByStem[stem]));
-      matchedStems.push(stem);
-    }
-  }
-
-  if (matchedPaths.length === 0) {
-    return res.json({ perFile: {}, majority: {} });
-  }
-
   try {
+    const { dir, files } = req.body;
+    if (!dir || !Array.isArray(files) || files.length === 0) {
+      return res.status(400).json({ error: 'dir and files[] required' });
+    }
+
+    const rafDir = path.join(dir, 'Liked', 'RAF');
+    if (!fs.existsSync(rafDir)) {
+      return res.json({ perFile: {}, majority: {} });
+    }
+
+    // Map HIF stems to RAF filenames
+    const rafEntries = fs.readdirSync(rafDir).filter(f => f.toUpperCase().endsWith('.RAF'));
+    const rafByStem = {};
+    for (const f of rafEntries) {
+      const stem = f.replace(/\.[^.]+$/, '');
+      rafByStem[stem] = f;
+    }
+
+    // Find matching RAF files
+    const stems = files.map(f => f.replace(/\.[^.]+$/, ''));
+    const matchedPaths = [];
+    const matchedStems = [];
+    for (const stem of stems) {
+      if (rafByStem[stem]) {
+        matchedPaths.push(path.join(rafDir, rafByStem[stem]));
+        matchedStems.push(stem);
+      }
+    }
+
+    if (matchedPaths.length === 0) {
+      return res.json({ perFile: {}, majority: {} });
+    }
     const exiftoolArgs = [
       '-json',
       '-FilmMode', '-WhiteBalance', '-WhiteBalanceFineTune',
@@ -2175,9 +2192,9 @@ app.post('/api/batch-recipe-exif', express.json(), async (req, res) => {
     }
 
     res.json({ perFile, majority });
-  } catch (e) {
-    console.error('Batch recipe EXIF extraction failed:', e.message);
-    res.json({ perFile: {}, majority: {}, error: e.message });
+  } catch (err) {
+    console.error('Batch recipe EXIF extraction failed:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -2223,6 +2240,50 @@ app.get('/api/raf-count', (req, res) => {
     res.json({ count: rafCount, dir });
   } catch (e) {
     res.json({ count: 0, dir });
+  }
+});
+
+app.post('/api/check-raf-only', (req, res) => {
+  const { dir } = req.body;
+  if (!dir) return res.status(400).json({ error: 'dir required' });
+
+  const rafDir = path.join(dir, 'Liked', 'RAF');
+  const hifDir = path.join(dir, 'Liked', 'HIF');
+  const jpgDir = path.join(dir, 'Liked', 'JPG');
+
+  if (!fs.existsSync(rafDir)) return res.json({ rafOnly: false, rafCount: 0 });
+
+  const hasHif = fs.existsSync(hifDir) && fs.readdirSync(hifDir).some(f => {
+    const u = f.toUpperCase();
+    return u.endsWith('.HIF') || u.endsWith('.HEIF') || u.endsWith('.JPG') || u.endsWith('.JPEG');
+  });
+  const hasJpg = fs.existsSync(jpgDir) && fs.readdirSync(jpgDir).some(f => {
+    const u = f.toUpperCase();
+    return u.endsWith('.JPG') || u.endsWith('.JPEG');
+  });
+
+  if (hasHif || hasJpg) return res.json({ rafOnly: false });
+
+  try {
+    const rafFiles = fs.readdirSync(rafDir).filter(f => f.toUpperCase().endsWith('.RAF') && !f.startsWith('.'));
+    res.json({ rafOnly: true, rafCount: rafFiles.length, rafDir, rafFiles });
+  } catch(e) {
+    res.json({ rafOnly: false, rafCount: 0 });
+  }
+});
+
+app.post('/api/ensure-dir', (req, res) => {
+  const { dir } = req.body;
+  if (!dir || !path.isAbsolute(dir)) return res.status(400).json({ error: 'absolute dir required' });
+  const resolved = path.resolve(dir);
+  if (!resolved.startsWith('/Volumes/') && !resolved.startsWith(os.homedir() + '/')) {
+    return res.status(403).json({ error: 'dir must be under /Volumes/ or home directory' });
+  }
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    res.json({ ok: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

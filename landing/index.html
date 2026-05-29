@@ -278,18 +278,6 @@ section {
   display: block;
 }
 
-.laptop-screen-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  font-size: 12px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
 .hero-camera {
   position: absolute;
   bottom: -30px;
@@ -405,12 +393,6 @@ section {
   object-fit: cover;
 }
 
-.cull-thumb-placeholder {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #1a1a1a 0%, #222 100%);
-}
-
 .cull-rating-badge {
   position: absolute;
   top: 4px;
@@ -453,11 +435,6 @@ section {
   width: 100%;
   height: 100%;
   object-fit: contain;
-}
-
-.cull-main-placeholder {
-  color: var(--text-muted);
-  font-size: 13px;
 }
 
 .cull-keys {
@@ -529,16 +506,6 @@ section {
   height: 100%;
   object-fit: cover;
   transition: opacity 0.4s ease;
-}
-
-.sim-photo-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  font-size: 13px;
 }
 
 .sim-label {
@@ -998,14 +965,14 @@ footer {
     <div class="flow-visual reveal reveal-delay-2">
       <div class="cull-demo" id="cull-demo">
         <div class="cull-main-view">
-          <img id="cull-main-img" src="photos/DSCF8910.jpg" alt="" style="width:100%;height:100%;object-fit:cover">
+          <img id="cull-main-img" src="photos/DSCF8910.jpg" alt="DSCF8910 photo in main cull view" style="width:100%;height:100%;object-fit:cover">
         </div>
         <div class="cull-filmstrip">
-          <div class="cull-thumb active" data-index="0"><img src="photos/DSCF8910.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
-          <div class="cull-thumb" data-index="1"><img src="photos/DSCF8884.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
-          <div class="cull-thumb" data-index="2"><img src="photos/DSCF8803.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
-          <div class="cull-thumb" data-index="3"><img src="photos/DSCF8684.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
-          <div class="cull-thumb" data-index="4"><img src="photos/DSCF8495.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
+          <div class="cull-thumb active" data-index="0"><img src="photos/DSCF8910.jpg" alt="Photo thumbnail in filmstrip" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
+          <div class="cull-thumb" data-index="1"><img src="photos/DSCF8884.jpg" alt="Photo thumbnail in filmstrip" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
+          <div class="cull-thumb" data-index="2"><img src="photos/DSCF8803.jpg" alt="Photo thumbnail in filmstrip" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
+          <div class="cull-thumb" data-index="3"><img src="photos/DSCF8684.jpg" alt="Photo thumbnail in filmstrip" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
+          <div class="cull-thumb" data-index="4"><img src="photos/DSCF8495.jpg" alt="Photo thumbnail in filmstrip" style="width:100%;height:100%;object-fit:cover"><div class="cull-rating-badge"></div></div>
         </div>
         <div class="cull-keys">
           <div class="cull-key" data-rating="1">
@@ -1040,7 +1007,7 @@ footer {
     <div class="flow-visual reveal reveal-delay-2">
       <div class="sim-demo" id="sim-demo">
         <div class="sim-photo">
-          <img id="sim-demo-img" src="variants/DSCF3048_Provia.jpg" alt="" style="width:100%;height:100%;object-fit:cover">
+          <img id="sim-demo-img" src="variants/DSCF3048_Provia.jpg" alt="DSCF3048 with Provia film simulation" style="width:100%;height:100%;object-fit:cover">
           <div class="sim-label" id="sim-current-label">Provia / Standard</div>
         </div>
         <div class="sim-tabs" id="sim-tabs">
@@ -1069,16 +1036,16 @@ footer {
     </div>
     <div class="flow-visual reveal reveal-delay-2">
       <div class="variant-grid">
-        <div class="variant-cell"><img src="variants/DSCF5058_Provia.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-tag">As Shot</div><div class="variant-cell-label">Provia</div></div>
-        <div class="variant-cell"><img src="variants/DSCF5058_Velvia.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Velvia</div></div>
-        <div class="variant-cell"><img src="variants/DSCF5058_Astia.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Astia</div></div>
-        <div class="variant-cell"><img src="variants/DSCF5058_Classic.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Classic Chrome</div></div>
-        <div class="variant-cell"><img src="variants/DSCF5058_ClassicNeg.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Classic Neg</div></div>
-        <div class="variant-cell"><img src="variants/DSCF5058_Nostalgic.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Nostalgic Neg</div></div>
-        <div class="variant-cell"><img src="variants/DSCF5058_RealaACE.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Reala ACE</div></div>
-        <div class="variant-cell"><img src="variants/DSCF5058_Acros.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Acros</div></div>
-        <div class="variant-cell"><img src="variants/DSCF5058_Eterna.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Eterna</div></div>
-        <div class="variant-cell"><img src="variants/DSCF5058_BleachBypass.jpg" alt="" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Bleach Bypass</div></div>
+        <div class="variant-cell"><img src="variants/DSCF5058_Provia.jpg" alt="DSCF5058 with Provia film simulation" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-tag">As Shot</div><div class="variant-cell-label">Provia</div></div>
+        <div class="variant-cell"><img src="variants/DSCF5058_Velvia.jpg" alt="DSCF5058 with Velvia film simulation" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Velvia</div></div>
+        <div class="variant-cell"><img src="variants/DSCF5058_Astia.jpg" alt="DSCF5058 with Astia film simulation" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Astia</div></div>
+        <div class="variant-cell"><img src="variants/DSCF5058_Classic.jpg" alt="DSCF5058 with Classic Chrome film simulation" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Classic Chrome</div></div>
+        <div class="variant-cell"><img src="variants/DSCF5058_ClassicNeg.jpg" alt="DSCF5058 with Classic Neg film simulation" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Classic Neg</div></div>
+        <div class="variant-cell"><img src="variants/DSCF5058_Nostalgic.jpg" alt="DSCF5058 with Nostalgic Neg film simulation" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Nostalgic Neg</div></div>
+        <div class="variant-cell"><img src="variants/DSCF5058_RealaACE.jpg" alt="DSCF5058 with Reala ACE film simulation" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Reala ACE</div></div>
+        <div class="variant-cell"><img src="variants/DSCF5058_Acros.jpg" alt="DSCF5058 with Acros film simulation" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Acros</div></div>
+        <div class="variant-cell"><img src="variants/DSCF5058_Eterna.jpg" alt="DSCF5058 with Eterna film simulation" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Eterna</div></div>
+        <div class="variant-cell"><img src="variants/DSCF5058_BleachBypass.jpg" alt="DSCF5058 with Bleach Bypass film simulation" style="width:100%;height:100%;object-fit:cover"><div class="variant-cell-label">Bleach Bypass</div></div>
       </div>
     </div>
   </div>
@@ -1094,11 +1061,11 @@ footer {
     <div class="flow-visual reveal reveal-delay-2">
       <div id="sbs-demo" style="display:flex;gap:4px;border-radius:4px;overflow:hidden;border:1px solid var(--border)">
         <div class="sbs-panel" style="flex:1;aspect-ratio:3/2;overflow:hidden;position:relative;cursor:zoom-in">
-          <img src="variants/DSCF9397_ClassicNeg.jpg" alt="" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transition:transform 0.3s ease">
+          <img src="variants/DSCF9397_ClassicNeg.jpg" alt="DSCF9397 with Classic Neg film simulation" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transition:transform 0.3s ease">
           <span style="position:absolute;top:8px;left:8px;font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;background:rgba(0,0,0,0.5);padding:2px 6px">Classic Neg</span>
         </div>
         <div class="sbs-panel" style="flex:1;aspect-ratio:3/2;overflow:hidden;position:relative;cursor:zoom-in">
-          <img src="variants/DSCF9397_Nostalgic.jpg" alt="" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transition:transform 0.3s ease">
+          <img src="variants/DSCF9397_Nostalgic.jpg" alt="DSCF9397 with Nostalgic Neg film simulation" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transition:transform 0.3s ease">
           <span style="position:absolute;top:8px;left:8px;font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;background:rgba(0,0,0,0.5);padding:2px 6px">Nostalgic Neg</span>
         </div>
       </div>
@@ -1300,7 +1267,6 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   const ratings = {};
 
   const photoFiles = ['photos/DSCF8910.jpg', 'photos/DSCF8884.jpg', 'photos/DSCF8803.jpg', 'photos/DSCF8684.jpg', 'photos/DSCF8495.jpg'];
-  const defaultMain = 'photos/DSCF8378.jpg';
 
   function setActive(index) {
     thumbs.forEach(t => t.classList.remove('active'));

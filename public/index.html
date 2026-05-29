@@ -2149,55 +2149,6 @@ body::before {
 
 /* (old recipe browser panels removed — tree now in left panel of shell) */
 
-#recipe-lightbox {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(0,0,0,0.92);
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-#recipe-lightbox.visible { display: flex; }
-#recipe-lightbox img {
-  max-width: 90vw;
-  max-height: 90vh;
-  object-fit: contain;
-}
-#recipe-lightbox-nav {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  pointer-events: none;
-}
-.lightbox-arrow {
-  font-size: 36px;
-  color: rgba(255,255,255,0.5);
-  cursor: pointer;
-  pointer-events: all;
-  padding: 20px;
-  user-select: none;
-  transition: color 0.15s;
-}
-.lightbox-arrow:hover { color: rgba(255,255,255,0.9); }
-#recipe-lightbox-counter {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--mono);
-  font-size: 11px;
-  color: rgba(255,255,255,0.5);
-  letter-spacing: 1px;
-}
-
 /* Toast */
 #recipe-toast {
   position: fixed;
@@ -3717,14 +3668,6 @@ body::before {
     </div>
   </div>
 </div>
-<div id="recipe-lightbox">
-  <img id="recipe-lightbox-img" src="" alt="">
-  <div id="recipe-lightbox-nav">
-    <div class="lightbox-arrow" id="lightbox-prev">&#8249;</div>
-    <div class="lightbox-arrow" id="lightbox-next">&#8250;</div>
-  </div>
-  <div id="recipe-lightbox-counter"></div>
-</div>
 
 <div id="photo-picker-modal">
   <div id="photo-picker-content">
@@ -3879,28 +3822,6 @@ body::before {
   }
 
   // ── Utilities ──
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  function relativeTime(dateStr) {
-    if (!dateStr) return '';
-    const now = Date.now();
-    const then = new Date(dateStr).getTime();
-    const diff = now - then;
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return mins + 'm ago';
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return hours + 'h ago';
-    const days = Math.floor(hours / 24);
-    if (days === 1) return 'yesterday';
-    if (days < 30) return days + 'd ago';
-    const months = Math.floor(days / 30);
-    return months + 'mo ago';
-  }
 
   // ── Flash label ──
   function showFlashLabel(text, color) {
@@ -6777,20 +6698,6 @@ body::before {
     }
   }
 
-  function findOrAddToCollage(photo) {
-    const existing = recipeState.gridPhotos.findIndex(p => p.file === photo.file);
-    if (existing >= 0) return existing;
-    if (recipeState.gridPhotos.length < 9) {
-      recipeState.gridPhotos.push(photo);
-      renderGrid();
-      return recipeState.gridPhotos.length - 1;
-    }
-    const swapIdx = recipeState.mode === 'focus' ? recipeState.focusIndex : 0;
-    recipeState.gridPhotos[swapIdx] = photo;
-    renderGrid();
-    return swapIdx;
-  }
-
   async function loadRecipes() {
     try {
       const res = await fetch('/api/recipes').then(r => r.json());
@@ -6946,12 +6853,6 @@ body::before {
     recipeState.dirty = true;
     if (recipeState.autoSaveTimer) clearTimeout(recipeState.autoSaveTimer);
     recipeState.autoSaveTimer = setTimeout(() => { saveRecipe(); }, 2000);
-    checkParamsChanged();
-    saveRecipeState();
-  }
-
-  function markDirtyNoAutoSave() {
-    recipeState.dirty = true;
     checkParamsChanged();
     saveRecipeState();
   }
@@ -8594,6 +8495,159 @@ body::before {
     window._focusResetZoom = focusResetZoom;
   })();
 
+  // ── RAF Preview Generation ──
+
+  function showRafPreviewPrompt(container, folderName, rafCheck, baseDir) {
+    var rafCount = rafCheck.rafCount;
+    var estTime = Math.ceil(rafCount * 1.5);
+    container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:var(--text-dim);font-size:13px;font-family:var(--font-mono);text-align:center;padding:0 24px">' +
+      '<div style="font-size:15px;color:var(--text)">' + folderName + '</div>' +
+      '<div>' + rafCount + ' RAF files found with no JPEG previews</div>' +
+      '<div style="font-size:11px;opacity:0.6">Generate previews using the connected camera?<br>~' + estTime + 's estimated</div>' +
+      '<div style="display:flex;gap:12px;margin-top:8px">' +
+        '<button id="raf-preview-cancel" style="background:none;border:1px solid rgba(255,255,255,0.15);color:var(--text);padding:6px 16px;font-family:var(--font-mono);font-size:12px;cursor:pointer;letter-spacing:0.5px">CANCEL</button>' +
+        '<button id="raf-preview-generate" style="background:var(--amber);border:1px solid var(--amber);color:#000;padding:6px 16px;font-family:var(--font-mono);font-size:12px;cursor:pointer;font-weight:600;letter-spacing:0.5px">GENERATE PREVIEWS</button>' +
+      '</div>' +
+    '</div>';
+
+    document.getElementById('raf-preview-cancel').addEventListener('click', function() {
+      container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-dim);font-size:13px;font-family:var(--font-mono)">' +
+        '<div style="font-size:15px;color:var(--text)">' + folderName + '</div>' +
+        '<div>No JPEG previews available</div>' +
+        '<div style="font-size:11px;opacity:0.5">Select a folder with sorted photos to use Recipe Lab</div>' +
+        '</div>';
+    });
+
+    document.getElementById('raf-preview-generate').addEventListener('click', function() {
+      generateRafPreviews(container, folderName, rafCheck, baseDir);
+    });
+  }
+
+  async function generateRafPreviews(container, folderName, rafCheck, baseDir) {
+    var rafFiles = rafCheck.rafFiles;
+    var rafDir = rafCheck.rafDir;
+    var hifDir = baseDir + '/Liked/HIF';
+    var total = rafFiles.length;
+    var done = 0;
+    var failed = 0;
+
+    function updateProgress(status) {
+      var pct = Math.round((done / total) * 100);
+      var remaining = total - done;
+      var estSec = Math.ceil(remaining * 1.5);
+      container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:var(--text-dim);font-size:13px;font-family:var(--font-mono);text-align:center;padding:0 24px">' +
+        '<div style="font-size:15px;color:var(--text)">' + folderName + '</div>' +
+        '<div style="color:var(--text)">' + (status || ('Generating preview ' + (done + 1) + '/' + total)) + '</div>' +
+        '<div style="width:280px;height:4px;background:rgba(255,255,255,0.08);overflow:hidden">' +
+          '<div style="width:' + pct + '%;height:100%;background:var(--amber);transition:width 0.3s"></div>' +
+        '</div>' +
+        '<div style="font-size:11px;opacity:0.6">' + done + ' of ' + total + ' generated' + (estSec > 0 ? ' &middot; ~' + estSec + 's remaining' : '') + '</div>' +
+        (failed > 0 ? '<div style="font-size:11px;color:var(--amber)">' + failed + ' failed</div>' : '') +
+      '</div>';
+    }
+
+    updateProgress('Connecting to camera...');
+
+    try {
+      await fetch('/api/camera/connect', { method: 'POST' }).then(function(r) { return r.json(); });
+    } catch(e) {
+      container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-dim);font-size:13px;font-family:var(--font-mono)">' +
+        '<div style="font-size:15px;color:var(--text)">' + folderName + '</div>' +
+        '<div style="color:var(--amber)">Camera connection failed</div>' +
+        '</div>';
+      return;
+    }
+
+    // Ensure Liked/HIF/ directory exists
+    await fetch('/api/ensure-dir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dir: hifDir })
+    });
+
+    for (var i = 0; i < rafFiles.length; i++) {
+      var rafFile = rafFiles[i];
+      var stem = rafFile.replace(/\.[^.]+$/, '');
+      var rafPath = rafDir + '/' + rafFile;
+      var outputPath = hifDir + '/' + stem + '.JPG';
+
+      updateProgress();
+
+      try {
+        var uploadRes = await fetch('/api/camera/upload-raf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: rafPath })
+        }).then(function(r) { return r.json(); });
+
+        if (uploadRes.error) {
+          var errLower = uploadRes.error.toLowerCase();
+          if (/camera|disconnect|connection|ptp|session/.test(errLower)) {
+            updateProgress('Camera disconnected');
+            showToast('Camera disconnected during preview generation');
+            return;
+          }
+          failed++;
+          done++;
+          continue;
+        }
+
+        // Read the as-shot profile (no recipe patching — just the embedded settings)
+        var profileRes = await fetch('/api/camera/profile').then(function(r) { return r.json(); });
+
+        // Write the profile back unchanged (as-shot rendering)
+        await fetch('/api/camera/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: profileRes.data })
+        }).then(function(r) { return r.json(); });
+
+        // Trigger conversion
+        await fetch('/api/camera/convert', { method: 'POST' }).then(function(r) { return r.json(); });
+
+        // Wait for result JPEG
+        var resultRes = await fetch('/api/camera/wait-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ outputPath: outputPath, timeout: 10000 })
+        }).then(function(r) { return r.json(); });
+
+        if (!resultRes.ok) {
+          failed++;
+        }
+        done++;
+      } catch(e) {
+        console.error('Preview generation failed for ' + stem, e);
+        var errMsg = (e && e.message) ? e.message.toLowerCase() : '';
+        if (/camera|disconnect|connection|ptp|session|typeerror/.test(errMsg)) {
+          updateProgress('Camera disconnected');
+          showToast('Camera disconnected during preview generation');
+          return;
+        }
+        failed++;
+        done++;
+      }
+    }
+
+    updateProgress('Done');
+
+    if (done - failed > 0) {
+      showToast((done - failed) + ' preview' + (done - failed === 1 ? '' : 's') + ' generated');
+      // Auto-load the directory now that HIF previews exist
+      recipeLoadedDir = baseDir;
+      recipeState.lastLoadedDir = null;
+      recipeState.gridPhotos = [];
+      document.getElementById('recipe-center-preview').style.display = 'none';
+      loadRecipeGrid();
+      loadRecipeFilmstrip();
+    } else {
+      container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-dim);font-size:13px;font-family:var(--font-mono)">' +
+        '<div style="font-size:15px;color:var(--text)">' + folderName + '</div>' +
+        '<div style="color:var(--amber)">All preview generations failed</div>' +
+        '</div>';
+    }
+  }
+
   // ── Grid ──
 
   async function loadRecipeGrid() {
@@ -8659,12 +8713,29 @@ body::before {
       document.getElementById('recipe-filter-dropdown').style.display = 'none';
       document.getElementById('recipe-compare-row').style.display = 'none';
       document.getElementById('recipe-right-panel').style.display = 'none';
-      recipeLoadedDir = null;
-      recipeState.lastLoadedDir = null;
       recipeState.gridPhotos = [];
       expandRecipeLeftPanel();
       var folderName = (recipeSelectedPath || '').split('/').filter(Boolean).pop() || 'folder';
       var centerPreview = document.getElementById('recipe-center-preview');
+
+      // Check if this is a RAF-only directory (has Liked/RAF/ but no HIF/JPG)
+      var checkDir = recipeLoadedDir || recipeSelectedPath;
+      recipeLoadedDir = null;
+      recipeState.lastLoadedDir = null;
+
+      try {
+        var rafCheckRes = await fetch('/api/check-raf-only', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dir: checkDir })
+        }).then(function(r) { return r.json(); });
+
+        if (rafCheckRes.rafOnly && rafCheckRes.rafCount > 0 && recipeState.cameraConnected) {
+          showRafPreviewPrompt(centerPreview, folderName, rafCheckRes, checkDir);
+          return;
+        }
+      } catch(rafCheckErr) {}
+
       centerPreview.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-dim);font-size:13px;font-family:var(--font-mono)">' +
         '<div style="font-size:15px;color:var(--text)">' + folderName + '</div>' +
         '<div>No Liked/RAF/ folder structure found</div>' +
@@ -8672,56 +8743,6 @@ body::before {
         '</div>';
     }
   }
-
-  const recipeLightbox = document.getElementById('recipe-lightbox');
-  const recipeLightboxImg = document.getElementById('recipe-lightbox-img');
-  const lightboxCounter = document.getElementById('recipe-lightbox-counter');
-  let lightboxIndex = 0;
-
-  function openRecipeLightbox(file) {
-    lightboxIndex = recipeState.gridPhotos.findIndex(p => p.file === file);
-    if (lightboxIndex < 0) lightboxIndex = 0;
-    showLightboxPhoto();
-    recipeLightbox.classList.add('visible');
-  }
-
-  function showLightboxPhoto() {
-    const photo = recipeState.gridPhotos[lightboxIndex];
-    if (!photo) return;
-    const dirB64 = btoa(unescape(encodeURIComponent(recipeState.gridDir)));
-    recipeLightboxImg.src = '/api/preview-image/' + dirB64 + '/' + encodeURIComponent(photo.file);
-    lightboxCounter.textContent = (lightboxIndex + 1) + ' / ' + recipeState.gridPhotos.length;
-  }
-
-  function lightboxNav(delta) {
-    lightboxIndex = (lightboxIndex + delta + recipeState.gridPhotos.length) % recipeState.gridPhotos.length;
-    showLightboxPhoto();
-  }
-
-  recipeLightbox.addEventListener('click', (e) => {
-    if (e.target === recipeLightboxImg || e.target.closest('.lightbox-arrow') || e.target.closest('#recipe-lightbox-counter')) return;
-    recipeLightbox.classList.remove('visible');
-    recipeLightboxImg.src = '';
-  });
-
-  document.getElementById('lightbox-prev').addEventListener('click', (e) => {
-    e.stopPropagation();
-    lightboxNav(-1);
-  });
-  document.getElementById('lightbox-next').addEventListener('click', (e) => {
-    e.stopPropagation();
-    lightboxNav(1);
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (!recipeLightbox.classList.contains('visible')) return;
-    if (e.key === 'ArrowLeft') lightboxNav(-1);
-    else if (e.key === 'ArrowRight') lightboxNav(1);
-    else if (e.key === 'Escape') {
-      recipeLightbox.classList.remove('visible');
-      recipeLightboxImg.src = '';
-    }
-  });
 
   function renderGrid() {
     recipeGridEl.innerHTML = '';
@@ -9107,11 +9128,6 @@ body::before {
     renderRecipeTreeRoot(homeContainer, homeDir.split('/').pop(), homeDir, 1);
 
     recipeLeftTreeInitialized = true;
-  }
-
-  // Keep old name as alias for landing page tab switching
-  async function initRecipeTree() {
-    initRecipeLeftTree();
   }
 
   // --- Recipe Lab tree wrappers ---
@@ -9608,7 +9624,6 @@ body::before {
 
   // Arrow keys in focus mode — cycle through collage or filmstrip photos
   document.addEventListener('keydown', (e) => {
-    if (recipeLightbox && recipeLightbox.classList.contains('visible')) return;
     if (recipeState.mode !== 'focus') return;
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;

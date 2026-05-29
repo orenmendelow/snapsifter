@@ -8,6 +8,8 @@
     "build": "electron-builder --mac && ./scripts/resign-app.sh",
     "build:helper": "./scripts/build-helper.sh",
     "test": "vitest run",
+    "test:compare": "node --test test/compare-mode.test.js",
+    "test:all": "vitest run && node --test test/compare-mode.test.js",
     "test:watch": "vitest"
   },
   "keywords": ["fujifilm", "film-simulation", "recipe", "photo-culling", "raw", "x-series"],
