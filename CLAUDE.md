@@ -74,6 +74,21 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 41 decisions (2026-05-29)
+
+**DMG hosting:** GitHub Releases selected over Cloudflare R2. Reason: `electron-updater` has native GitHub Releases support for auto-updates with zero config. R2 would require a custom update manifest. Added to LAUNCH.md Phase 2.
+
+**Feedback pipeline (designed, not yet built):**
+- In-app: "Feedback" button opens mailto to `support@drkrm.app` with structured subject prefixes (`[drkrm-bug]`, `[drkrm-feature]`) and auto-populated system info (version, OS). Zero backend.
+- Triage: Gmail filters auto-label by prefix. Bugs → GitHub Issues. Feature requests → `REQUESTS.md` tally file.
+- Public: Static changelog page at `drkrm.app/changelog` (from `CHANGELOG.md` in repo, dark/amber aesthetic).
+- Added to LAUNCH.md Phase 2.
+
+**Tutorial/onboarding (designed, not yet built):**
+- Photo Cull: No onboarding needed — universal pattern.
+- Recipe Lab: First-run 5-7 step modal walkthrough with spotlight highlighting. Covers: collage, per-photo params, simulate (why camera needed), variant test, SBS compare, cookbook, focus mode. Shows once (localStorage flag), re-accessible from `?` menu.
+- Website: "How Recipe Lab works" section with GIFs for discovery. Not a substitute for in-app walkthrough.
+
 ### Session 40 changes (2026-05-29)
 
 **App (`public/index.html`):**

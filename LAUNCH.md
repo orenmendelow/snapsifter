@@ -59,10 +59,12 @@
 
 - [ ] Apple Developer Program enrollment ($99)
 - [ ] Code signing + notarization build script (codesign -> notarytool -> staple -> DMG)
+- [ ] GitHub Releases for DMG hosting + electron-updater for auto-updates
 - [ ] LemonSqueezy or Paddle storefront setup
 - [ ] License key validation in app (check at startup, store in ~/.drkrm/license.json)
 - [ ] Trial mode (14-day countdown, Cull stays free, Recipe Lab locks)
 - [ ] Build DMG packaging script
+- [ ] In-app feedback pipeline (bug reports / feature requests → GitHub Issues or similar)
 
 ## Phase 3: Soft Launch
 
