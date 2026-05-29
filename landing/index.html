@@ -358,7 +358,7 @@ section {
   font-family: var(--serif);
   font-size: 72px;
   font-weight: 800;
-  color: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.08);
   line-height: 1;
 }
 
@@ -860,6 +860,10 @@ footer {
   .flow-visual { flex: none; width: 100%; padding-top: 0; }
   .flow-content > .section-label { top: 32px; }
 
+  .sim-tabs {
+    -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+    mask-image: linear-gradient(to right, #000 85%, transparent);
+  }
   .sim-tab { flex: 0 0 auto; padding: 14px 12px; }
 
   .pricing-row { flex-direction: column; gap: 32px; }
