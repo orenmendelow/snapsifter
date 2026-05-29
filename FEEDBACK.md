@@ -241,11 +241,18 @@ Verbatim from Oren. Check off when completed and visually verified.
 
 - [x] **S36-1**: Landing page missing feature sections — DONE: 3x2 features grid with SVG icons added between flow steps and stats. Covers: Session Resume, File Browser, Star & Flag, Cookbook, Diverse Collage, Focus Mode. Responsive (2-col tablet, 1-col mobile).
 - [x] **S36-2**: Landing page hero animated cursor — DONE then REMOVED in S38. Oren called it "horrid." All cursor/rating HTML and 4 keyframe animations deleted.
-- [ ] **S36-3**: Download buttons (`btn-download`) unwired — all 3 point to `javascript:void(0)`. Need hosted DMG URL.
+- [x] **S36-3**: Download buttons (`btn-download`) — converted to email signup forms ("Notify Me") for pre-launch. Will become download links when DMG is hosted on GitHub Releases (requires Apple Developer signing).
 - [x] **S36-4**: No OG/Twitter meta tags for link sharing. — DONE: meta tags added. OG image (`landing/og-image.jpg`, 1200x630) created in S38.
 - [x] **S37-1**: PINNED OPTION — Hero camera SVG beside laptop with wire + green light. IMPLEMENTED then REVERTED — Oren rejected the side-by-side layout. Camera restored to original absolute-positioned bottom-right corner. Wire + green light removed.
 - [x] **S36-5**: `support@drkrm.app` mailto in footer — DONE: Cloudflare Email Routing active. Inbound forwards to mendelowllc@gmail.com. Gmail "Send mail as" configured for outbound via smtp.gmail.com.
 - [x] **S36-6**: Landing page spacing — DONE: Removed `min-height: 100vh` from hero (was creating dead space between hero CTA and first flow step). Set explicit `padding-top: 120px; padding-bottom: 48px`. Hero content determines section height now, flows directly into features.
+
+## Session 42 — New
+
+- [ ] **S42-1**: "Be first to know when drkrm launches. No spam." and similar dim text — should be a touch dimmer (Oren wants it slightly less prominent than current #999, but still readable).
+- [ ] **S42-2**: Flow step numbers (01, 02, 03, 04) too dim / hard to see. Bump opacity.
+- [ ] **S42-3**: Hero camera SVG — offset further away from laptop screen. Less overlap, more beside.
+- [ ] **S42-4**: "You're on the list." confirmation text after email signup — not centered. Needs centering.
 
 ## Older — Unresolved
 

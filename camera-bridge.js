@@ -127,6 +127,10 @@ class CameraBridge {
     if (dataBase64) p.data = dataBase64;
     return this._send('sendCommand', p);
   }
+
+  async setWatermark(enabled) {
+    return this._send('set-watermark', { enabled });
+  }
 }
 
 module.exports = new CameraBridge();

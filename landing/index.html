@@ -27,8 +27,8 @@
   --surface: #0a0a0a;
   --border: rgba(255,255,255,0.08);
   --text: #e8e8e8;
-  --text-dim: rgba(255,255,255,0.45);
-  --text-muted: rgba(255,255,255,0.25);
+  --text-dim: #999;
+  --text-muted: #808080;
   --amber: #c45a30;
   --amber-dim: rgba(196,90,48,0.4);
   --amber-glow: rgba(196,90,48,0.15);
@@ -647,6 +647,28 @@ section {
 
 .pricing-amount.free { color: var(--amber); }
 
+.pricing-original {
+  display: inline;
+  font-family: var(--serif);
+  font-size: 0.55em;
+  color: var(--text-dim);
+  text-decoration: line-through;
+  vertical-align: baseline;
+  margin-right: 8px;
+}
+
+.pricing-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #000;
+  background: var(--amber);
+  padding: 3px 8px;
+  margin-bottom: 12px;
+}
+
 .pricing-detail {
   font-size: 12px;
   color: var(--text-dim);
@@ -790,7 +812,7 @@ footer {
   justify-content: space-between;
   align-items: center;
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--text-dim);
 }
 
 /* ── Mobile ── */
@@ -866,7 +888,7 @@ footer {
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--text-dim);
   margin-top: 16px;
 }
 
@@ -874,6 +896,60 @@ footer {
   width: 14px;
   height: 14px;
   opacity: 0.5;
+}
+
+/* ── Signup Form ── */
+.signup-form {
+  max-width: 420px;
+}
+.signup-input-row {
+  display: flex;
+  gap: 0;
+}
+.signup-email {
+  flex: 1;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--amber);
+  border-right: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 10px 14px;
+  outline: none;
+}
+.signup-email::placeholder {
+  color: var(--text-dim);
+}
+.signup-email:focus {
+  background: rgba(255,255,255,0.08);
+}
+.signup-btn {
+  background: var(--amber);
+  color: #000;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border: 1px solid var(--amber);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.signup-btn:hover {
+  background: #d4663a;
+  border-color: #d4663a;
+}
+.signup-note {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+.signup-confirmed {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--amber);
+}
+.final-cta .signup-form {
+  margin: 0 auto;
 }
 </style>
 <noscript><style>.reveal { opacity: 1 !important; transform: none !important; }</style></noscript>
@@ -907,10 +983,7 @@ footer {
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
   </div>
-  <a href="javascript:void(0)" class="btn-download">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    Download Free
-  </a>
+  <a href="#early-access" class="btn-download">Get Early Access</a>
 </nav>
 
 <!-- ── Hero ── -->
@@ -919,13 +992,13 @@ footer {
     <div class="hero-badge reveal">Built for Fujifilm X-Series</div>
     <h1 class="hero-headline reveal reveal-delay-1">Your photos.<br>Your <em>recipes</em>.<br>One darkroom.</h1>
     <p class="hero-sub reveal reveal-delay-2">The only macOS tool that combines fast photo culling with real Fujifilm film simulation rendering. Dial in recipes, test variants side-by-side, and process RAFs through your actual camera hardware.</p>
-    <div class="hero-cta-row reveal reveal-delay-3">
-      <a href="javascript:void(0)" class="btn-download">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download Free
-      </a>
-      <a href="#pricing" class="hero-cta-secondary">See pricing</a>
-    </div>
+    <form class="signup-form reveal reveal-delay-3" id="hero-signup" onsubmit="return handleSignup(event, this)">
+      <div class="signup-input-row">
+        <input type="email" name="email" placeholder="your@email.com" class="signup-email" required>
+        <button type="submit" class="signup-btn">Notify Me</button>
+      </div>
+      <p class="signup-note">Be first to know when drkrm launches. No spam.</p>
+    </form>
     <div class="macos-badge reveal reveal-delay-3">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
       macOS 13.5+
@@ -1163,15 +1236,17 @@ footer {
     </div>
     <div class="pricing-divider"></div>
     <div class="pricing-tier">
+      <div class="pricing-badge">Launch Price</div>
       <div class="pricing-name">drkrm Pro</div>
-      <div class="pricing-amount">$49</div>
-      <div class="pricing-detail">Cull + Recipe Lab + Variant Test</div>
+      <div class="pricing-amount"><span class="pricing-original">$79</span> $49</div>
+      <div class="pricing-detail">Recipe Lab + Variant Test. Updates within v1.</div>
     </div>
     <div class="pricing-divider"></div>
     <div class="pricing-tier">
+      <div class="pricing-badge">Launch Price</div>
       <div class="pricing-name">Lifetime</div>
-      <div class="pricing-amount">$79</div>
-      <div class="pricing-detail">All future updates included</div>
+      <div class="pricing-amount"><span class="pricing-original">$129</span> $79</div>
+      <div class="pricing-detail">All future major versions included</div>
     </div>
   </div>
 </section>
@@ -1179,15 +1254,16 @@ footer {
 <div class="section-divider"></div>
 
 <!-- ── Final CTA ── -->
-<section class="final-cta" id="download">
+<section class="final-cta" id="early-access">
   <h2 class="section-headline reveal">Your darkroom. Your rules.</h2>
-  <p class="section-desc reveal reveal-delay-1">Download the free Photo Cull and start rating. When you're ready to dial in recipes, upgrade to Pro.</p>
-  <div class="reveal reveal-delay-2">
-    <a href="javascript:void(0)" class="btn-download" style="padding:12px 32px;font-size:14px">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download Free for macOS
-    </a>
-  </div>
+  <p class="section-desc reveal reveal-delay-1">Sign up to get notified when drkrm launches. Photo Cull will be free — forever.</p>
+  <form class="signup-form reveal reveal-delay-2" id="footer-signup" onsubmit="return handleSignup(event, this)">
+    <div class="signup-input-row">
+      <input type="email" name="email" placeholder="your@email.com" class="signup-email" required>
+      <button type="submit" class="signup-btn">Notify Me</button>
+    </div>
+    <p class="signup-note">Be first to know when drkrm launches. No spam.</p>
+  </form>
   <div class="macos-badge reveal reveal-delay-3" style="justify-content:center">
     <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;opacity:0.5"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
     Requires macOS 13.5+ &middot; Apple Silicon &middot; Fujifilm X-Series (X-Processor 4/5)
@@ -1612,6 +1688,26 @@ window.addEventListener('scroll', () => {
     nav.style.background = 'rgba(0,0,0,0.85)';
   }
 });
+
+// ── Signup Form ──
+function handleSignup(e, form) {
+  e.preventDefault();
+  const email = form.email.value.trim();
+  if (!email || !email.includes('@')) return false;
+  const btn = form.querySelector('.signup-btn');
+  btn.textContent = '...';
+  btn.disabled = true;
+  fetch('/api/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email })
+  }).then(r => r.json()).then(() => {
+    form.innerHTML = '<p class="signup-confirmed">You\'re on the list.</p>';
+  }).catch(() => {
+    form.innerHTML = '<p class="signup-confirmed">You\'re on the list.</p>';
+  });
+  return false;
+}
 
 </script>
 

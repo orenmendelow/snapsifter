@@ -1,5 +1,8 @@
 import Foundation
 import ImageCaptureCore
+import CoreGraphics
+import ImageIO
+import CoreText
 
 // MARK: - PTP Constants
 
@@ -118,6 +121,7 @@ class CameraManager: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate {
     var activeCamera: ICCameraDevice?
     var transactionId: UInt32 = 0
     var sessionOpen = false
+    var watermarkMode = false
 
     // Pending command completion
     var pendingCompletion: ((UInt16, Data?) -> Void)?
@@ -497,6 +501,104 @@ class CameraManager: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate {
         }
     }
 
+    func applyWatermark(_ jpegData: Data) -> Data? {
+        guard let source = CGImageSourceCreateWithData(jpegData as CFData, nil),
+              let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+            log("Watermark: failed to decode JPEG")
+            return nil
+        }
+
+        let width = cgImage.width
+        let height = cgImage.height
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+
+        guard let ctx = CGContext(data: nil,
+                                 width: width,
+                                 height: height,
+                                 bitsPerComponent: 8,
+                                 bytesPerRow: 0,
+                                 space: colorSpace,
+                                 bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+            log("Watermark: failed to create bitmap context")
+            return nil
+        }
+
+        // Draw original image
+        ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        // Watermark text setup
+        let text = "drkrm TRIAL" as CFString
+        let fontSize = CGFloat(max(width, height)) / 18.0
+        let font = CTFontCreateWithName("Helvetica-Bold" as CFString, fontSize, nil)
+
+        let attributes: [CFString: Any] = [
+            kCTFontAttributeName: font,
+            kCTForegroundColorFromContextAttributeName: true as CFBoolean
+        ]
+        let attrString = CFAttributedStringCreate(nil, text, attributes as CFDictionary)!
+        let line = CTLineCreateWithAttributedString(attrString)
+        let textBounds = CTLineGetBoundsWithOptions(line, [])
+
+        // Semi-transparent white, ~20% opacity
+        ctx.setFillColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.20)
+
+        // Tile the watermark diagonally across the image
+        let spacingX = textBounds.width * 1.8
+        let spacingY = fontSize * 3.5
+        let angle = -CGFloat.pi / 6.0 // -30 degrees
+
+        ctx.saveGState()
+        // Rotate the entire context around center
+        ctx.translateBy(x: CGFloat(width) / 2.0, y: CGFloat(height) / 2.0)
+        ctx.rotate(by: angle)
+        ctx.translateBy(x: -CGFloat(width) / 2.0, y: -CGFloat(height) / 2.0)
+
+        // Draw text in a grid that covers the rotated area (extend beyond bounds)
+        let diagonal = sqrt(CGFloat(width * width + height * height))
+        let startX = -diagonal / 2.0
+        let startY = -diagonal / 2.0
+        let endX = CGFloat(width) + diagonal / 2.0
+        let endY = CGFloat(height) + diagonal / 2.0
+
+        var y = startY
+        while y < endY {
+            var x = startX
+            while x < endX {
+                ctx.textPosition = CGPoint(x: x, y: y)
+                CTLineDraw(line, ctx)
+                x += spacingX
+            }
+            y += spacingY
+        }
+
+        ctx.restoreGState()
+
+        // Encode back to JPEG
+        guard let watermarkedImage = ctx.makeImage() else {
+            log("Watermark: failed to create output image")
+            return nil
+        }
+
+        let outputData = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(outputData as CFMutableData, "public.jpeg" as CFString, 1, nil) else {
+            log("Watermark: failed to create image destination")
+            return nil
+        }
+
+        let destOptions: [CFString: Any] = [
+            kCGImageDestinationLossyCompressionQuality: 0.92
+        ]
+        CGImageDestinationAddImage(dest, watermarkedImage, destOptions as CFDictionary)
+
+        guard CGImageDestinationFinalize(dest) else {
+            log("Watermark: failed to finalize JPEG")
+            return nil
+        }
+
+        log("Watermark: applied to \(width)x\(height) image (\(jpegData.count) -> \(outputData.length) bytes)")
+        return outputData as Data
+    }
+
     func pollForResult(outputPath: String, timeout: TimeInterval = 30, completion: @escaping (Bool, String?) -> Void) {
         let startTime = Date()
         pollLoop(outputPath: outputPath, startTime: startTime, timeout: timeout, completion: completion)
@@ -532,7 +634,8 @@ class CameraManager: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate {
                     do {
                         let outputURL = URL(fileURLWithPath: outputPath)
                         try FileManager.default.createDirectory(at: outputURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-                        try jpegData.write(to: outputURL)
+                        let finalData = self?.watermarkMode == true ? (self?.applyWatermark(jpegData) ?? jpegData) : jpegData
+                        try finalData.write(to: outputURL)
                         // Cleanup temp object
                         self?.sendPTPCommand(opcode: PTP_OP_DELETE_OBJECT, params: [handle]) { _, _ in
                             completion(true, nil)
@@ -688,6 +791,20 @@ func handleRequest(_ request: JSONRPCRequest) {
                 respondError(err ?? "Conversion failed")
             }
         }
+
+    case "set-watermark":
+        if let enabled = request.params?["enabled"] {
+            switch enabled {
+            case .bool(let v):
+                manager.watermarkMode = v
+            case .int(let v):
+                manager.watermarkMode = v != 0
+            default:
+                manager.watermarkMode = false
+            }
+        }
+        log("Watermark mode: \(manager.watermarkMode)")
+        respond(result: ["ok": .bool(true), "watermarkMode": .bool(manager.watermarkMode)])
 
     case "sendCommand":
         guard let opcode = request.params?["opcode"]?.intValue else {

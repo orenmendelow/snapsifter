@@ -74,6 +74,83 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 42 changes (2026-05-29)
+
+**Landing page deployed to drkrm.app:**
+- Cloudflare Pages project `drkrm` created, deployed from `landing/` directory.
+- Custom domain `drkrm.app` configured (CNAME to `drkrm.pages.dev`, proxied).
+- Download buttons replaced with email signup forms ("Notify Me" → POST `/api/signup`).
+- CF Pages Function (`landing/functions/api/signup.js`) stores emails in KV namespace `drkrm-email` (bound as `EMAILS`).
+- Early bird pricing: ~~$79~~ $49 Pro, ~~$129~~ $79 Lifetime. "LAUNCH PRICE" badges.
+- Accessibility sweep: `--text-dim` bumped to `#999` (WCAG AA), `--text-muted` to `#808080`. Multiple elements fixed.
+- Pricing layout: struck-out prices inline with sale prices (same line as "Free").
+- `favicon.ico` generated from `logo.svg` (16/32/48px multi-size ICO).
+- OG image, meta tags, footer all wired.
+- Staging URL: `drkrm.pages.dev`. Production: `drkrm.app`.
+
+**App licensing infrastructure built:**
+- `lib/license.js` — License state module. Trial timer (macOS Keychain), LemonSqueezy activation/validation/deactivation API, machine binding via IOPlatformUUID, activation receipt in `~/.drkrm/license.json`.
+- Server endpoints: `GET /api/license`, `POST /api/license/activate`, `POST /api/license/validate`, `POST /api/license/deactivate`.
+- `syncWatermark()` toggles Swift helper watermark based on license state.
+- Frontend: license key entry modal, trial banner (day 10+), lock screen on expiry, Recipe Lab gate via `showRecipeEditor` wrapper.
+- "Lost your key?" link opens LemonSqueezy order lookup.
+
+**Swift helper watermark (`camera-helper/Sources/main.swift`):**
+- `applyWatermark()` tiles "drkrm TRIAL" diagonally across rendered JPEGs using CoreGraphics/CoreText.
+- `set-watermark` JSON-RPC command, controlled by license state via `cameraBridge.setWatermark()`.
+- Falls back to original JPEG if watermarking fails. Compiles clean.
+
+**Camera bridge (`camera-bridge.js`):**
+- `setWatermark(enabled)` method added.
+
+**Licensing & distribution plan (audited, finalized):**
+
+Purchase flow:
+- LemonSqueezy as MoR (~5-8% fee). One product: "drkrm Pro".
+- v1: User pastes license key from email into app. "Lost your key?" button hits LS license lookup by email.
+- v2 (post-launch): LS checkout overlay in Electron for seamless purchase-to-activation.
+
+License validation:
+- LS activation endpoint called once at key entry (requires internet). Activation limit: 3 machines per key.
+- Signed activation receipt stored locally in `~/.drkrm/license.json`.
+- Startup checks receipt structure offline — no ongoing internet requirement.
+- Machine-binding prevents casual key sharing.
+
+Trial:
+- 14-day full-featured trial. Photo Cull stays free forever. Recipe Lab locks after expiry.
+- Trial start date stored in macOS Keychain (not filesystem — prevents reset by deleting `~/.drkrm/`).
+- Starts on first app launch, not download time.
+- Conversion UX: gentle banner from day 10, urgent on day 13, lock screen on day 15 with purchase button → LS checkout.
+- Clock manipulation not worth solving for a $49 app.
+
+Anti-piracy:
+- UI gate: Recipe Lab locked without valid activation receipt.
+- Watermark injection in Swift helper binary (compiled, not JS — meaningfully harder to patch than asar JS).
+- Activation limits handle casual sharing. Not investing beyond this.
+
+Code signing (BLOCKING for paid launch):
+- Apple Developer Program enrollment ($99/yr) — Oren enrolling.
+- Sign + notarize DMG via electron-builder + electron-notarize.
+- Required before first paid transaction. Unsigned apps trigger Gatekeeper warnings that kill conversions.
+- electron-updater auto-updates also require signed builds.
+- Once cert arrives: update electron-builder config, build, upload to GitHub Releases, wire download buttons.
+
+Pricing (clarify on landing page):
+- $49: drkrm Pro, updates within v1.
+- $79: Lifetime — all future major versions included.
+- $29: Upgrade price for $49 users when v2 ships. New users pay $49.
+
+Buildable before signing cert arrives:
+- License key entry UI + activation receipt read/write
+- LS account + product creation (web dashboard)
+- LS activation endpoint integration
+- Trial timer (Keychain read/write, expiry checks)
+- Trial-to-paid conversion UX (banners, lock screen)
+- Recipe Lab gate logic
+- Watermark injection in Swift helper
+- "Lost your key?" restore flow
+- Landing page pricing copy
+
 ### Session 41 decisions (2026-05-29)
 
 **DMG hosting:** GitHub Releases selected over Cloudflare R2. Reason: `electron-updater` has native GitHub Releases support for auto-updates with zero config. R2 would require a custom update manifest. Added to LAUNCH.md Phase 2.

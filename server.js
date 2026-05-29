@@ -22,6 +22,7 @@ const exiftoolBin = (() => {
 })();
 const gridSelection = require('./lib/grid-selection');
 const d185 = require('./lib/d185-patch');
+const license = require('./lib/license');
 
 // ── State directory & sessions ──
 const stateDir = path.join(os.homedir(), '.drkrm');
@@ -2872,6 +2873,59 @@ app.post('/api/camera/scan-presets', async (req, res) => {
   } catch (err) {
     // Try to disconnect on error
     try { await cameraBridge.disconnect(); } catch (_) {}
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── License & trial ──
+
+function syncWatermark() {
+  try {
+    const unlocked = license.isRecipeLabUnlocked();
+    cameraBridge.setWatermark(!unlocked).catch(() => {});
+  } catch {}
+}
+
+app.get('/api/license', (req, res) => {
+  try {
+    const state = license.getState();
+    syncWatermark();
+    res.json(state);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/license/activate', async (req, res) => {
+  try {
+    const { licenseKey } = req.body;
+    if (!licenseKey || typeof licenseKey !== 'string') {
+      return res.status(400).json({ error: 'licenseKey required' });
+    }
+    const result = await license.activate(licenseKey.trim());
+    syncWatermark();
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/license/validate', async (req, res) => {
+  try {
+    const result = await license.validate();
+    if (!result.valid) syncWatermark();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/license/deactivate', async (req, res) => {
+  try {
+    const result = await license.deactivate();
+    syncWatermark();
+    res.json(result);
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
