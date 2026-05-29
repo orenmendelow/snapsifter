@@ -177,8 +177,8 @@ Verbatim from Oren. Check off when completed and visually verified.
 ## Session 30 — New
 
 - [x] **S30-1**: Loading non-compatible directories (no Liked/RAF/) freezes or has weird interaction. Needs graceful error handling — show message and return to browse state. — FIXED: `loadRecipeGrid` checks HTTP status, catches errors, resets all state (recipeLoadedDir, gridPhotos), hides collage/filmstrip/right panel, re-expands left panel, shows error message in center preview. Recovery to other directories works immediately.
-- [ ] **S30-2**: Session list deduplication — implemented but needs Oren verification with SSD plugged in. Parent folders filtered, leaf sessions show parent/child path labels.
-- [ ] **S30-3**: Variant select mode — VARIANT TEST + CANCEL stay active, everything else fades. Needs Oren verification with SSD plugged in.
+- [x] **S30-2**: Session list deduplication — VERIFIED S39. Photo Cull now also uses `filterLeafSessions` + `sessionDisplayName`. Both tabs dedup correctly.
+- [x] **S30-3**: Variant select mode — VERIFIED S39. VARIANT TEST + CANCEL stay active, everything else fades to 0.2 opacity.
 
 ## Session 31 — Audit Findings
 
@@ -244,7 +244,7 @@ Verbatim from Oren. Check off when completed and visually verified.
 - [ ] **S36-3**: Download buttons (`btn-download`) unwired — all 3 point to `javascript:void(0)`. Need hosted DMG URL.
 - [x] **S36-4**: No OG/Twitter meta tags for link sharing. — DONE: meta tags added. OG image (`landing/og-image.jpg`, 1200x630) created in S38.
 - [x] **S37-1**: PINNED OPTION — Hero camera SVG beside laptop with wire + green light. IMPLEMENTED then REVERTED — Oren rejected the side-by-side layout. Camera restored to original absolute-positioned bottom-right corner. Wire + green light removed.
-- [ ] **S36-5**: `support@drkrm.app` mailto in footer — domain may not be configured for email.
+- [x] **S36-5**: `support@drkrm.app` mailto in footer — DONE: Cloudflare Email Routing active. Inbound forwards to mendelowllc@gmail.com. Gmail "Send mail as" configured for outbound via smtp.gmail.com.
 - [x] **S36-6**: Landing page spacing — DONE: Removed `min-height: 100vh` from hero (was creating dead space between hero CTA and first flow step). Set explicit `padding-top: 120px; padding-bottom: 48px`. Hero content determines section height now, flows directly into features.
 
 ## Older — Unresolved

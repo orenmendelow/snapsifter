@@ -582,10 +582,33 @@ body::before {
   border: 2px solid transparent;
   transition: border-color 0.15s ease;
   overflow: hidden;
+  position: relative;
 }
 .focus-gallery-thumb:hover { border-color: var(--amber-dim); }
 .focus-gallery-thumb.active { border-color: var(--amber); box-shadow: 0 0 8px var(--amber-glow); }
 .focus-gallery-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.gallery-star {
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+  opacity: 0;
+  z-index: 2;
+  color: rgba(255,255,255,0.4);
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+}
+.focus-gallery-thumb:hover .gallery-star { opacity: 1; }
+.gallery-star:hover { color: rgba(255,255,255,0.7); }
+.gallery-star.starred { color: #fff; opacity: 1; }
 
 #focus-main {
   flex: 1;
@@ -1240,6 +1263,7 @@ body::before {
   background: #0a0a0a;
   border-radius: 2px;
   overflow: hidden;
+  outline: 2px solid transparent;
 }
 
 .recipe-grid-cell img {
@@ -1297,8 +1321,8 @@ body::before {
   position: absolute;
   bottom: 4px;
   left: 4px;
-  width: 8px;
-  height: 8px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
   opacity: 0;
   z-index: 2;
@@ -1309,12 +1333,34 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 8px;
+  font-size: 18px;
   line-height: 1;
 }
 .recipe-grid-cell:hover .cell-star { opacity: 1; }
 .cell-star:hover { color: rgba(255,255,255,0.7); }
 .cell-star.starred { color: #fff; opacity: 1; }
+.focus-star {
+  position: absolute;
+  bottom: 48px;
+  left: 12px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  opacity: 0;
+  z-index: 10;
+  color: rgba(255,255,255,0.4);
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  line-height: 1;
+}
+#focus-body:hover .focus-star { opacity: 1; }
+.focus-star:hover { color: rgba(255,255,255,0.7); }
+.focus-star.starred { color: #fff; opacity: 1; }
 
 .recipe-grid-cell.loading {
   animation: cell-pulse 1.5s ease-in-out infinite;
@@ -3056,30 +3102,24 @@ body::before {
   opacity: 1;
   display: flex;
   flex-direction: column;
-  border: 2px solid transparent;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.thumb-wrapper:hover {
-  border-color: var(--amber-dim);
-}
-
-.thumb-wrapper.active {
+.thumb-wrapper.active .thumb-img {
   border-color: var(--amber);
   box-shadow: 0 0 12px var(--amber-glow);
+  opacity: 1 !important;
 }
 
-.thumb-wrapper.active .thumb-img,
 .thumb-wrapper.active .thumb-label {
   opacity: 1 !important;
 }
 
 .thumb-star {
   position: absolute;
-  bottom: 2px;
-  left: 2px;
-  width: 6px;
-  height: 6px;
+  bottom: 14px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
   cursor: pointer;
   opacity: 0;
   z-index: 2;
@@ -3090,7 +3130,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 6px;
+  font-size: 14px;
   line-height: 1;
 }
 .thumb-wrapper:hover .thumb-star { opacity: 1; }
@@ -3103,7 +3143,10 @@ body::before {
   object-fit: cover;
   display: block;
   min-height: 0;
+  border: 2px solid transparent;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+.thumb-wrapper:hover .thumb-img { border-color: var(--amber-dim); }
 
 .thumb-wrapper .thumb-label {
   font-family: var(--mono);
@@ -4467,7 +4510,7 @@ body::before {
 
     const nameEl = document.createElement('div');
     nameEl.className = 'session-name';
-    nameEl.textContent = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+    nameEl.textContent = s._displayName || s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
     row.appendChild(nameEl);
 
     if (s.accessible === false) {
@@ -4509,7 +4552,7 @@ body::before {
     card.style.cssText = 'cursor:pointer;margin-bottom:8px;transition:color 0.1s ease;';
     const cardName = document.createElement('div');
     cardName.style.cssText = 'font-family:var(--mono);font-size:13px;color:var(--amber);transition:color 0.1s ease;';
-    cardName.textContent = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+    cardName.textContent = s._displayName || s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
     card.appendChild(cardName);
     const cardDetail = document.createElement('div');
     cardDetail.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:2px;';
@@ -4548,11 +4591,13 @@ body::before {
         return;
       }
 
-      const inProgress = sessions.filter(s => !isSessionCompleted(s));
-      const completed = sessions.filter(s => isSessionCompleted(s));
+      const leafSessions = filterLeafSessions(sessions);
+      leafSessions.forEach(s => { s._displayName = sessionDisplayName(s, sessions); });
+      const inProgress = leafSessions.filter(s => !isSessionCompleted(s));
+      const completed = leafSessions.filter(s => isSessionCompleted(s));
 
       async function handleDelete(s) {
-        const name = s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
+        const name = s._displayName || s.name || s.dir.split('/').filter(Boolean).pop() || s.dir;
         if (!confirm('Delete session "' + name + '"?')) return;
         await fetch('/api/session/' + s.id, { method: 'DELETE' });
         loadSessions();
@@ -4562,7 +4607,7 @@ body::before {
       const recentInProgress = inProgress.find(s => s.accessible !== false);
       if (recentInProgress && !selectedPath) {
         const qs = recentInProgress;
-        const qsFolderName = qs.name || qs.dir.split('/').filter(Boolean).pop() || qs.dir;
+        const qsFolderName = qs._displayName || qs.name || qs.dir.split('/').filter(Boolean).pop() || qs.dir;
         quickStartName.textContent = qsFolderName;
         const qsTotal = qs.fileCount || 0;
         const qsRated = qs.ratedCount || 0;
@@ -6516,6 +6561,37 @@ body::before {
         img.src = '/api/preview-thumb/' + dirB64 + '/' + encodeURIComponent(p.file);
         img.loading = 'lazy';
         thumb.appendChild(img);
+        const galStem = p.file.replace(/\.[^.]+$/, '');
+        const galStar = document.createElement('button');
+        galStar.className = 'gallery-star' + (recipeStars[galStem] ? ' starred' : '');
+        galStar.innerHTML = '&#9679;';
+        galStar.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const s = !recipeStars[galStem];
+          if (s) { recipeStars[galStem] = true; } else { delete recipeStars[galStem]; }
+          galStar.classList.toggle('starred', s);
+          const strip = document.getElementById('recipe-filmstrip');
+          strip.querySelectorAll('.thumb-wrapper').forEach(w => {
+            const label = w.querySelector('.thumb-label');
+            if (label && label.textContent === galStem) {
+              const ts = w.querySelector('.thumb-star');
+              if (ts) ts.classList.toggle('starred', s);
+            }
+          });
+          recipeGridEl.querySelectorAll('.recipe-grid-cell').forEach(c => {
+            const cimg = c.querySelector('img');
+            if (cimg && cimg.alt && cimg.alt.replace(/\.[^.]+$/, '') === galStem) {
+              const cs = c.querySelector('.cell-star');
+              if (cs) cs.classList.toggle('starred', s);
+            }
+          });
+          const focusStar = document.querySelector('#focus-body .focus-star');
+          if (focusStar && recipeState.gridPhotos[recipeState.focusIndex] && recipeState.gridPhotos[recipeState.focusIndex].file.replace(/\.[^.]+$/, '') === galStem) {
+            focusStar.classList.toggle('starred', s);
+          }
+          fetch('/api/recipe-star', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: p.file, starred: s }) });
+        });
+        thumb.appendChild(galStar);
         thumb.addEventListener('click', () => enterFocusMode(i));
         gallery.appendChild(thumb);
       });
@@ -6574,6 +6650,44 @@ body::before {
     if (photo.iso) { const s = document.createElement('span'); s.textContent = 'ISO ' + photo.iso; metaEl.appendChild(s); }
     if (photo.aperture) { const s = document.createElement('span'); s.textContent = 'f/' + photo.aperture; metaEl.appendChild(s); }
     if (photo.focalLength) { const s = document.createElement('span'); s.textContent = photo.focalLength + 'mm'; metaEl.appendChild(s); }
+
+    const focusBody = document.getElementById('focus-body');
+    const oldFocusStar = focusBody.querySelector('.focus-star');
+    if (oldFocusStar) oldFocusStar.remove();
+    const focusStarBtn = document.createElement('button');
+    focusStarBtn.className = 'focus-star' + (recipeStars[stem] ? ' starred' : '');
+    focusStarBtn.innerHTML = '●';
+    focusStarBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const s = !recipeStars[stem];
+      if (s) {
+        recipeStars[stem] = true;
+      } else {
+        delete recipeStars[stem];
+      }
+      focusStarBtn.classList.toggle('starred', s);
+      const fstrip = document.getElementById('recipe-filmstrip');
+      fstrip.querySelectorAll('.thumb-wrapper').forEach(w => {
+        const label = w.querySelector('.thumb-label');
+        if (label && label.textContent === stem) {
+          const ts = w.querySelector('.thumb-star');
+          if (ts) ts.classList.toggle('starred', s);
+        }
+      });
+      recipeGridEl.querySelectorAll('.recipe-grid-cell').forEach(c => {
+        const cimg = c.querySelector('img');
+        if (cimg && cimg.alt && cimg.alt.replace(/\.[^.]+$/, '') === stem) {
+          const cs = c.querySelector('.cell-star');
+          if (cs) cs.classList.toggle('starred', s);
+        }
+      });
+      fetch('/api/recipe-star', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: photo.file, starred: s })
+      });
+    });
+    focusBody.appendChild(focusStarBtn);
 
     // Highlight active photo in filmstrip
     const strip = document.getElementById('recipe-filmstrip');
@@ -8062,6 +8176,24 @@ body::before {
       : (photoIndex != null) ? [{ photo: photos[photoIndex], idx: photoIndex }]
       : photos.map((p, i) => ({ photo: p, idx: i }));
 
+    const skipped = targets.filter(function(t) { return isAlreadySimulated(t.photo.file); });
+    const filteredTargets = targets.filter(function(t) { return !isAlreadySimulated(t.photo.file); });
+
+    if (filteredTargets.length === 0) {
+      showToast('All photos already simulated');
+      simBtn.classList.remove('simulating');
+      simBtn.disabled = false;
+      simBtn.style.background = '';
+      simBtn.innerHTML = '<span class="sim-main-label">SIMULATE</span>';
+      document.getElementById('sim-scope-toggle').style.display = '';
+      checkParamsChanged();
+      return;
+    }
+
+    if (skipped.length > 0) {
+      showToast('Skipping ' + skipped.length + ' already simulated');
+    }
+
     simBtn.innerHTML = '<span class="sim-text-back">Connecting...</span><span class="sim-text-front" style="clip-path:inset(0 100% 0 0)">Connecting...</span>';
     try {
       await fetch('/api/camera/connect', { method: 'POST' }).then(r => r.json());
@@ -8076,17 +8208,17 @@ body::before {
       return;
     }
 
-    for (let t = 0; t < targets.length; t++) {
-      const { photo, idx } = targets[t];
+    for (let t = 0; t < filteredTargets.length; t++) {
+      const { photo, idx } = filteredTargets[t];
       const stem = photo.file.replace(/\.[^.]+$/, '');
       const rafPath = recipeLoadedDir + '/Liked/RAF/' + stem + '.RAF';
       const outputPath = recipeLoadedDir + '/Liked/RAF/.sim-cache/' + stem + '_sim.jpg';
 
-      if (targets.length === 1) {
+      if (filteredTargets.length === 1) {
         simBtn.style.background = 'linear-gradient(to right, var(--amber) 50%, rgba(255,255,255,0.04) 50%)';
         simBtn.innerHTML = '<span class="sim-text-back">Rendering...</span><span class="sim-text-front" style="clip-path:inset(0 50% 0 0)">Rendering...</span>';
       } else {
-        setMainSimProgress(t, targets.length);
+        setMainSimProgress(t, filteredTargets.length);
       }
 
       const cell = recipeGridEl.children[idx];
@@ -8781,6 +8913,12 @@ body::before {
     if (!recipeState.simulatedPhotos[photoFile] || !recipeState.simParamsUsed[photoFile]) return false;
     const simP = recipeState.simParamsUsed[photoFile];
     return Object.keys(recipeState.currentParams).every(k => k === paramKey || simP[k] === recipeState.currentParams[k]);
+  }
+
+  function isAlreadySimulated(photoFile) {
+    if (!recipeState.simulatedPhotos[photoFile] || !recipeState.simParamsUsed[photoFile]) return false;
+    const simP = recipeState.simParamsUsed[photoFile];
+    return Object.keys(recipeState.currentParams).every(function(k) { return simP[k] === recipeState.currentParams[k]; });
   }
 
   async function replaceGridCell(idx) {
@@ -9522,6 +9660,15 @@ body::before {
       if (cimg && cimg.alt && cimg.alt.replace(/\.[^.]+$/, '') === stem) {
         const cs = c.querySelector('.cell-star');
         if (cs) cs.classList.toggle('starred', starred);
+      }
+    });
+    const focusStar = document.querySelector('#focus-body .focus-star');
+    if (focusStar) focusStar.classList.toggle('starred', starred);
+    const gallery = document.getElementById('focus-gallery');
+    gallery.querySelectorAll('.focus-gallery-thumb').forEach((gt, i) => {
+      if (i < recipeState.gridPhotos.length && recipeState.gridPhotos[i].file.replace(/\.[^.]+$/, '') === stem) {
+        const gs = gt.querySelector('.gallery-star');
+        if (gs) gs.classList.toggle('starred', starred);
       }
     });
     fetch('/api/recipe-star', {

@@ -193,6 +193,12 @@ function buildCompareVariant(paramKey, value, isCurrentVal) {
   };
 }
 
+function isAlreadySimulated(photoFile, simulatedPhotos, simParamsUsed, currentParams) {
+  if (!simulatedPhotos[photoFile] || !simParamsUsed[photoFile]) return false;
+  var simP = simParamsUsed[photoFile];
+  return Object.keys(currentParams).every(function(k) { return simP[k] === currentParams[k]; });
+}
+
 module.exports = {
   RECIPE_DEFAULTS,
   RECIPE_KEYS,
@@ -205,5 +211,6 @@ module.exports = {
   compareOutputFilename,
   formatSimulateProgress,
   toggleChip,
-  buildCompareVariant
+  buildCompareVariant,
+  isAlreadySimulated
 };

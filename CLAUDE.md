@@ -74,6 +74,23 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 39 changes (2026-05-29)
+
+**App (`public/index.html`):**
+- Library simulation skip logic: `isAlreadySimulated(photoFile)` checks `simulatedPhotos` and `simParamsUsed` against current params. Simulate loop filters out already-simulated photos. Toast feedback ("All photos already simulated" or "Skipping N already simulated").
+- Variant select mode flash fix: added `outline: 2px solid transparent` to base `.recipe-grid-cell` so entering variant-select-mode only transitions outline-color (no paint flash).
+- Star indicator 3x larger: `.cell-star` 8→18px, `.thumb-star` 6→14px. New `.focus-star` (24px) in focus mode on `#focus-body`. New `.gallery-star` (12px) on gallery column thumbs.
+- Filmstrip orange outline moved from `.thumb-wrapper` to `.thumb-img` so it only wraps the image, not the filename label.
+- Star dots clickable on collage, filmstrip, gallery column, and focus mode. S key syncs all four.
+- Session list deduplication applied to Photo Cull tab: `filterLeafSessions` + `sessionDisplayName` now used in `loadSessions()`. `buildSessionRow`, `buildCompletedCard`, quick-start, and delete confirmation all use `_displayName`.
+
+**Tests (`test/`):**
+- `isAlreadySimulated` pure function added to `compare-helpers.js`. 6 new tests in `compare-mode.test.js` (65 total, all pass).
+
+**Infrastructure:**
+- Cloudflare Email Routing enabled for drkrm.app. `support@drkrm.app` → `mendelowllc@gmail.com`. Gmail "Send mail as" configured for outbound. MX + SPF + DKIM auto-created.
+- drkrm.app nameservers moved from Porkbun to Cloudflare (`drew.ns.cloudflare.com`, `ingrid.ns.cloudflare.com`). Zone ID: `cdbc7d30b20f6e4e9eeb296654d8e31a`.
+
 ### Session 38 changes (2026-05-29)
 
 **Landing page (`landing/index.html`):**

@@ -12,7 +12,8 @@ const {
   compareOutputFilename,
   formatSimulateProgress,
   toggleChip,
-  buildCompareVariant
+  buildCompareVariant,
+  isAlreadySimulated
 } = require('./compare-helpers.js');
 
 
@@ -452,5 +453,46 @@ describe('chip toggle + pending count integration', () => {
     const rendered = new Set(['Velvia']);
     // current (Provia) not in set, Velvia rendered → pending = Astia + ClassicNeg = 2
     assert.equal(calculatePendingCount(selected, 'Provia', rendered), 2);
+  });
+});
+
+
+// ── isAlreadySimulated ──
+
+describe('isAlreadySimulated', () => {
+  const params = { filmSimulation: 'Velvia', grainEffect: 'Off', clarity: 0 };
+
+  it('returns false when photo has no simulation', () => {
+    assert.equal(isAlreadySimulated('DSCF0001.HIF', {}, {}, params), false);
+  });
+
+  it('returns false when simParamsUsed missing', () => {
+    const simPhotos = { 'DSCF0001.HIF': '/path/to/sim.jpg' };
+    assert.equal(isAlreadySimulated('DSCF0001.HIF', simPhotos, {}, params), false);
+  });
+
+  it('returns false when params differ', () => {
+    const simPhotos = { 'DSCF0001.HIF': '/path/to/sim.jpg' };
+    const simParams = { 'DSCF0001.HIF': { filmSimulation: 'Provia', grainEffect: 'Off', clarity: 0 } };
+    assert.equal(isAlreadySimulated('DSCF0001.HIF', simPhotos, simParams, params), false);
+  });
+
+  it('returns true when all params match exactly', () => {
+    const simPhotos = { 'DSCF0001.HIF': '/path/to/sim.jpg' };
+    const simParams = { 'DSCF0001.HIF': { filmSimulation: 'Velvia', grainEffect: 'Off', clarity: 0 } };
+    assert.equal(isAlreadySimulated('DSCF0001.HIF', simPhotos, simParams, params), true);
+  });
+
+  it('returns false when string "0" vs number 0 (strict equality)', () => {
+    const simPhotos = { 'DSCF0001.HIF': '/path/to/sim.jpg' };
+    const simParams = { 'DSCF0001.HIF': { filmSimulation: 'Velvia', grainEffect: 'Off', clarity: '0' } };
+    assert.equal(isAlreadySimulated('DSCF0001.HIF', simPhotos, simParams, params), false);
+  });
+
+  it('returns false when currentParams has extra keys not in simParamsUsed', () => {
+    const simPhotos = { 'DSCF0001.HIF': '/path/to/sim.jpg' };
+    const simParams = { 'DSCF0001.HIF': { filmSimulation: 'Velvia', grainEffect: 'Off' } };
+    const extendedParams = { filmSimulation: 'Velvia', grainEffect: 'Off', clarity: 0 };
+    assert.equal(isAlreadySimulated('DSCF0001.HIF', simPhotos, simParams, extendedParams), false);
   });
 });
