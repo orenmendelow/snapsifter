@@ -74,6 +74,18 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 37 changes (2026-05-28)
+
+**App (`public/index.html` + `server.js`):**
+- S35-2: Filmstrip filter panel expanded from filename-only search to full filter panel. Server-side: `parseExifEntry` returns `dateTimeOriginal`, `formatExifSummary` passes it as `dateTaken`. Frontend: filter dropdown now includes filename search, STARRED toggle pill, time-of-day toggle pills (Morning 6-12, Afternoon 12-17, Evening 17-21, Night 21-6), scrollable date list with per-day photo counts, CLEAR ALL button. All filters AND-combined. Date options build dynamically from EXIF data via `_buildFilterDates()`.
+
+**Landing page (`landing/index.html`):**
+- S36-1: Added "Everything else / Built for the full workflow" features grid section between flow steps and stats. 3x2 CSS grid (responsive: 2-col tablet, 1-col mobile) with amber SVG icons. Features: Session Resume, File Browser, Star & Flag, Cookbook, Diverse Collage, Focus Mode.
+- S36-2: Hero MacBook mockup animated cursor overlay. Amber cursor dot with 12s CSS keyframe loop: moves to 3 collage photos (LIKE/MAYBE/DITCH badges appear), trails along filmstrip, fades, repeats. 2s initial delay. Cursor "clicks" with scale(0.7) pulse.
+- S36-4: OG/Twitter meta tags added (og:title, og:description, og:type, og:url, og:image, twitter:card/title/description/image). `og-image.jpg` file needed before deploy.
+- S36-6: Hero spacing fix — removed `min-height: 100vh` (was creating dead space between hero and first flow step). Set `padding-top: 120px; padding-bottom: 48px`. Content determines section height.
+- S37-1: PINNED OPTION — Camera SVG full opacity beside laptop with wire and blinking green light. Not implemented.
+
 ### Session 36 changes (2026-05-28)
 
 **Landing page (`landing/index.html`):**

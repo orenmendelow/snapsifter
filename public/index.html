@@ -318,13 +318,66 @@ body::before {
   position: absolute;
   top: 100%;
   left: 0;
-  min-width: 220px;
+  min-width: 260px;
+  max-height: 400px;
+  overflow-y: auto;
   z-index: 100;
   background: #1a1a1a;
   border: 1px solid rgba(255,255,255,0.15);
   padding: 8px;
   margin-top: 2px;
 }
+.filter-section-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 10px 0 4px;
+}
+.filter-pill {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  margin: 0 4px 4px 0;
+}
+.filter-pill.active { border-color: var(--amber); color: var(--amber); }
+.filter-pill:hover { border-color: var(--amber); color: var(--text); }
+.filter-tod-row { display: flex; flex-wrap: wrap; gap: 0; }
+#filter-date-list { max-height: 120px; overflow-y: auto; margin-top: 4px; }
+.filter-date-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 4px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.filter-date-row.active { color: var(--amber); }
+.filter-date-row:hover { color: var(--text); }
+.filter-date-count { font-size: 9px; opacity: 0.5; }
+#filter-clear-all {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  margin-top: 8px;
+  padding: 0;
+}
+#filter-clear-all:hover { color: var(--amber); }
 #recipe-filter-dropdown .filter-input-wrap {
   position: relative;
   display: flex;
@@ -3467,7 +3520,7 @@ body::before {
         <button class="recipe-action-btn" id="recipe-shuffle-btn" style="display:none">SHUFFLE</button>
         <button class="recipe-action-btn" id="recipe-pick-btn" style="display:none">PICK PHOTOS</button>
         <button id="recipe-filter-btn" title="Filter filmstrip" style="display:none"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 2h12M3 5h8M5 8h4M6 11h2"/></svg><span class="filter-active-dot"></span></button>
-        <div id="recipe-filter-dropdown"><div class="filter-input-wrap"><input type="text" id="recipe-filter-input" placeholder="Search filename..." spellcheck="false" autocomplete="off"><button id="recipe-filter-clear" type="button">&times;</button></div></div>
+        <div id="recipe-filter-dropdown"><div class="filter-input-wrap"><input type="text" id="recipe-filter-input" placeholder="Search filename..." spellcheck="false" autocomplete="off"><button id="recipe-filter-clear" type="button">&times;</button></div><div class="filter-section-label">STARRED</div><button id="filter-starred-pill" class="filter-pill" type="button">STARRED</button><div class="filter-section-label">TIME OF DAY</div><div id="filter-tod-section" class="filter-tod-row"><button class="filter-pill filter-tod-pill" data-tod="morning" type="button">MORNING</button><button class="filter-pill filter-tod-pill" data-tod="afternoon" type="button">AFTERNOON</button><button class="filter-pill filter-tod-pill" data-tod="evening" type="button">EVENING</button><button class="filter-pill filter-tod-pill" data-tod="night" type="button">NIGHT</button></div><div class="filter-section-label">DATE</div><div id="filter-date-list"></div><button id="filter-clear-all" type="button">CLEAR ALL</button></div>
       </div>
 
       <!-- Center preview (folder browsing / resume) -->
@@ -6603,6 +6656,7 @@ body::before {
 
         strip.appendChild(wrapper);
       });
+      if (window._buildFilterDates) window._buildFilterDates();
       if (window._applyFilmstripFilter) window._applyFilmstripFilter();
     } catch(e) {
       console.error('Filmstrip load failed', e);
@@ -7765,6 +7819,10 @@ body::before {
     const filterDropdown = document.getElementById('recipe-filter-dropdown');
     const filterInput = document.getElementById('recipe-filter-input');
     const filterClear = document.getElementById('recipe-filter-clear');
+    const starredPill = document.getElementById('filter-starred-pill');
+    const todPills = document.querySelectorAll('.filter-tod-pill');
+    const dateList = document.getElementById('filter-date-list');
+    const clearAllBtn = document.getElementById('filter-clear-all');
     let filterDebounceTimer = null;
 
     filterBtn.addEventListener('click', (e) => {
@@ -7805,24 +7863,155 @@ body::before {
       }
     });
 
+    // Starred pill
+    starredPill.addEventListener('click', () => {
+      starredPill.classList.toggle('active');
+      applyFilmstripFilter();
+    });
+
+    // Time of day pills
+    todPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        pill.classList.toggle('active');
+        applyFilmstripFilter();
+      });
+    });
+
+    // Clear all
+    clearAllBtn.addEventListener('click', () => {
+      filterInput.value = '';
+      filterClear.style.display = 'none';
+      starredPill.classList.remove('active');
+      todPills.forEach(p => p.classList.remove('active'));
+      dateList.querySelectorAll('.filter-date-row').forEach(r => r.classList.remove('active'));
+      applyFilmstripFilter();
+    });
+
+    function parseDateFromExif(dateTaken) {
+      if (!dateTaken) return null;
+      // EXIF format: "2026:04:15 14:32:10"
+      const parts = dateTaken.split(' ');
+      if (!parts[0]) return null;
+      return parts[0].replace(/:/g, '-');
+    }
+
+    function getTimeHour(timeStr) {
+      if (!timeStr) return null;
+      const parts = timeStr.split(':');
+      return parseInt(parts[0], 10);
+    }
+
+    function matchesTod(hour, tod) {
+      if (hour === null || isNaN(hour)) return false;
+      switch (tod) {
+        case 'morning': return hour >= 6 && hour < 12;
+        case 'afternoon': return hour >= 12 && hour < 17;
+        case 'evening': return hour >= 17 && hour < 21;
+        case 'night': return hour >= 21 || hour < 6;
+        default: return false;
+      }
+    }
+
     function applyFilmstripFilter() {
       const query = filterInput.value.trim().toLowerCase();
+      const starredActive = starredPill.classList.contains('active');
+      const activeTods = [];
+      todPills.forEach(p => { if (p.classList.contains('active')) activeTods.push(p.dataset.tod); });
+      const activeDates = [];
+      dateList.querySelectorAll('.filter-date-row.active').forEach(r => activeDates.push(r.dataset.date));
+
+      const hasAnyFilter = !!query || starredActive || activeTods.length > 0 || activeDates.length > 0;
+
       const strip = document.getElementById('recipe-filmstrip');
       const wrappers = strip.querySelectorAll('.thumb-wrapper');
-      wrappers.forEach(w => {
+      const photos = recipeState.filmstripPhotos || [];
+
+      wrappers.forEach((w, i) => {
+        const photo = photos[i];
         const label = w.querySelector('.thumb-label');
-        if (!label) return;
-        const name = label.textContent.toLowerCase();
-        w.style.display = (!query || name.includes(query)) ? '' : 'none';
+        if (!label || !photo) return;
+
+        let show = true;
+
+        // Filename filter
+        if (query) {
+          const name = label.textContent.toLowerCase();
+          if (!name.includes(query)) show = false;
+        }
+
+        // Starred filter
+        if (show && starredActive) {
+          const stem = photo.file.replace(/\.[^.]+$/, '');
+          if (!recipeStars[stem]) show = false;
+        }
+
+        // Time of day filter
+        if (show && activeTods.length > 0) {
+          const hour = getTimeHour(photo.time);
+          if (hour === null) {
+            show = false;
+          } else {
+            show = activeTods.some(tod => matchesTod(hour, tod));
+          }
+        }
+
+        // Date filter
+        if (show && activeDates.length > 0) {
+          const photoDate = parseDateFromExif(photo.dateTaken);
+          if (!photoDate) {
+            show = false;
+          } else {
+            show = activeDates.includes(photoDate);
+          }
+        }
+
+        w.style.display = show ? '' : 'none';
       });
-      filterBtn.classList.toggle('filter-active', !!query);
+
+      filterBtn.classList.toggle('filter-active', hasAnyFilter);
     }
 
     window._applyFilmstripFilter = applyFilmstripFilter;
+
     window._clearFilmstripFilter = function() {
       filterInput.value = '';
       filterClear.style.display = 'none';
+      starredPill.classList.remove('active');
+      todPills.forEach(p => p.classList.remove('active'));
+      dateList.querySelectorAll('.filter-date-row').forEach(r => r.classList.remove('active'));
       applyFilmstripFilter();
+    };
+
+    window._buildFilterDates = function() {
+      dateList.innerHTML = '';
+      const photos = recipeState.filmstripPhotos || [];
+      const dateCounts = {};
+      photos.forEach(p => {
+        const d = parseDateFromExif(p.dateTaken);
+        if (d) dateCounts[d] = (dateCounts[d] || 0) + 1;
+      });
+      const sortedDates = Object.keys(dateCounts).sort();
+      sortedDates.forEach(dateStr => {
+        const row = document.createElement('div');
+        row.className = 'filter-date-row';
+        row.dataset.date = dateStr;
+        // Format: "Apr 15, 2026"
+        const parts = dateStr.split('-');
+        const dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const formatted = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const label = document.createElement('span');
+        label.textContent = formatted;
+        const count = document.createElement('span');
+        count.className = 'filter-date-count';
+        count.textContent = dateCounts[dateStr];
+        row.appendChild(label);
+        row.appendChild(count);
+        row.addEventListener('click', () => {
+          row.classList.toggle('active');
+          applyFilmstripFilter();
+        });
+        dateList.appendChild(row);
+      });
     };
   })();
 

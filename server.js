@@ -1547,9 +1547,11 @@ function parseExifEntry(entry) {
     if (m) hourOfDay = parseInt(m[1], 10) + parseInt(m[2], 10) / 60;
   }
 
+  let dateTimeOriginal = entry.DateTimeOriginal != null ? String(entry.DateTimeOriginal) : null;
+
   let wb = entry.WhiteBalance != null ? String(entry.WhiteBalance) : null;
 
-  return { focalLength, iso, exposureTime, fNumber, hourOfDay, wb };
+  return { focalLength, iso, exposureTime, fNumber, hourOfDay, dateTimeOriginal, wb };
 }
 
 function wbToNumeric(wb) {
@@ -1710,6 +1712,7 @@ function formatExifSummary(rawExif) {
     shutterSpeed: shutter,
     time: time,
     wb: rawExif.wb || null,
+    dateTaken: rawExif.dateTimeOriginal || null,
   };
 }
 

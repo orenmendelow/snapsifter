@@ -227,7 +227,7 @@ Verbatim from Oren. Check off when completed and visually verified.
 ## Session 35 — New
 
 - [x] **S35-1**: Filter icon (funnel) should NOT appear on Recipe Lab file browse toolbar. Only on Recipe Lab collage/focus view. Currently shows on both. — FIXED: filter button starts hidden, shows/hides with shuffle/pick (only in collage/focus views). Stays visible in focus mode for filmstrip filtering.
-- [ ] **S35-2**: Recipe Lab filmstrip filter needs more than filename search — add date, time of day taken toggles, etc. Full filter panel.
+- [x] **S35-2**: Recipe Lab filmstrip filter — DONE (S37): Full filter panel with filename search, STARRED toggle, time-of-day pills (Morning/Afternoon/Evening/Night), scrollable date list with per-day counts, CLEAR ALL. All filters AND-combined. Server returns `dateTaken` from EXIF. `_buildFilterDates()` populates dates dynamically.
 - [x] **S35-3**: Add directory search/filter input ABOVE the file browsing tree in left panel. Filters directory names as you type. — DONE: `_setupTreeSearch()` shared function, search inputs in both Cull (`#cull-tree-search`) and Recipe Lab (`#recipe-tree-search`) panels. 150ms debounce, filters by name or path, auto-expands parent nodes on match.
 - [x] **S35-4**: Bug — per-photo params bleeding between photos. DSCF7011 shot with Provia, but clicking it loaded RealaACE + changed settings from a previously focused photo. Variant test then shows RealaACE and Provia with identical BEFORE images (wrong). — FIXED: `enterFocusMode` now updates `exifBaseline` from `perFileExif` per-photo. `showRecipePreview` restores majority baseline. `_majorityExifBaseline` stored on batch EXIF load.
 - [x] **S35-5**: SIMULATE button should be FILLED (not outline) when simulate is available. Outline only when not actionable. — FIXED: `checkParamsChanged` sets `background: var(--amber)` + `color: #000` when camera connected.
@@ -239,12 +239,13 @@ Verbatim from Oren. Check off when completed and visually verified.
 
 ## Session 36 — New
 
-- [ ] **S36-1**: Landing page missing feature sections — session management/resume, file browser/directory tree, star/favorite, cookbook/recipe library, collage view, focus mode not shown on page.
-- [ ] **S36-2**: Landing page hero MacBook mockup still static screenshot — Oren wants animated cursor demonstrations cycling through the app (culling flow, recipe dialing).
+- [x] **S36-1**: Landing page missing feature sections — DONE: 3x2 features grid with SVG icons added between flow steps and stats. Covers: Session Resume, File Browser, Star & Flag, Cookbook, Diverse Collage, Focus Mode. Responsive (2-col tablet, 1-col mobile).
+- [x] **S36-2**: Landing page hero animated cursor — DONE: Amber cursor dot with CSS keyframe animation cycles through 3 collage photos (LIKE/MAYBE/DITCH badges appear), then trails along filmstrip. 12s loop, 2s initial delay. Cursor "clicks" with scale pulse. Badges positioned at percentage coords for responsive scaling.
 - [ ] **S36-3**: Download buttons (`btn-download`) unwired — all 3 point to `javascript:void(0)`. Need hosted DMG URL.
-- [ ] **S36-4**: No OG/Twitter meta tags for link sharing.
+- [x] **S36-4**: No OG/Twitter meta tags for link sharing. — DONE: added og:title/description/type/url/image + twitter:card/title/description/image. og-image.jpg needs to be created before deploy.
+- [ ] **S37-1**: PINNED OPTION — Hero camera SVG at full opacity, positioned beside the laptop (not overlapping), with a wire running between them and a blinking green light indicating connection. Oren wants this as a design option, not implemented yet.
 - [ ] **S36-5**: `support@drkrm.app` mailto in footer — domain may not be configured for email.
-- [ ] **S36-6**: Landing page spacing still needs tuning on certain breakpoints — Oren flagged dead space under headers and between sections. Audit applied fixes but may need further refinement after visual review.
+- [x] **S36-6**: Landing page spacing — DONE: Removed `min-height: 100vh` from hero (was creating dead space between hero CTA and first flow step). Set explicit `padding-top: 120px; padding-bottom: 48px`. Hero content determines section height now, flows directly into features.
 
 ## Older — Unresolved
 
