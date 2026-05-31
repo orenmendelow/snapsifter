@@ -249,10 +249,10 @@ Verbatim from Oren. Check off when completed and visually verified.
 
 ## Session 42 — New
 
-- [ ] **S42-1**: "Be first to know when drkrm launches. No spam." and similar dim text — should be a touch dimmer (Oren wants it slightly less prominent than current #999, but still readable).
-- [ ] **S42-2**: Flow step numbers (01, 02, 03, 04) too dim / hard to see. Bump opacity.
-- [ ] **S42-3**: Hero camera SVG — offset further away from laptop screen. Less overlap, more beside.
-- [ ] **S42-4**: "You're on the list." confirmation text after email signup — not centered. Needs centering.
+- [x] **S42-1**: "Be first to know when drkrm launches. No spam." and similar dim text — should be a touch dimmer (Oren wants it slightly less prominent than current #999, but still readable). — DONE S43: changed from `var(--text-dim)` (#999) to `#777`.
+- [x] **S42-2**: Flow step numbers (01, 02, 03, 04) too dim / hard to see. Bump opacity. — DONE S43: bumped from 0.08 to 0.10.
+- [x] **S42-3**: Hero camera SVG — offset further away from laptop screen. Less overlap, more beside. — DONE S43: `right` changed from -40px to -80px.
+- [x] **S42-4**: "You're on the list." confirmation text after email signup — not centered. Needs centering. — DONE S43: `text-align: center` added to `.signup-confirmed`. Pricing tier alignment also fixed (`padding-top: 28px` on free tier).
 
 ## Older — Unresolved
 

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>drkrm Marketing Dashboard</title>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --border: rgba(255,255,255,0.08);
+  --text: #e5e5e5;
+  --text-dim: #777;
+  --amber: #c45a30;
+  --amber-dim: rgba(196,90,48,0.3);
+  --green: #3a7d44;
+  --green-dim: rgba(58,125,68,0.3);
+  --mono: 'SF Mono', 'Fira Code', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-bottom: 32px;
+}
+
+.stats-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.stat-value {
+  font-family: var(--mono);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 6px;
+}
+
+.phase {
+  margin-bottom: 40px;
+}
+
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.phase-header:hover .phase-title { color: var(--amber); }
+
+.phase-chevron {
+  font-size: 10px;
+  color: var(--text-dim);
+  transition: transform 0.15s;
+  width: 12px;
+}
+
+.phase.collapsed .phase-chevron { transform: rotate(-90deg); }
+.phase.collapsed .phase-items { display: none; }
+
+.phase-title {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+
+.phase-progress {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+
+.phase-bar {
+  height: 3px;
+  background: var(--border);
+  margin-bottom: 16px;
+}
+
+.phase-bar-fill {
+  height: 100%;
+  background: var(--amber);
+  transition: width 0.3s;
+}
+
+.phase-items { list-style: none; }
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.item:last-child { border-bottom: none; }
+
+.item-check {
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255,255,255,0.2);
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  transition: all 0.15s;
+}
+
+.item-check:hover { border-color: var(--amber); }
+
+.item-check.checked {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.item-check.checked::after {
+  content: '\2713';
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.item.done .item-text { color: var(--text-dim); text-decoration: line-through; }
+
+.item-text { flex: 1; }
+
+.item-title { font-size: 14px; }
+
+.item-detail {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.tag-blocker { background: rgba(220,50,50,0.2); color: #e55; }
+.tag-draft { background: var(--amber-dim); color: var(--amber); }
+.tag-ready { background: var(--green-dim); color: #5a5; }
+
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 40px 0;
+}
+
+.outreach-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.outreach-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.outreach-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.outreach-table .status {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.status-pending { color: var(--text-dim); }
+.status-sent { color: var(--amber); }
+.status-replied { color: #5a5; }
+.status-featured { color: var(--amber); font-weight: 700; }
+
+select.status-select {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.notes-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: var(--text-dim);
+  font-size: 12px;
+  width: 100%;
+  padding: 2px 0;
+  font-family: var(--sans);
+}
+
+.notes-input:focus {
+  outline: none;
+  border-bottom-color: var(--amber);
+  color: var(--text);
+}
+
+.timeline {
+  display: flex;
+  gap: 0;
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+.timeline-week {
+  flex: 1;
+  text-align: center;
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-right: none;
+  font-size: 11px;
+}
+
+.timeline-week:last-child { border-right: 1px solid var(--border); }
+
+.timeline-week .week-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.timeline-week.current { background: var(--amber-dim); }
+.timeline-week.past { background: var(--green-dim); }
+
+.timeline-tasks {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  body { padding: 16px; }
+  .stats-row { flex-direction: column; }
+  .timeline { flex-direction: column; }
+  .timeline-week { border-right: 1px solid var(--border); border-bottom: none; }
+  .timeline-week:last-child { border-bottom: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<h1>drkrm</h1>
+<p class="subtitle">Marketing Dashboard</p>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-value" id="stat-total">0</div>
+    <div class="stat-label">Total Items</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="stat-done">0</div>
+    <div class="stat-label">Completed</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="stat-pct">0%</div>
+    <div class="stat-label">Progress</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="stat-blockers">0</div>
+    <div class="stat-label">Blockers</div>
+  </div>
+</div>
+
+<!-- PHASE: Pre-Launch Blockers -->
+<div class="phase" data-phase="blockers">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <span class="phase-chevron">&#9660;</span>
+    <span class="phase-title">Pre-Launch Blockers</span>
+    <span class="phase-progress"></span>
+  </div>
+  <div class="phase-bar"><div class="phase-bar-fill"></div></div>
+  <ul class="phase-items">
+    <li class="item" data-id="b1"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Apple Developer enrollment ($99) <span class="tag tag-blocker">blocker</span></div><div class="item-detail">Required for code signing, notarization, downloads, auto-updates</div></div></li>
+    <li class="item" data-id="b2"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">LemonSqueezy product + checkout <span class="tag tag-blocker">blocker</span></div><div class="item-detail">Create "drkrm Pro" product, configure pricing ($49/$79), get API keys</div></div></li>
+    <li class="item" data-id="b3"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Code sign + notarize DMG</div><div class="item-detail">electron-builder + electron-notarize. Blocked by Apple Dev enrollment</div></div></li>
+    <li class="item" data-id="b4"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Demo video (60-90s)</div><div class="item-detail">Screen recording: cull flow, recipe lab, variant test, SBS compare. Text captions, no voiceover.</div></div></li>
+    <li class="item" data-id="b5"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Screenshot set (5 screens)</div><div class="item-detail">Cull filmstrip, recipe collage, variant grid, SBS compare, focus mode. 2880x1800 retina.</div></div></li>
+    <li class="item" data-id="b6"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Press kit directory</div><div class="item-detail">landing/press/ with icon, logo, screenshots, demo video, one-paragraph description</div></div></li>
+  </ul>
+</div>
+
+<!-- PHASE: Content Creation -->
+<div class="phase" data-phase="content">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <span class="phase-chevron">&#9660;</span>
+    <span class="phase-title">Content Creation</span>
+    <span class="phase-progress"></span>
+  </div>
+  <div class="phase-bar"><div class="phase-bar-fill"></div></div>
+  <ul class="phase-items">
+    <li class="item" data-id="c1"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">r/fujifilm post draft</div><div class="item-detail">"I built a free Mac app for culling Fuji photos + testing film sim recipes on your camera" -- see MARKETING.md</div></div></li>
+    <li class="item" data-id="c2"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Product Hunt listing</div><div class="item-detail">Tagline, description, screenshots, demo video, maker profile, first comment</div></div></li>
+    <li class="item" data-id="c3"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Twitter/X build-in-public posts (4)</div><div class="item-detail">Variant test screenshot, cull GIF, recipe workflow, launch announcement. Draft all 4.</div></div></li>
+    <li class="item" data-id="c4"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Facebook group posts</div><div class="item-detail">Shorter than Reddit, lead with demo video. Film Simulations group (134K), SOOC group.</div></div></li>
+    <li class="item" data-id="c5"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Short-form social clips (15s)</div><div class="item-detail">Instagram Reels / TikTok crops of demo video. 1080x1080 or 1080x1920.</div></div></li>
+    <li class="item" data-id="c6"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Email list preview message</div><div class="item-detail">"drkrm launches next week" to existing signups. Pull from Cloudflare KV.</div></div></li>
+    <li class="item" data-id="c7"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">SEO blog post #1</div><div class="item-detail">"How to build a Fujifilm recipe from scratch" or "X RAW Studio vs drkrm"</div></div></li>
+  </ul>
+</div>
+
+<!-- PHASE: Outreach -->
+<div class="phase" data-phase="outreach">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <span class="phase-chevron">&#9660;</span>
+    <span class="phase-title">Outreach</span>
+    <span class="phase-progress"></span>
+  </div>
+  <div class="phase-bar"><div class="phase-bar-fill"></div></div>
+  <ul class="phase-items">
+    <li class="item" data-id="o1"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Ritchie Roesch (Fuji X Weekly) <span class="tag tag-draft">priority</span></div><div class="item-detail">80-100K readers. Email pitch + free license. Send 1-2 weeks before launch.</div></div></li>
+    <li class="item" data-id="o2"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">pal2tech / Chris Lee (226K subs)</div><div class="item-detail">Fuji tutorials + tool reviews. Email + license key.</div></div></li>
+    <li class="item" data-id="o3"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Kevin Mullins (47K subs)</div><div class="item-detail">Recipe creator (F16 recipes). Email + license key.</div></div></li>
+    <li class="item" data-id="o4"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Reggie Ballesteros (93K subs)</div><div class="item-detail">Fuji tutorials. Email + license key.</div></div></li>
+    <li class="item" data-id="o5"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Eren Sarigul (59K subs)</div><div class="item-detail">Fuji-focused creator. Email + license key.</div></div></li>
+    <li class="item" data-id="o6"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">PetaPixel</div><div class="item-detail">Press pitch email. See MARKETING.md for draft.</div></div></li>
+    <li class="item" data-id="o7"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">The Phoblographer</div><div class="item-detail">Press pitch email.</div></div></li>
+    <li class="item" data-id="o8"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Digital Camera World</div><div class="item-detail">Press pitch email.</div></div></li>
+    <li class="item" data-id="o9"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Fstoppers</div><div class="item-detail">Press pitch email.</div></div></li>
+  </ul>
+</div>
+
+<!-- PHASE: Community Prep -->
+<div class="phase" data-phase="community">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <span class="phase-chevron">&#9660;</span>
+    <span class="phase-title">Community Engagement (Pre-Launch)</span>
+    <span class="phase-progress"></span>
+  </div>
+  <div class="phase-bar"><div class="phase-bar-fill"></div></div>
+  <ul class="phase-items">
+    <li class="item" data-id="cm1"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">r/fujifilm — engage for 2-3 weeks</div><div class="item-detail">Comment on recipe/workflow posts. Be a genuine community member before self-promoting.</div></div></li>
+    <li class="item" data-id="cm2"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Twitter/X account setup</div><div class="item-detail">@drkrm_app or similar. Bio, avatar (logo), pinned tweet.</div></div></li>
+    <li class="item" data-id="cm3"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Product Hunt maker profile</div><div class="item-detail">Create account, fill profile, explore community.</div></div></li>
+    <li class="item" data-id="cm4"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Google Alert for "drkrm"</div><div class="item-detail">Monitor press mentions and discussions post-launch.</div></div></li>
+    <li class="item" data-id="cm5"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Beta testers (5-10 Fuji shooters)</div><div class="item-detail">Personal network + r/fujifilm DMs. Get feedback before public launch.</div></div></li>
+  </ul>
+</div>
+
+<!-- PHASE: Launch Day -->
+<div class="phase" data-phase="launch">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <span class="phase-chevron">&#9660;</span>
+    <span class="phase-title">Launch Day</span>
+    <span class="phase-progress"></span>
+  </div>
+  <div class="phase-bar"><div class="phase-bar-fill"></div></div>
+  <ul class="phase-items">
+    <li class="item" data-id="l1"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Product Hunt goes live (Tuesday AM PST)</div><div class="item-detail">Publish listing, drop first comment, share link everywhere.</div></div></li>
+    <li class="item" data-id="l2"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">r/fujifilm post published</div><div class="item-detail">Same day or day after PH. Respond to every comment for 48h.</div></div></li>
+    <li class="item" data-id="l3"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Facebook group posts</div><div class="item-detail">Film Simulations group (134K), SOOC group.</div></div></li>
+    <li class="item" data-id="l4"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Twitter/X launch thread</div><div class="item-detail">Thread: what it does, demo video, link to PH + website.</div></div></li>
+    <li class="item" data-id="l5"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Press emails sent</div><div class="item-detail">PetaPixel, Phoblographer, DCW, Fstoppers.</div></div></li>
+    <li class="item" data-id="l6"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Email list: "drkrm is live"</div><div class="item-detail">Send to all KV signups. Download link + what's included.</div></div></li>
+    <li class="item" data-id="l7"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Landing page: swap signup forms for download buttons</div><div class="item-detail">Wire download to GitHub Releases DMG URL.</div></div></li>
+  </ul>
+</div>
+
+<!-- PHASE: Post-Launch -->
+<div class="phase" data-phase="post">
+  <div class="phase-header" onclick="togglePhase(this)">
+    <span class="phase-chevron">&#9660;</span>
+    <span class="phase-title">Post-Launch (Weeks 1-4)</span>
+    <span class="phase-progress"></span>
+  </div>
+  <div class="phase-bar"><div class="phase-bar-fill"></div></div>
+  <ul class="phase-items">
+    <li class="item" data-id="p1"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Follow up with YouTube creators</div><div class="item-detail">2 weeks after initial email. One follow-up max.</div></div></li>
+    <li class="item" data-id="p2"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Collect testimonials</div><div class="item-detail">Screenshot positive Reddit/Twitter comments for landing page.</div></div></li>
+    <li class="item" data-id="p3"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Second r/fujifilm post</div><div class="item-detail">Different angle: "what I learned" or workflow tips post, not self-promo.</div></div></li>
+    <li class="item" data-id="p4"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">SEO blog post published</div><div class="item-detail">drkrm.app/blog — "x raw studio alternative" keyword target.</div></div></li>
+    <li class="item" data-id="p5"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Setapp submission</div><div class="item-detail">Revenue share marketplace. Extends reach to Setapp subscriber base.</div></div></li>
+    <li class="item" data-id="p6"><div class="item-check" onclick="toggle(this)"></div><div class="item-text"><div class="item-title">Forum presence</div><div class="item-detail">Fuji-X-Forum profile, DPReview signature. Organic, not spammy.</div></div></li>
+  </ul>
+</div>
+
+<hr class="section-divider">
+
+<!-- Outreach Tracker Table -->
+<h2 style="font-family:var(--mono);font-size:14px;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;">Outreach Tracker</h2>
+
+<table class="outreach-table">
+  <thead>
+    <tr>
+      <th>Contact</th>
+      <th>Channel</th>
+      <th>Audience</th>
+      <th>Status</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr data-contact="roesch">
+      <td>Ritchie Roesch</td>
+      <td>Fuji X Weekly (blog + YT)</td>
+      <td>80-100K readers / 18K subs</td>
+      <td><select class="status-select" onchange="saveState()"><option value="pending">Pending</option><option value="sent">Sent</option><option value="replied">Replied</option><option value="featured">Featured</option></select></td>
+      <td><input class="notes-input" placeholder="Add notes..." oninput="saveState()"></td>
+    </tr>
+    <tr data-contact="pal2tech">
+      <td>Chris Lee (pal2tech)</td>
+      <td>YouTube</td>
+      <td>226K subs</td>
+      <td><select class="status-select" onchange="saveState()"><option value="pending">Pending</option><option value="sent">Sent</option><option value="replied">Replied</option><option value="featured">Featured</option></select></td>
+      <td><input class="notes-input" placeholder="Add notes..." oninput="saveState()"></td>
+    </tr>
+    <tr data-contact="mullins">
+      <td>Kevin Mullins</td>
+      <td>YouTube</td>
+      <td>47K subs</td>
+      <td><select class="status-select" onchange="saveState()"><option value="pending">Pending</option><option value="sent">Sent</option><option value="replied">Replied</option><option value="featured">Featured</option></select></td>
+      <td><input class="notes-input" placeholder="Add notes..." oninput="saveState()"></td>
+    </tr>
+    <tr data-contact="ballesteros">
+      <td>Reggie Ballesteros</td>
+      <td>YouTube</td>
+      <td>93K subs</td>
+      <td><select class="status-select" onchange="saveState()"><option value="pending">Pending</option><option value="sent">Sent</option><option value="replied">Replied</option><option value="featured">Featured</option></select></td>
+      <td><input class="notes-input" placeholder="Add notes..." oninput="saveState()"></td>
+    </tr>
+    <tr data-contact="sarigul">
+      <td>Eren Sarigul</td>
+      <td>YouTube</td>
+      <td>59K subs</td>
+      <td><select class="status-select" onchange="saveState()"><option value="pending">Pending</option><option value="sent">Sent</option><option value="replied">Replied</option><option value="featured">Featured</option></select></td>
+      <td><input class="notes-input" placeholder="Add notes..." oninput="saveState()"></td>
+    </tr>
+    <tr data-contact="petapixel">
+      <td>PetaPixel</td>
+      <td>Press</td>
+      <td>Publication</td>
+      <td><select class="status-select" onchange="saveState()"><option value="pending">Pending</option><option value="sent">Sent</option><option value="replied">Replied</option><option value="featured">Featured</option></select></td>
+      <td><input class="notes-input" placeholder="Add notes..." oninput="saveState()"></td>
+    </tr>
+    <tr data-contact="phoblographer">
+      <td>The Phoblographer</td>
+      <td>Press</td>
+      <td>Publication</td>
+      <td><select class="status-select" onchange="saveState()"><option value="pending">Pending</option><option value="sent">Sent</option><option value="replied">Replied</option><option value="featured">Featured</option></select></td>
+      <td><input class="notes-input" placeholder="Add notes..." oninput="saveState()"></td>
+    </tr>
+    <tr data-contact="dcw">
+      <td>Digital Camera World</td>
+      <td>Press</td>
+      <td>Publication</td>
+      <td><select class="status-select" onchange="saveState()"><option value="pending">Pending</option><option value="sent">Sent</option><option value="replied">Replied</option><option value="featured">Featured</option></select></td>
+      <td><input class="notes-input" placeholder="Add notes..." oninput="saveState()"></td>
+    </tr>
+    <tr data-contact="fstoppers">
+      <td>Fstoppers</td>
+      <td>Press</td>
+      <td>Publication</td>
+      <td><select class="status-select" onchange="saveState()"><option value="pending">Pending</option><option value="sent">Sent</option><option value="replied">Replied</option><option value="featured">Featured</option></select></td>
+      <td><input class="notes-input" placeholder="Add notes..." oninput="saveState()"></td>
+    </tr>
+  </tbody>
+</table>
+
+<script>
+const STORAGE_KEY = 'drkrm-marketing-state';
+
+function saveState() {
+  const state = { items: {}, outreach: {} };
+
+  document.querySelectorAll('.item').forEach(item => {
+    const id = item.dataset.id;
+    const checked = item.querySelector('.item-check').classList.contains('checked');
+    if (checked) state.items[id] = true;
+  });
+
+  document.querySelectorAll('.outreach-table tbody tr').forEach(row => {
+    const contact = row.dataset.contact;
+    const status = row.querySelector('.status-select').value;
+    const notes = row.querySelector('.notes-input').value;
+    state.outreach[contact] = { status, notes };
+  });
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  updateStats();
+}
+
+function loadState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  const state = JSON.parse(raw);
+
+  if (state.items) {
+    Object.entries(state.items).forEach(([id, checked]) => {
+      const item = document.querySelector(`.item[data-id="${id}"]`);
+      if (item && checked) {
+        item.querySelector('.item-check').classList.add('checked');
+        item.classList.add('done');
+      }
+    });
+  }
+
+  if (state.outreach) {
+    Object.entries(state.outreach).forEach(([contact, data]) => {
+      const row = document.querySelector(`tr[data-contact="${contact}"]`);
+      if (row) {
+        row.querySelector('.status-select').value = data.status;
+        row.querySelector('.notes-input').value = data.notes || '';
+      }
+    });
+  }
+}
+
+function toggle(el) {
+  el.classList.toggle('checked');
+  el.closest('.item').classList.toggle('done');
+  saveState();
+}
+
+function togglePhase(header) {
+  header.closest('.phase').classList.toggle('collapsed');
+}
+
+function updateStats() {
+  const items = document.querySelectorAll('.item');
+  const done = document.querySelectorAll('.item.done');
+  const blockers = document.querySelectorAll('.tag-blocker');
+  const blockersDone = [...blockers].filter(b => b.closest('.item').classList.contains('done')).length;
+
+  document.getElementById('stat-total').textContent = items.length;
+  document.getElementById('stat-done').textContent = done.length;
+  document.getElementById('stat-pct').textContent = Math.round((done.length / items.length) * 100) + '%';
+  document.getElementById('stat-blockers').textContent = (blockers.length - blockersDone);
+
+  document.querySelectorAll('.phase').forEach(phase => {
+    const phaseItems = phase.querySelectorAll('.item');
+    const phaseDone = phase.querySelectorAll('.item.done');
+    const pct = phaseItems.length ? Math.round((phaseDone.length / phaseItems.length) * 100) : 0;
+    const progress = phase.querySelector('.phase-progress');
+    const bar = phase.querySelector('.phase-bar-fill');
+    if (progress) progress.textContent = `${phaseDone.length}/${phaseItems.length}`;
+    if (bar) bar.style.width = pct + '%';
+  });
+
+  document.querySelectorAll('.status-select').forEach(sel => {
+    sel.className = 'status-select status-' + sel.value;
+  });
+}
+
+loadState();
+updateStats();
+</script>
+
+</body>
+</html>

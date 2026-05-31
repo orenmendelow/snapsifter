@@ -74,6 +74,25 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 43 changes (2026-05-31)
+
+**Landing page polish (S42 feedback):**
+- S42-1: `.signup-note` dimmed from `var(--text-dim)` (#999) to `#777`.
+- S42-2: `.flow-number` opacity bumped from `0.08` to `0.10`.
+- S42-3: `.hero-camera` `right` offset changed from `-40px` to `-80px` (more separation from laptop).
+- S42-4: `.signup-confirmed` gets `text-align: center`.
+- Pricing vertical alignment: `.pricing-tier:first-child` gets `padding-top: 28px` to align "Free" baseline with "$49"/"$79" (compensates for LAUNCH PRICE badge height on paid tiers).
+
+**Marketing plan + dashboard created:**
+- `MARKETING.md` — full marketing plan with drafted messages for all channels: r/fujifilm post, Ritchie Roesch email, YouTube creator outreach template, press pitch (PetaPixel/Phoblographer/DCW/Fstoppers), Product Hunt listing copy, Twitter/X build-in-public posts, Facebook group posts, email list messages, demo video script (60-90s), content calendar (weeks -4 to +4), metrics to track.
+- `marketing/dashboard.html` — interactive local checklist dashboard. 6 phases (Blockers, Content, Outreach, Community, Launch Day, Post-Launch), progress bars, outreach tracker table with status dropdowns + notes, all state in localStorage. Dark theme matching drkrm aesthetic.
+
+**Market research completed:**
+- TAM: ~2-3M active Fuji X owners. SAM: ~500-750K (Mac + Apple Silicon). SOM: 5-15K paying customers year 1-2. Revenue range $245K-$1.2M.
+- Key channels identified: r/fujifilm (254K), Fuji X Weekly (80-100K readers), FB Film Simulations (134K), YouTube creators (pal2tech 226K, Reggie 93K, Eren 59K, Kevin Mullins 47K, Ritchie 18K).
+- No direct competitor does PTP camera connection for recipe testing. All competitors are mobile recipe library apps.
+- Data in LAUNCH.md (market context) and MARKETING.md (full plan).
+
 ### Session 42 changes (2026-05-29)
 
 **Landing page deployed to drkrm.app:**
