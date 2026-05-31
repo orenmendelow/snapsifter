@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>drkrm Email Blast Tool</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #000;
+      color: #e0e0e0;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      color: #c45a30;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      color: #c45a30;
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .subtitle {
+      color: #777;
+      font-size: 12px;
+      margin-bottom: 32px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid #222;
+    }
+
+    .section:last-child { border-bottom: none; }
+
+    label {
+      display: block;
+      color: #999;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"], input[type="password"], textarea {
+      width: 100%;
+      background: #111;
+      border: 1px solid #333;
+      color: #e0e0e0;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 14px;
+      padding: 10px 12px;
+      border-radius: 4px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
+      border-color: #c45a30;
+    }
+
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    button {
+      background: transparent;
+      border: 1px solid #c45a30;
+      color: #c45a30;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    button:hover {
+      background: #c45a30;
+      color: #000;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    button.filled {
+      background: #c45a30;
+      color: #000;
+    }
+
+    button.filled:hover {
+      background: #d4693f;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .status {
+      margin-top: 12px;
+      color: #777;
+      font-size: 12px;
+    }
+
+    .status.success { color: #c45a30; }
+    .status.error { color: #ff6b6b; }
+
+    .count {
+      font-size: 32px;
+      font-weight: 600;
+      color: #c45a30;
+      margin: 8px 0;
+    }
+
+    .template-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #333;
+    }
+
+    .template-tab {
+      padding: 8px 16px;
+      color: #777;
+      cursor: pointer;
+      border: none;
+      background: none;
+      border-bottom: 2px solid transparent;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      border-radius: 0;
+    }
+
+    .template-tab:hover {
+      color: #e0e0e0;
+      background: none;
+    }
+
+    .template-tab.active {
+      color: #c45a30;
+      border-bottom-color: #c45a30;
+      background: none;
+    }
+
+    .draft-preview {
+      background: #0a0a0a;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 24px;
+      margin-top: 16px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .draft-preview h3 {
+      color: #e0e0e0;
+      font-size: 16px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #222;
+    }
+
+    .draft-preview .body {
+      white-space: pre-wrap;
+      color: #ccc;
+      line-height: 1.8;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      body { padding: 20px; }
+    }
+
+    .token-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .token-row .field { flex: 1; margin-bottom: 0; }
+    .token-row button { margin-bottom: 0; }
+
+    .copy-toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #c45a30;
+      color: #000;
+      padding: 10px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .copy-toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <h1>drkrm email blast</h1>
+  <p class="subtitle">Local tool for managing subscriber outreach via Gmail "Send mail as" support@drkrm.app</p>
+
+  <!-- Auth + Load -->
+  <div class="section">
+    <h2>Subscribers</h2>
+    <div class="token-row">
+      <div class="field">
+        <label>Admin Token</label>
+        <input type="password" id="admin-token" placeholder="ADMIN_TOKEN from CF Pages env">
+      </div>
+      <button id="btn-load" class="filled">Load Subscribers</button>
+    </div>
+    <div id="subscriber-status" class="status"></div>
+    <div id="subscriber-count" style="display:none">
+      <div class="count"><span id="count-num">0</span></div>
+      <p style="color:#777; font-size:12px">subscribers loaded</p>
+    </div>
+    <div class="btn-row" id="export-actions" style="display:none">
+      <button id="btn-csv">Export CSV</button>
+      <button id="btn-mailto">Copy mailto: links</button>
+    </div>
+  </div>
+
+  <!-- Compose -->
+  <div class="section">
+    <h2>Compose</h2>
+    <div class="template-tabs">
+      <button class="template-tab active" data-template="prelaunch">Pre-launch Preview</button>
+      <button class="template-tab" data-template="launch">Launch Day</button>
+      <button class="template-tab" data-template="custom">Custom</button>
+    </div>
+    <div class="field">
+      <label>Subject</label>
+      <input type="text" id="email-subject" placeholder="Subject line">
+    </div>
+    <div class="field">
+      <label>Body (plain text with line breaks)</label>
+      <textarea id="email-body" placeholder="Write your email here..."></textarea>
+    </div>
+  </div>
+
+  <!-- Gmail Draft -->
+  <div class="section">
+    <h2>Generate Gmail Draft</h2>
+    <p style="color:#777; font-size:12px; margin-bottom:12px">
+      Formatted HTML for copy-pasting into Gmail compose (send as support@drkrm.app).
+      BCC all subscribers for bulk send.
+    </p>
+    <div class="btn-row">
+      <button id="btn-generate-draft" class="filled">Generate Draft HTML</button>
+      <button id="btn-copy-draft">Copy to Clipboard</button>
+      <button id="btn-copy-bcc">Copy BCC List</button>
+    </div>
+    <div id="draft-preview" class="draft-preview" style="display:none">
+      <h3 id="draft-subject"></h3>
+      <div id="draft-body" class="body"></div>
+    </div>
+  </div>
+
+  <div class="copy-toast" id="toast">Copied</div>
+
+  <script>
+    const API_BASE = 'https://drkrm.app';
+    let subscribers = [];
+
+    // Token persistence
+    const tokenInput = document.getElementById('admin-token');
+    tokenInput.value = localStorage.getItem('drkrm-admin-token') || '';
+    tokenInput.addEventListener('input', () => {
+      localStorage.setItem('drkrm-admin-token', tokenInput.value);
+    });
+
+    // Templates
+    const templates = {
+      prelaunch: {
+        subject: 'drkrm — early look at what we\'re building',
+        body: `Hey,
+
+You signed up for drkrm, so here's a quick look at where we're at.
+
+drkrm is a macOS desktop app for Fuji X shooters. Two tools in one:
+
+Photo Cull — keyboard-driven photo triage. Rate with 1/2/3, sort into folders. Fast.
+
+Recipe Lab — dial in film simulation recipes on your actual camera hardware. See the same photo rendered through every sim, compare variants side-by-side, build a cookbook of your go-to looks.
+
+We're in beta now. Launch is soon.
+
+If you shoot Fuji and edit on a Mac, this was built for you.
+
+More soon.
+
+— drkrm
+support@drkrm.app`
+      },
+      launch: {
+        subject: 'drkrm is live — download now',
+        body: `It's here.
+
+drkrm is now available for macOS (Apple Silicon).
+
+Photo Cull is free — always.
+Recipe Lab is $49 (lifetime: $79).
+
+14-day free trial, no credit card needed.
+
+Download: https://drkrm.app
+
+What you get:
+- Keyboard-driven photo culling (1/2/3 to rate, auto-sort)
+- Film simulation recipe editor with live camera rendering
+- Side-by-side variant comparison
+- Recipe cookbook
+- Direct PTP camera connection (no X RAW Studio needed)
+
+Requires: macOS 13+, Apple Silicon, Fuji X camera with USB-C
+
+Thanks for signing up early.
+
+— drkrm
+support@drkrm.app`
+      },
+      custom: {
+        subject: '',
+        body: ''
+      }
+    };
+
+    // Template tabs
+    document.querySelectorAll('.template-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.template-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const t = templates[tab.dataset.template];
+        document.getElementById('email-subject').value = t.subject;
+        document.getElementById('email-body').value = t.body;
+      });
+    });
+
+    // Load initial template
+    document.getElementById('email-subject').value = templates.prelaunch.subject;
+    document.getElementById('email-body').value = templates.prelaunch.body;
+
+    // Load subscribers
+    document.getElementById('btn-load').addEventListener('click', async () => {
+      const token = tokenInput.value.trim();
+      if (!token) {
+        showStatus('Enter admin token', 'error');
+        return;
+      }
+
+      showStatus('Loading...');
+      subscribers = [];
+      let cursor = null;
+
+      try {
+        do {
+          const url = new URL(`${API_BASE}/api/subscribers`);
+          if (cursor) url.searchParams.set('cursor', cursor);
+
+          const res = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || `HTTP ${res.status}`);
+          }
+
+          const data = await res.json();
+          subscribers.push(...data.subscribers);
+          cursor = data.cursor;
+        } while (cursor);
+
+        document.getElementById('count-num').textContent = subscribers.length;
+        document.getElementById('subscriber-count').style.display = 'block';
+        document.getElementById('export-actions').style.display = 'flex';
+        showStatus(`Loaded ${subscribers.length} subscribers`, 'success');
+      } catch (err) {
+        showStatus(`Error: ${err.message}`, 'error');
+      }
+    });
+
+    // Export CSV
+    document.getElementById('btn-csv').addEventListener('click', () => {
+      if (!subscribers.length) return;
+      const header = 'email,timestamp,source\n';
+      const rows = subscribers.map(s =>
+        `${s.email},${s.timestamp || ''},${s.source || ''}`
+      ).join('\n');
+      const blob = new Blob([header + rows], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `drkrm-subscribers-${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('CSV downloaded');
+    });
+
+    // Copy mailto links
+    document.getElementById('btn-mailto').addEventListener('click', () => {
+      if (!subscribers.length) return;
+      const links = subscribers.map(s => `mailto:${s.email}`).join('\n');
+      navigator.clipboard.writeText(links);
+      toast('mailto: links copied');
+    });
+
+    // Copy BCC list
+    document.getElementById('btn-copy-bcc').addEventListener('click', () => {
+      if (!subscribers.length) return;
+      const bcc = subscribers.map(s => s.email).join(', ');
+      navigator.clipboard.writeText(bcc);
+      toast('BCC list copied');
+    });
+
+    // Generate draft
+    document.getElementById('btn-generate-draft').addEventListener('click', () => {
+      const subject = document.getElementById('email-subject').value;
+      const body = document.getElementById('email-body').value;
+
+      if (!subject || !body) {
+        showStatus('Fill in subject and body', 'error');
+        return;
+      }
+
+      const htmlBody = body
+        .split('\n\n')
+        .map(para => `<p style="margin:0 0 16px 0;color:#e0e0e0;font-family:'IBM Plex Mono',monospace;font-size:14px;line-height:1.6">${para.replace(/\n/g, '<br>')}</p>`)
+        .join('');
+
+      const fullHtml = `<div style="max-width:600px;padding:32px;background:#0a0a0a;color:#e0e0e0;font-family:'IBM Plex Mono',monospace">
+  <div style="margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #222">
+    <span style="color:#c45a30;font-size:18px;font-weight:600">drkrm</span>
+  </div>
+  ${htmlBody}
+  <div style="margin-top:32px;padding-top:16px;border-top:1px solid #222;font-size:11px;color:#666">
+    <a href="https://drkrm.app" style="color:#c45a30;text-decoration:none">drkrm.app</a>
+  </div>
+</div>`;
+
+      document.getElementById('draft-subject').textContent = subject;
+      document.getElementById('draft-body').innerHTML = fullHtml;
+      document.getElementById('draft-preview').style.display = 'block';
+    });
+
+    // Copy draft HTML
+    document.getElementById('btn-copy-draft').addEventListener('click', () => {
+      const preview = document.getElementById('draft-body');
+      if (!preview.innerHTML) {
+        toast('Generate draft first');
+        return;
+      }
+      const html = preview.innerHTML;
+      const blob = new Blob([html], { type: 'text/html' });
+      navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]);
+      toast('Draft HTML copied');
+    });
+
+    function showStatus(msg, type = '') {
+      const el = document.getElementById('subscriber-status');
+      el.textContent = msg;
+      el.className = 'status' + (type ? ' ' + type : '');
+    }
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+</html>

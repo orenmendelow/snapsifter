@@ -74,6 +74,63 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 44 changes (2026-05-31)
+
+**All marketing materials built (12 items from S43 plan):**
+
+1. Press kit (`landing/press/`):
+   - `icon.png` (1024x1024, exported from logo-v4d.svg via rsvg-convert)
+   - `logo.svg` (copy of public/logo-v4d.svg)
+   - `description.txt` (one-paragraph + key facts + contact)
+
+2. Press page (`landing/press.html`):
+   - Static page matching landing page aesthetic (dark, amber, IBM Plex Mono + Playfair Display)
+   - Asset download links, key facts, contact section
+   - Deployed at drkrm.app/press
+
+3. Personalized outreach emails (`marketing/creator-outreach.md`):
+   - Ritchie Roesch (roeschphotography@yahoo.com) — recipe ecosystem hook
+   - pal2tech / Chris Lee (media@pal2tech.com) — educational/tutorial angle
+   - Kevin Mullins (kevinmullinsphotography.co.uk/contact) — pro volume + Recipe Maker connection
+   - Reggie Ballesteros (info@reggiebphotography.com) — "stop shooting RAW" alignment
+   - Eren Sarigul (hello@erenjam.com) — street photography volume, free culler lead
+
+4. Press pitch emails (`marketing/press-emails.md`):
+   - PetaPixel (Jeremy Gray, eic@petapixel.com)
+   - The Phoblographer (Chris Gampat, ChrisGampat@thephoblographer.com)
+   - Digital Camera World (Kim Bunermann, LinkedIn DM)
+   - Fstoppers (Alex Cooke, fstoppers.com/contact)
+
+5. r/fujifilm post — polished long-form version added to MARKETING.md
+
+6. Product Hunt listing (`marketing/product-hunt.md`):
+   - Tagline, description, first comment draft, gallery checklist, launch checklist
+
+7. Twitter/X threads (`marketing/twitter-threads.md`):
+   - 4 build-in-public posts + 6-tweet launch day thread + engagement reply bank
+
+8. Facebook group posts (`marketing/facebook-posts.md`):
+   - Film Simulations (134K) + SOOC group drafts
+
+9. Email list messages (`marketing/email-blasts.md`):
+   - Pre-launch preview + launch day announcement
+
+10. SEO blog post (`marketing/seo-blog-post.md`):
+    - Full "X RAW Studio vs drkrm: What's Different" article with comparison table
+
+11. Demo video shot list (`marketing/demo-shot-list.md`):
+    - 7 shots, 75-90s runtime, per-shot actions/timings/captions/transitions
+
+12. Email infrastructure:
+    - `landing/functions/api/subscribers.js` — GET endpoint, Bearer auth (`ADMIN_TOKEN`), paginated subscriber list with metadata
+    - `marketing/email-templates.html` — local dark-themed tool: load subscribers, export CSV, copy BCC list, generate Gmail drafts with pre-filled templates
+
+**MARKETING.md updated:**
+- Added file reference table for all marketing/ files
+- Content calendar items checked off where drafts are ready
+- Inline copy added: polished r/fujifilm post, PH first comment, Twitter threads, Facebook posts, email messages
+- Pointers to detailed files replace duplicate content
+
 ### Session 43 changes (2026-05-31)
 
 **Landing page polish (S42 feedback):**

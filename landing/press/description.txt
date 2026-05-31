@@ -1,0 +1,16 @@
+drkrm — Recipe Lab & Photo Cull for Fujifilm X-Series
+
+drkrm is a Mac app for Fujifilm X-series photographers. Photo Cull lets you scrub through hundreds of photos with keyboard shortcuts — rate, filter, sort into folders. Recipe Lab connects to your camera over USB to test film simulation recipes on your actual photos. Pick a parameter, render every option as a variant, compare side-by-side, and dial in your recipe one setting at a time. Photo Cull is free forever. Recipe Lab is $49.
+
+Key facts:
+- macOS 13.5+ (Apple Silicon)
+- No subscription, no cloud — photos stay on your drive
+- Photo Cull: keyboard-driven rating (1/2/3), filtering, folder sorting. Handles HEIF, JPG, RAF.
+- Recipe Lab: USB connection to Fuji X-series cameras. Real film simulation rendering via the camera's processor.
+- Variant Test: render every value of any recipe parameter, compare side-by-side, apply and iterate.
+- 20 film simulations supported, all recipe parameters adjustable.
+- Pricing: Photo Cull free forever. Recipe Lab $49 one-time. Lifetime $79.
+
+Website: https://drkrm.app
+Contact: support@drkrm.app
+Developer: Mendelow LLC

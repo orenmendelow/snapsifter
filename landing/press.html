@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>drkrm — Press Kit</title>
+<meta name="description" content="Press kit for drkrm, the Mac app for Fujifilm X-series photographers. Download logos, icons, and product descriptions.">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --black: #000;
+  --bg: #050505;
+  --surface: #0a0a0a;
+  --border: rgba(255,255,255,0.08);
+  --text: #e8e8e8;
+  --text-dim: #999;
+  --text-muted: #808080;
+  --amber: #c45a30;
+  --amber-dim: rgba(196,90,48,0.4);
+  --amber-glow: rgba(196,90,48,0.15);
+  --mono: 'IBM Plex Mono', monospace;
+  --serif: 'Playfair Display', serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--black);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Sticky Nav ── */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.nav-logo {
+  width: 28px;
+  height: 28px;
+}
+
+.nav-wordmark {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+
+/* ── Main Content ── */
+main {
+  padding-top: 96px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding-left: 32px;
+  padding-right: 32px;
+  padding-bottom: 80px;
+}
+
+h1 {
+  font-family: var(--serif);
+  font-size: 48px;
+  font-weight: 600;
+  margin-bottom: 32px;
+  color: var(--text);
+}
+
+h2 {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 500;
+  margin-bottom: 24px;
+  color: var(--text);
+}
+
+.section {
+  margin-bottom: 64px;
+}
+
+.description {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-dim);
+  max-width: 640px;
+}
+
+/* ── Assets ── */
+.asset-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.asset-item {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.asset-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.asset-label {
+  font-size: 13px;
+  color: var(--text);
+  min-width: 200px;
+}
+
+.asset-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.asset-link {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--amber);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.asset-link:hover {
+  color: #d4663a;
+}
+
+.asset-note {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* ── Key Facts ── */
+.facts-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fact {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.fact-label {
+  color: var(--text-muted);
+  min-width: 120px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding-top: 1px;
+}
+
+.fact-value {
+  color: var(--text-dim);
+}
+
+/* ── Contact ── */
+.contact-link {
+  color: var(--amber);
+  text-decoration: none;
+  font-size: 15px;
+  transition: color 0.2s;
+}
+
+.contact-link:hover {
+  color: #d4663a;
+}
+
+/* ── Footer ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 48px 32px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.footer-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  main {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
+  .asset-item {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .asset-label {
+    min-width: unset;
+  }
+
+  .fact {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .fact-label {
+    min-width: unset;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-left">
+    <svg class="nav-logo" viewBox="0 0 128 128" width="28" height="28">
+      <defs>
+        <clipPath id="nav-round"><rect width="128" height="128" rx="24"/></clipPath>
+        <mask id="nav-cuts" maskContentUnits="userSpaceOnUse">
+          <rect x="-64" y="-66" width="128" height="132" fill="white"/>
+          <rect x="-1.5" y="-40" width="3" height="92" fill="black"/>
+          <circle cx="0" cy="-4" r="6" fill="black"/>
+        </mask>
+      </defs>
+      <g clip-path="url(#nav-round)">
+        <rect width="128" height="128" fill="#0a0a0a"/>
+        <g transform="translate(64,66)" mask="url(#nav-cuts)">
+          <polygon points="-20,-52 -10,-52 8,10 2,52 -4,52 -14,10" fill="#c45a30"/>
+          <polygon points="20,-52 10,-52 -8,10 -2,52 4,52 14,10" fill="#c45a30"/>
+          <circle cx="0" cy="-4" r="12" fill="#c45a30"/>
+        </g>
+      </g>
+    </svg>
+    <span class="nav-wordmark">drkrm</span>
+  </a>
+</nav>
+
+<main>
+
+  <section class="section">
+    <h1>Press Kit</h1>
+    <p class="description">drkrm is a Mac app for Fujifilm X-series photographers. Photo Cull lets you scrub through hundreds of photos with keyboard shortcuts — rate, filter, sort into folders. Recipe Lab connects to your camera over USB to test film simulation recipes on your actual photos. Pick a parameter, render every option as a variant, compare side-by-side, and dial in your recipe one setting at a time. Photo Cull is free forever. Recipe Lab is $49.</p>
+  </section>
+
+  <section class="section">
+    <h2>Assets</h2>
+    <ul class="asset-list">
+      <li class="asset-item">
+        <span class="asset-label">App Icon (PNG, 1024x1024)</span>
+        <a class="asset-link" href="/press/icon.png" download>Download</a>
+      </li>
+      <li class="asset-item">
+        <span class="asset-label">Logo (SVG)</span>
+        <a class="asset-link" href="/press/logo.svg" download>Download</a>
+      </li>
+      <li class="asset-item">
+        <span class="asset-label">Description (TXT)</span>
+        <a class="asset-link" href="/press/description.txt" download>Download</a>
+      </li>
+      <li class="asset-item">
+        <span class="asset-label">Screenshots</span>
+        <span class="asset-note">Available on request — contact <a href="mailto:support@drkrm.app" class="contact-link" style="font-size:13px">support@drkrm.app</a></span>
+      </li>
+      <li class="asset-item">
+        <span class="asset-label">Demo Video</span>
+        <span class="asset-note">Coming soon</span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>Key Facts</h2>
+    <ul class="facts-list">
+      <li class="fact">
+        <span class="fact-label">Platform</span>
+        <span class="fact-value">macOS 13.5+ (Apple Silicon)</span>
+      </li>
+      <li class="fact">
+        <span class="fact-label">Pricing</span>
+        <span class="fact-value">Photo Cull free forever / Recipe Lab $49 / Lifetime $79</span>
+      </li>
+      <li class="fact">
+        <span class="fact-label">Model</span>
+        <span class="fact-value">No subscription, no cloud</span>
+      </li>
+      <li class="fact">
+        <span class="fact-label">Developer</span>
+        <span class="fact-value">Mendelow LLC</span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>Contact</h2>
+    <a href="mailto:support@drkrm.app" class="contact-link">support@drkrm.app</a>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-top">
+    <svg viewBox="0 0 128 128" width="24" height="24">
+      <defs>
+        <clipPath id="f-round"><rect width="128" height="128" rx="24"/></clipPath>
+        <mask id="f-cuts" maskContentUnits="userSpaceOnUse">
+          <rect x="-64" y="-66" width="128" height="132" fill="white"/>
+          <rect x="-1.5" y="-40" width="3" height="92" fill="black"/>
+          <circle cx="0" cy="-4" r="6" fill="black"/>
+        </mask>
+      </defs>
+      <g clip-path="url(#f-round)">
+        <rect width="128" height="128" fill="#0a0a0a"/>
+        <g transform="translate(64,66)" mask="url(#f-cuts)">
+          <polygon points="-20,-52 -10,-52 8,10 2,52 -4,52 -14,10" fill="#c45a30"/>
+          <polygon points="20,-52 10,-52 -8,10 -2,52 4,52 14,10" fill="#c45a30"/>
+          <circle cx="0" cy="-4" r="12" fill="#c45a30"/>
+        </g>
+      </g>
+    </svg>
+    <span class="nav-wordmark">drkrm</span>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2026 Mendelow LLC</span>
+    <span>Made in New Jersey</span>
+  </div>
+</footer>
+
+</body>
+</html>
