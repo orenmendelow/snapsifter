@@ -2712,6 +2712,10 @@ body::before {
   color: var(--amber);
 }
 
+#cull-feedback-btn:hover {
+  color: var(--amber);
+}
+
 /* ── Sort confirmation overlay ── */
 #sort-overlay {
   position: fixed;
@@ -3170,6 +3174,97 @@ body::before {
   text-align: right;
 }
 
+#recipe-tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: none;
+}
+#recipe-tutorial-overlay.visible {
+  display: block;
+}
+#recipe-tutorial-spotlight {
+  position: fixed;
+  border-radius: 4px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.85);
+  transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease;
+  z-index: 251;
+  pointer-events: none;
+}
+#recipe-tutorial-card {
+  position: fixed;
+  z-index: 252;
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 24px;
+  max-width: 320px;
+  transition: top 0.2s ease, left 0.2s ease;
+}
+#recipe-tutorial-step {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #555;
+  margin-bottom: 8px;
+}
+#recipe-tutorial-title {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--amber);
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+#recipe-tutorial-desc {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+#recipe-tutorial-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+#recipe-tutorial-btns button {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 6px 14px;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.18);
+  color: var(--text-dim);
+  background: transparent;
+  transition: color 0.15s, border-color 0.15s;
+  text-transform: uppercase;
+}
+#recipe-tutorial-btns button:hover {
+  color: var(--text);
+  border-color: var(--amber-dim);
+}
+#recipe-tutorial-btns .tutorial-btn-primary {
+  color: var(--amber);
+  border-color: var(--amber-dim);
+}
+#recipe-tutorial-btns .tutorial-btn-primary:hover {
+  border-color: var(--amber);
+}
+#recipe-tutorial-help-btn {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+  transition: color 0.1s ease;
+  line-height: 1;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 12px;
+}
+#recipe-tutorial-help-btn:hover {
+  color: var(--amber);
+}
+
 /* ── Loading state ── */
 #loading-screen {
   position: fixed;
@@ -3506,6 +3601,7 @@ body::before {
         <span class="maybe-count">M:0</span>
         <span class="like-count">L:0</span>
       </div>
+      <span id="cull-feedback-btn" onclick="window.open('mailto:support@drkrm.app?subject=' + encodeURIComponent('[drkrm-feedback] ') + '&body=' + encodeURIComponent('\n\n---\ndrkrm v1.0.0-beta\nmacOS ' + navigator.platform + '\n'))" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;color:#555;cursor:pointer;transition:color 0.1s ease">FEEDBACK</span>
       <span id="help-btn">?</span>
     </div>
   </div>
@@ -3588,6 +3684,19 @@ body::before {
   </div>
 </div>
 
+<div id="recipe-tutorial-overlay">
+  <div id="recipe-tutorial-spotlight"></div>
+  <div id="recipe-tutorial-card">
+    <div id="recipe-tutorial-step"></div>
+    <div id="recipe-tutorial-title"></div>
+    <div id="recipe-tutorial-desc"></div>
+    <div id="recipe-tutorial-btns">
+      <button id="recipe-tutorial-skip">SKIP</button>
+      <button id="recipe-tutorial-next" class="tutorial-btn-primary">NEXT</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Recipe Editor ── -->
 <div id="recipe-editor">
   <!-- Persistent top bar -->
@@ -3607,6 +3716,8 @@ body::before {
       <div id="recipe-shell-meta">
         <div id="camera-status"></div>
         <button class="recipe-action-btn" id="recipe-library-btn">COOKBOOK</button>
+        <button class="recipe-action-btn" id="recipe-feedback-btn" onclick="window.open('mailto:support@drkrm.app?subject=' + encodeURIComponent('[drkrm-feedback] ') + '&body=' + encodeURIComponent('\n\n---\ndrkrm v1.0.0-beta\nmacOS ' + navigator.platform + '\n'))">FEEDBACK</button>
+        <button id="recipe-tutorial-help-btn" title="Recipe Lab Guide">?</button>
       </div>
     </div>
   </div>
@@ -5477,7 +5588,10 @@ body::before {
       if (e.key === 'Escape' && helpVisible) toggleHelp();
       return;
     }
-    if (screen === 'recipe') return;
+    if (screen === 'recipe') {
+      if (e.key === 'Escape' && tutorialOverlay.classList.contains('visible')) hideRecipeTutorial();
+      return;
+    }
 
     if (helpVisible && e.key !== '?') {
       if (e.key === 'Escape') toggleHelp();
@@ -5782,6 +5896,90 @@ body::before {
   document.getElementById('camera-status').addEventListener('click', () => checkCameraStatus());
   document.getElementById('camera-status').style.cursor = 'pointer';
 
+  const recipeTutorialSteps = [
+    {title: 'Collage', desc: 'Your photos, auto-selected for diversity. SHUFFLE for new picks or PICK PHOTOS to choose manually.', target: '#recipe-collage'},
+    {title: 'Recipe Params', desc: 'Every Fujifilm recipe parameter. Tweak any setting — changes show instantly against the as-shot baseline.', target: '#recipe-right-panel'},
+    {title: 'Simulate', desc: 'Renders your recipe on the camera hardware via USB. Plug in your Fuji to see real results.', target: '#simulate-row'},
+    {title: 'Variant Test', desc: 'Compare one parameter across all its values. Pick a favorite and move to the next setting.', target: '#recipe-compare-row'},
+    {title: 'Focus Mode', desc: 'Click any photo to go full-screen. Browse the filmstrip to switch photos.', target: '#recipe-filmstrip-container'},
+    {title: 'Cookbook', desc: 'Save, load, and manage your recipes. Import presets directly from your camera.', target: '#recipe-library-btn'}
+  ];
+  let tutorialStep = 0;
+  const tutorialOverlay = document.getElementById('recipe-tutorial-overlay');
+  const tutorialSpotlight = document.getElementById('recipe-tutorial-spotlight');
+  const tutorialCard = document.getElementById('recipe-tutorial-card');
+  const tutorialStepEl = document.getElementById('recipe-tutorial-step');
+  const tutorialTitleEl = document.getElementById('recipe-tutorial-title');
+  const tutorialDescEl = document.getElementById('recipe-tutorial-desc');
+  const tutorialNextBtn = document.getElementById('recipe-tutorial-next');
+  const tutorialSkipBtn = document.getElementById('recipe-tutorial-skip');
+
+  function showRecipeTutorial() {
+    tutorialStep = 0;
+    tutorialOverlay.classList.add('visible');
+    renderTutorialStep();
+  }
+
+  function hideRecipeTutorial() {
+    tutorialOverlay.classList.remove('visible');
+    localStorage.setItem('drkrm-recipe-tutorial-seen', '1');
+  }
+
+  function renderTutorialStep() {
+    const step = recipeTutorialSteps[tutorialStep];
+    tutorialStepEl.textContent = (tutorialStep + 1) + ' of ' + recipeTutorialSteps.length;
+    tutorialTitleEl.textContent = step.title;
+    tutorialDescEl.textContent = step.desc;
+    if (tutorialStep === recipeTutorialSteps.length - 1) {
+      tutorialNextBtn.textContent = 'GOT IT';
+    } else {
+      tutorialNextBtn.textContent = 'NEXT';
+    }
+    const targetEl = document.querySelector(step.target);
+    if (targetEl) {
+      const rect = targetEl.getBoundingClientRect();
+      const pad = 8;
+      tutorialSpotlight.style.top = (rect.top - pad) + 'px';
+      tutorialSpotlight.style.left = (rect.left - pad) + 'px';
+      tutorialSpotlight.style.width = (rect.width + pad * 2) + 'px';
+      tutorialSpotlight.style.height = (rect.height + pad * 2) + 'px';
+      const cardW = 320;
+      const cardH = tutorialCard.offsetHeight || 180;
+      let cardTop, cardLeft;
+      if (rect.bottom + pad + 12 + cardH < window.innerHeight) {
+        cardTop = rect.bottom + pad + 12;
+      } else if (rect.top - pad - 12 - cardH > 0) {
+        cardTop = rect.top - pad - 12 - cardH;
+      } else {
+        cardTop = Math.max(8, (window.innerHeight - cardH) / 2);
+      }
+      if (rect.left + cardW < window.innerWidth - 8) {
+        cardLeft = rect.left;
+      } else {
+        cardLeft = Math.max(8, window.innerWidth - cardW - 8);
+      }
+      tutorialCard.style.top = cardTop + 'px';
+      tutorialCard.style.left = cardLeft + 'px';
+    }
+  }
+
+  tutorialNextBtn.addEventListener('click', function() {
+    if (tutorialStep >= recipeTutorialSteps.length - 1) {
+      hideRecipeTutorial();
+    } else {
+      tutorialStep++;
+      renderTutorialStep();
+    }
+  });
+
+  tutorialSkipBtn.addEventListener('click', hideRecipeTutorial);
+
+  tutorialOverlay.addEventListener('click', function(e) {
+    if (e.target === tutorialOverlay) hideRecipeTutorial();
+  });
+
+  document.getElementById('recipe-tutorial-help-btn').addEventListener('click', showRecipeTutorial);
+
   let recipeEditorInitialized = false;
 
   // Start camera polling immediately on page load (background, non-blocking)
@@ -5812,6 +6010,9 @@ body::before {
 
     if (!recipeEditorInitialized) {
       recipeEditorInitialized = true;
+      if (!localStorage.getItem('drkrm-recipe-tutorial-seen')) {
+        setTimeout(showRecipeTutorial, 500);
+      }
       recipeState.mode = 'preview';
       showRecipePreview();
       const recipesP = loadRecipes();

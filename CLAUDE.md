@@ -74,6 +74,28 @@ Opens on port 4000. No arguments needed — the web UI provides a folder browser
 - Music/Movies/Mail/Podcasts TCC prompt still fires when browsing Macintosh HD root despite filter. macOS TCC triggers on directory listing attempt before our filter runs.
 - Logo SVG uses mask-based subtraction now (proper), but hasn't been verified by Oren on the rebuilt .app icon yet.
 
+### Session 45 changes (2026-06-01)
+
+**Recipe Lab tutorial/onboarding (`public/index.html`):**
+- 6-step spotlight walkthrough modal: Collage, Recipe Params, Simulate, Variant Test, Focus Mode, Cookbook
+- Spotlight cutout via `box-shadow: 0 0 0 9999px rgba(0,0,0,0.85)` on positioned highlight div
+- Card auto-positions below/above/centered based on available viewport space
+- Auto-triggers on first Recipe Lab entry (500ms delay after `recipeEditorInitialized`)
+- localStorage flag `drkrm-recipe-tutorial-seen` — shows once, re-launchable via `?` button in Recipe Lab topbar
+- SKIP closes immediately, NEXT advances, last step shows GOT IT, Escape closes
+
+**Feedback pipeline (`public/index.html`):**
+- FEEDBACK button in Photo Cull topbar (`#cull-feedback-btn`, next to `?` help button)
+- FEEDBACK button in Recipe Lab topbar (`#recipe-feedback-btn`, next to COOKBOOK)
+- Opens `mailto:support@drkrm.app` with `[drkrm-feedback]` subject prefix and auto-populated version/platform info
+- Uses `window.open()` for mailto (safe in Electron context)
+
+**Changelog page (`landing/changelog.html`):**
+- Static page matching landing dark aesthetic (same nav, fonts, colors as press.html)
+- v1.0.0-beta entry with 6 feature bullets
+- "Changelog" link added to landing page footer (`landing/index.html`)
+- Deployed at drkrm.app/changelog (after next deploy)
+
 ### Session 44 changes (2026-05-31)
 
 **All marketing materials built (12 items from S43 plan):**
