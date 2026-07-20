@@ -174,13 +174,13 @@ function updateSessionPosition(sessionId, position) {
 
 function isSupportedImage(filename) {
   const upper = filename.toUpperCase();
-  return upper.endsWith('.HIF') || upper.endsWith('.HEIF') ||
+  return upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.HEIC') ||
          upper.endsWith('.JPG') || upper.endsWith('.JPEG');
 }
 
 function isHeifFile(filename) {
   const upper = filename.toUpperCase();
-  return upper.endsWith('.HIF') || upper.endsWith('.HEIF');
+  return upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.HEIC');
 }
 
 function hasRafFiles(dir, maxDepth, depth) {
@@ -306,7 +306,7 @@ function requireRecipeDir(req, res, next) {
 
 function generateThumb(srcPath, destPath, size) {
   const upper = srcPath.toUpperCase();
-  const needsConversion = upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.RAF');
+  const needsConversion = upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.HEIC') || upper.endsWith('.RAF');
   if (needsConversion) {
     execSync(`sips -s format jpeg -Z ${size} ${JSON.stringify(srcPath)} --out ${JSON.stringify(destPath)}`, { stdio: 'pipe', timeout: 15000 });
   } else {
@@ -1394,7 +1394,7 @@ app.post('/api/scan-outputs', requireRecipeDir, (req, res) => {
         const files = fs.readdirSync(loc.dir);
         const match = files.find(f => {
           const upper = f.toUpperCase();
-          return path.parse(f).name === stem && (upper.endsWith('.HIF') || upper.endsWith('.HEIF'));
+          return path.parse(f).name === stem && (upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.HEIC'));
         });
         if (match) {
           found.push({
@@ -1434,7 +1434,7 @@ app.get('/api/preview-output-image/:stem', requireRecipeDir, (req, res) => {
       const files = fs.readdirSync(dir);
       const match = files.find(f => {
         const upper = f.toUpperCase();
-        return path.parse(f).name === stem && (upper.endsWith('.HIF') || upper.endsWith('.HEIF'));
+        return path.parse(f).name === stem && (upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.HEIC'));
       });
       if (match) {
         srcPath = path.join(dir, match);
@@ -2256,7 +2256,7 @@ app.post('/api/check-raf-only', (req, res) => {
 
   const hasHif = fs.existsSync(hifDir) && fs.readdirSync(hifDir).some(f => {
     const u = f.toUpperCase();
-    return u.endsWith('.HIF') || u.endsWith('.HEIF') || u.endsWith('.JPG') || u.endsWith('.JPEG');
+    return u.endsWith('.HIF') || u.endsWith('.HEIF') || u.endsWith('.HEIC') || u.endsWith('.JPG') || u.endsWith('.JPEG');
   });
   const hasJpg = fs.existsSync(jpgDir) && fs.readdirSync(jpgDir).some(f => {
     const u = f.toUpperCase();
@@ -2316,7 +2316,7 @@ app.get('/api/grid-select', (req, res) => {
   try {
     hifFiles = fs.readdirSync(hifDir).filter(f => {
       const upper = f.toUpperCase();
-      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.JPG') || upper.endsWith('.JPEG')) && !f.startsWith('.') && !f.startsWith('._');
+      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.HEIC') || upper.endsWith('.JPG') || upper.endsWith('.JPEG')) && !f.startsWith('.') && !f.startsWith('._');
     });
   } catch (e) {
     return res.status(500).json({ error: 'Cannot read HIF directory' });
@@ -2372,7 +2372,7 @@ app.post('/api/grid-replace', (req, res) => {
   try {
     hifFiles = fs.readdirSync(hifDir).filter(f => {
       const upper = f.toUpperCase();
-      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.JPG') || upper.endsWith('.JPEG')) && !f.startsWith('.') && !f.startsWith('._');
+      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.HEIC') || upper.endsWith('.JPG') || upper.endsWith('.JPEG')) && !f.startsWith('.') && !f.startsWith('._');
     });
   } catch (e) {
     return res.status(500).json({ error: 'Cannot read HIF directory' });
@@ -2451,7 +2451,7 @@ app.post('/api/grid-shuffle', (req, res) => {
   try {
     hifFiles = fs.readdirSync(hifDir).filter(f => {
       const upper = f.toUpperCase();
-      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.JPG') || upper.endsWith('.JPEG')) && !f.startsWith('.') && !f.startsWith('._');
+      return (upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.HEIC') || upper.endsWith('.JPG') || upper.endsWith('.JPEG')) && !f.startsWith('.') && !f.startsWith('._');
     });
   } catch (e) {
     return res.status(500).json({ error: 'Cannot read HIF directory' });
@@ -2519,7 +2519,7 @@ app.post('/api/prewarm-thumbs', (req, res) => {
 
     return new Promise((resolve) => {
       const upper = srcPath.toUpperCase();
-      const needsConversion = upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.RAF');
+      const needsConversion = upper.endsWith('.HIF') || upper.endsWith('.HEIF') || upper.endsWith('.HEIC') || upper.endsWith('.RAF');
       const cmd = needsConversion
         ? `sips -s format jpeg -Z 800 ${JSON.stringify(srcPath)} --out ${JSON.stringify(cachePath)}`
         : `sips -Z 800 ${JSON.stringify(srcPath)} --out ${JSON.stringify(cachePath)}`;
